@@ -13,5 +13,10 @@
     "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .oxfmt*, .prettier*, prettier*, .editorconfig"
   },
   "cSpell.words": ["demi", "esbuild", "nuxt", "oxfmt", "oxlint", "tsgo", "vite", "vitejs", "vitest"],
-  "oxc.fmt.configPath": "./vite.config.ts"
+  "oxc.fmt.configPath": "./vite.config.ts",
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "tailwindCSS.classAttributes": ["class", "ui"],
+  "tailwindCSS.classFunctions": ["defineAppConfig"]
 }

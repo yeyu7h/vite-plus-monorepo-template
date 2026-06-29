@@ -8,6 +8,7 @@ export default defineConfig({
     semi: false,
     singleQuote: true,
     printWidth: 200,
+    ignorePatterns: ['apps/**/typed-router.d.ts', '.agents/**'],
   },
   lint: {
     plugins: ['eslint', 'typescript', 'unicorn', 'oxc', 'vue', 'vitest'],
@@ -18,7 +19,7 @@ export default defineConfig({
       browser: true,
       builtin: true,
     },
-    ignorePatterns: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**'],
+    ignorePatterns: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**', 'apps/**/typed-router.d.ts', '.agents/**'],
     rules: {
       'no-array-constructor': 'error',
       'typescript/ban-ts-comment': 'error',

@@ -19,6 +19,7 @@ export default defineConfig({
     }),
     Tailwindcss(),
     NuxtUI({
+      ui: { colors: { neutral: 'neutral' } },
       autoImport: false,
       scanPackages: ['@monorepo-admin-core/layout-ui'],
     }),

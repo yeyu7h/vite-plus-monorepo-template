@@ -1,7 +1,7 @@
 import { computed } from 'vue'
-import type { AdminLayoutProps } from '../admin-layout'
+import type { LayoutProps } from '../layout'
 
-export function useLayout(props: AdminLayoutProps) {
+export function useLayout(props: LayoutProps) {
   const tabbar = computed(() => props.tabbarEnable)
 
   return {

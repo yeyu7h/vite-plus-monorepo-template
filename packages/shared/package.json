@@ -1,5 +1,5 @@
 {
-  "name": "@monorepo-admin-core/layout-effect",
+  "name": "@monorepo/shared",
   "version": "0.0.0",
   "description": "A starter for creating a TypeScript package.",
   "homepage": "https://github.com/author/library#readme",
@@ -16,17 +16,20 @@
     "dist"
   ],
   "type": "module",
-  "main": "./dist/index.mjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
   "exports": {
-    "types": "./src/index.ts",
-    "development": "./src/index.ts",
-    "production": "./src/index.ts",
-    "default": "./dist/index.mjs"
+    "./utils": {
+      "types": "./src/utils/index.ts",
+      "development": "./src/utils/index.ts",
+      "default": "./dist/utils/index.mjs"
+    }
   },
   "publishConfig": {
-    "access": "public"
+    "exports": {
+      "./utils": {
+        "types": "./dist/utils/index.d.ts",
+        "default": "./dist/utils/index.mjs"
+      }
+    }
   },
   "scripts": {
     "build": "vp pack",
@@ -36,13 +39,14 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
-    "@monorepo-admin-core/layout-ui": "workspace:*",
-    "@monorepo-admin-core/tabs-ui": "workspace:*",
-    "@nuxt/ui": "catalog:vue3",
-    "vite-plus": "catalog:",
-    "vue": "catalog:vue3"
+    "clsx": "catalog:",
+    "tailwind-merge": "catalog:"
   },
   "devDependencies": {
-    "unplugin-vue": "catalog:"
+    "@types/node": "^25.6.2",
+    "@typescript/native-preview": "7.0.0-dev.20260509.2",
+    "bumpp": "^11.1.0",
+    "typescript": "^6.0.3",
+    "vite-plus": "catalog:"
   }
 }

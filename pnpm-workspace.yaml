@@ -5,12 +5,11 @@ packages:
   - packages/admin-core/ui/*
   - packages/admin-core/effects/*
 
-  - tools/*
-
 catalogMode: prefer
 
 catalog:
   '@tailwindcss/vite': ^4.3.1
+  '@typescript/native-preview': latest
   '@types/node': ^24
   typescript: ~6
   tailwindcss: ^4.3.0
@@ -18,6 +17,8 @@ catalog:
   vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
   unplugin-vue: ^7.2.0
+  tailwind-merge: ^3.6.0
+  clsx: ^2.1.1
 
 overrides:
   vite: 'catalog:'

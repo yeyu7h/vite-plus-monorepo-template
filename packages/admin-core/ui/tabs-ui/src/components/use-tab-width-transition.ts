@@ -19,6 +19,10 @@ interface OpeningTabTransition {
   expanding: boolean
 }
 
+/**
+ * 管理 Tab 打开和关闭时的宽度过渡动画状态
+ * @param options
+ */
 export function useTabWidthTransition(options: UseTabWidthTransitionOptions) {
   const { tabEls, setTabElement } = createTabElementRegistry()
 
@@ -64,11 +68,11 @@ export function useTabWidthTransition(options: UseTabWidthTransitionOptions) {
 
   /**
    * 处理 width 过渡结束事件，并结束对应的打开或关闭流程
-   * @param event transitionend 事件对象
+   * @param e transitionend 事件对象
    * @param id 触发过渡结束的 tab 唯一标识
    */
-  function handleTabWidthTransitionEnd(event: TransitionEvent, id: string) {
-    if (event.propertyName !== 'width') return
+  function handleTabWidthTransitionEnd(e: TransitionEvent, id: string) {
+    if (e.propertyName !== 'width') return
     if (openingTabs.value[id]?.expanding) return finishTabOpenTransition(id)
     if (!closingTabs.value[id]?.collapsing) return
 
@@ -121,16 +125,14 @@ export function useTabWidthTransition(options: UseTabWidthTransitionOptions) {
    */
   function startTabOpenTransition(id: string) {
     const transition = openingTabs.value[id]
+
     if (!transition) return false
     if (transition.expanding) return false
 
-    const element = tabEls.get(id)
+    const el = tabEls.get(id)
     openingTabs.value = {
       ...openingTabs.value,
-      [id]: {
-        ...transition,
-        width: element ? getNaturalElementWidth(element) : 0,
-      },
+      [id]: { ...transition, width: el ? getNaturalElementWidth(el) : 0 },
     }
 
     requestAnimationFrame(() => {
@@ -164,8 +166,8 @@ export function useTabWidthTransition(options: UseTabWidthTransitionOptions) {
 
     getTabWidthTransitionStyle,
     handleTabWidthTransitionEnd,
-    prepareTabOpenTransition,
 
+    prepareTabOpenTransition,
     startTabOpenTransition,
     startTabCloseTransition,
   }

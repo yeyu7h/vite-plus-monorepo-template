@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { Layout } from '@monorepo-admin-core/layout-ui'
-import Tabbar from './basic/tabbar/Tabbar.vue'
+import { LayoutTabbar } from './basic/tabbar'
+import { LayoutMenu } from './basic/menu'
 </script>
 
 <template>
   <Layout :tabbar-enable="true">
     <slot />
 
+    <template #menu="{ collapsed, opened }">
+      <LayoutMenu :collapsed="collapsed" :opened="opened" />
+    </template>
+
     <template #tabbar>
-      <Tabbar />
+      <LayoutTabbar />
     </template>
   </Layout>
 </template>

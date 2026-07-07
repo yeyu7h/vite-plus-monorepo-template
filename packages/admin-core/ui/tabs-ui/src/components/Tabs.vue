@@ -14,14 +14,22 @@ const emit = defineEmits<{
   select: [path: string]
 }>()
 
-const tabWidthTrans = useTabWidthTransition({ onClosed: removeTab })
+const tabWidthTrans = useTabWidthTransition({ onClosed: finishTabClose })
+const hasHydratedTabs = ref(false)
 const localTabs = ref<AdminTabItem[]>([])
+const pendingCloseTabIds = ref<Record<string, true>>({})
+const logicalTabCount = computed(() => localTabs.value.filter((tab) => !pendingCloseTabIds.value[tab.path]).length)
 
 watch(
   () => props.tabs,
   async (tabs, previousTabs = []) => {
+    if (!hasHydratedTabs.value) {
+      localTabs.value = tabs.map((tab) => ({ ...tab }))
+      hasHydratedTabs.value = true
+      return
+    }
+
     const previousPaths = new Set(previousTabs.map((tab) => tab.path))
-    const incomingPaths = new Set(tabs.map((tab) => tab.path))
 
     for (const tab of tabs) {
       if (!previousPaths.has(tab.path)) {
@@ -29,19 +37,13 @@ watch(
       }
     }
 
-    localTabs.value = tabs.map((tab) => ({ ...tab }))
+    syncLocalTabs(tabs)
 
     await nextTick()
 
     for (const tab of tabs) {
       if (!previousPaths.has(tab.path)) {
         tabWidthTrans.startTabOpenTransition(tab.path)
-      }
-    }
-
-    for (const tab of previousTabs) {
-      if (!incomingPaths.has(tab.path)) {
-        tabWidthTrans.closingTabIds.value.delete(tab.path)
       }
     }
   },
@@ -59,10 +61,19 @@ function closeTab(path: string) {
 
   const started = tabWidthTrans.startTabCloseTransition(path)
   if (!started) return
+
+  pendingCloseTabIds.value = {
+    ...pendingCloseTabIds.value,
+    [path]: true,
+  }
+
+  emit('close', path)
 }
 
-function removeTab(path: string) {
-  emit('close', path)
+function finishTabClose(path: string) {
+  const { [path]: _removedTabId, ...nextPendingCloseTabIds } = pendingCloseTabIds.value
+  pendingCloseTabIds.value = nextPendingCloseTabIds
+  localTabs.value = localTabs.value.filter((tab) => tab.path !== path)
 }
 
 function selectTab(path: string) {
@@ -71,7 +82,10 @@ function selectTab(path: string) {
 }
 
 function isTabClosable(tab: AdminTabItem) {
-  return localTabs.value.length > 1 && tab.closable !== false
+  if (tab.closable === false) return false
+  if (pendingCloseTabIds.value[tab.path]) return true
+
+  return logicalTabCount.value > 1
 }
 
 function getTabImageIcon(icon: unknown, theme: 'light' | 'dark' = 'light'): string {
@@ -81,6 +95,33 @@ function getTabImageIcon(icon: unknown, theme: 'light' | 'dark' = 'light'): stri
 
 function isTabImageIcon(icon: unknown): icon is AdminMenuImageIcon {
   return typeof icon === 'object' && icon !== null && 'light' in icon
+}
+
+function syncLocalTabs(tabs: AdminTabItem[]) {
+  const nextTabsByPath = new Map(tabs.map((tab) => [tab.path, { ...tab }]))
+  const nextLocalTabs: AdminTabItem[] = []
+
+  for (const currentTab of localTabs.value) {
+    const nextTab = nextTabsByPath.get(currentTab.path)
+    if (nextTab) {
+      nextLocalTabs.push(nextTab)
+      nextTabsByPath.delete(currentTab.path)
+      continue
+    }
+
+    if (pendingCloseTabIds.value[currentTab.path]) {
+      nextLocalTabs.push(currentTab)
+    }
+  }
+
+  const renderedPaths = new Set(nextLocalTabs.map((tab) => tab.path))
+
+  for (const tab of tabs) {
+    if (renderedPaths.has(tab.path)) continue
+    nextLocalTabs.push({ ...tab })
+  }
+
+  localTabs.value = nextLocalTabs
 }
 </script>
 

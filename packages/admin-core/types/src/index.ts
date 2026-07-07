@@ -1,1 +1,1 @@
-export * from './app'
+export type * from './app'

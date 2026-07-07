@@ -336,3 +336,17 @@ function randomize() {
     </div>
   </div>
 </template>
+
+<route lang="json">
+{
+  "meta": {
+    "title": "用户",
+    "icon": "i-lucide-users",
+    "menuGroup": {
+      "label": "系统管理",
+      "order": 20
+    },
+    "order": 30
+  }
+}
+</route>

@@ -12,7 +12,7 @@
     "vite.config.*": "jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*",
     "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .oxfmt*, .prettier*, prettier*, .editorconfig"
   },
-  "cSpell.words": ["demi", "esbuild", "lucide", "nuxt", "oxfmt", "oxlint", "tsgo", "vite", "vitejs", "vitest"],
+  "cSpell.words": ["dedupe", "demi", "esbuild", "lucide", "nuxt", "oxfmt", "oxlint", "tsgo", "vite", "vitejs", "vitest"],
   "oxc.fmt.configPath": "./vite.config.ts",
   "files.associations": {
     "*.css": "tailwindcss"

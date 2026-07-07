@@ -1,6 +1,10 @@
-import type { LayoutType } from '@monorepo-admin-core/types'
+import type { LayoutBreadcrumbItem, LayoutType } from '@monorepo-admin-core/types'
 
 export interface LayoutProps {
+  breadcrumbPrefix?: LayoutBreadcrumbItem[]
+
+  breadcrumbs?: LayoutBreadcrumbItem[]
+
   /**
    * @default true
    */

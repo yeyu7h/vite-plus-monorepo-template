@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { useLayout } from './hooks/use-layout'
-import { ref } from 'vue'
-import type { NavigationMenuItem, BreadcrumbItem } from '@nuxt/ui'
 import type { LayoutProps } from './layout'
 import LayoutTabbar from './components/LayoutTabbar.vue'
 import LayoutSidebar from './components/LayoutSidebar.vue'
@@ -25,7 +23,7 @@ const { tabbar } = useLayout(props)
 
     <UDashboardPanel :ui="{ body: 'relative' }">
       <template #header>
-        <LayoutHeader />
+        <LayoutHeader :breadcrumb-prefix="props.breadcrumbPrefix" :breadcrumbs="props.breadcrumbs" />
 
         <LayoutTabbar v-if="tabbar">
           <slot name="tabbar" />

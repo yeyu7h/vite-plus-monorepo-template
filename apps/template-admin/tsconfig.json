@@ -2,7 +2,7 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "allowArbitraryExtensions": true,
-    "types": ["vite-plugin-vue-layouts-next/client"],
+    "types": ["vite-plugin-vue-layouts-next/client", "@monorepo-admin-core/types/global"],
     "paths": {
       "@/*": ["./src/*"],
       "#build/ui/*": ["./node_modules/.nuxt-ui/ui/*"]

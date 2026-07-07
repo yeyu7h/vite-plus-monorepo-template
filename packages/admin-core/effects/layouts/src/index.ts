@@ -1,1 +1,5 @@
 export { default as AdminLayout } from './AdminLayout.vue'
+export { buildAdminBreadcrumbPrefix, buildAdminBreadcrumbs } from './route-breadcrumb'
+export type { AdminBreadcrumbRouteRecord, AdminCurrentRouteRecord } from './route-breadcrumb'
+export { buildAdminMenuGroups, buildAdminMenus, markActiveAdminMenuGroups, markActiveAdminMenus } from './route-menu'
+export type { AdminRouteRecord, BuildAdminMenuGroupsOptions, BuildAdminMenusOptions } from './route-menu'

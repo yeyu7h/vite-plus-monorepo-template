@@ -1,85 +1,128 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import type { AdminMenuImageIcon, AdminTabItem } from '@monorepo-admin-core/types'
+import { computed, nextTick, ref, watch } from 'vue'
 import { cn } from '@monorepo/shared/utils'
 import { useTabWidthTransition } from './use-tab-width-transition'
 
-interface TabItem {
-  id: string
-  title: string
-  icon: string
-  refreshedAt?: number
-}
+const props = defineProps<{
+  activePath: string
+  tabs: AdminTabItem[]
+}>()
 
-const tabs = ref<TabItem[]>([
-  { id: 'guide', title: 'Guide', icon: 'i-lucide-box' },
-  { id: 'settings', title: '设置', icon: 'i-lucide-settings' },
-  { id: 'colors', title: 'Colors', icon: 'i-lucide-palette' },
-  { id: 'theme', title: 'Theme', icon: 'i-lucide-swatch-book' },
-])
+const emit = defineEmits<{
+  close: [path: string]
+  select: [path: string]
+}>()
 
 const tabWidthTrans = useTabWidthTransition({ onClosed: removeTab })
+const localTabs = ref<AdminTabItem[]>([])
 
-const activeTabId = ref('settings')
-const newTabIndex = ref(1)
+watch(
+  () => props.tabs,
+  async (tabs, previousTabs = []) => {
+    const previousPaths = new Set(previousTabs.map((tab) => tab.path))
+    const incomingPaths = new Set(tabs.map((tab) => tab.path))
 
-function closeTab(id: string) {
-  if (tabs.value.length <= 1) return
+    for (const tab of tabs) {
+      if (!previousPaths.has(tab.path)) {
+        tabWidthTrans.prepareTabOpenTransition(tab.path)
+      }
+    }
 
-  const index = tabs.value.findIndex((tab) => tab.id === id)
+    localTabs.value = tabs.map((tab) => ({ ...tab }))
+
+    await nextTick()
+
+    for (const tab of tabs) {
+      if (!previousPaths.has(tab.path)) {
+        tabWidthTrans.startTabOpenTransition(tab.path)
+      }
+    }
+
+    for (const tab of previousTabs) {
+      if (!incomingPaths.has(tab.path)) {
+        tabWidthTrans.closingTabIds.value.delete(tab.path)
+      }
+    }
+  },
+  { immediate: true },
+)
+
+const activeTabPath = computed(() => props.activePath)
+
+function closeTab(path: string) {
+  const index = localTabs.value.findIndex((tab) => tab.path === path)
   if (index === -1) return
 
-  const started = tabWidthTrans.startTabCloseTransition(id)
+  const tab = localTabs.value[index]
+  if (!tab || !isTabClosable(tab)) return
+
+  const started = tabWidthTrans.startTabCloseTransition(path)
   if (!started) return
-
-  if (activeTabId.value === id) {
-    const nextTab = tabs.value[index + 1] ?? tabs.value[index - 1]
-    if (nextTab) activeTabId.value = nextTab.id
-  }
 }
 
-function removeTab(id: string) {
-  const index = tabs.value.findIndex((tab) => tab.id === id)
-  if (index !== -1) tabs.value.splice(index, 1)
+function removeTab(path: string) {
+  emit('close', path)
 }
 
-async function addTab() {
-  const id = `new-${newTabIndex.value}`
+function selectTab(path: string) {
+  if (path === props.activePath) return
+  emit('select', path)
+}
 
-  tabWidthTrans.prepareTabOpenTransition(id)
-  tabs.value.push({ id, title: `New ${newTabIndex.value}`, icon: 'i-lucide-file' })
-  newTabIndex.value += 1
+function isTabClosable(tab: AdminTabItem) {
+  return localTabs.value.length > 1 && tab.closable !== false
+}
 
-  await nextTick()
-  tabWidthTrans.startTabOpenTransition(id)
-  requestAnimationFrame(() => (activeTabId.value = id))
+function getTabImageIcon(icon: unknown, theme: 'light' | 'dark' = 'light'): string {
+  const imageIcon = icon as AdminMenuImageIcon
+  return theme === 'light' ? imageIcon.light : (imageIcon.dark ?? imageIcon.light)
+}
+
+function isTabImageIcon(icon: unknown): icon is AdminMenuImageIcon {
+  return typeof icon === 'object' && icon !== null && 'light' in icon
 }
 </script>
 
 <template>
   <div class="flex h-full">
     <div
-      v-for="tab in tabs"
-      :key="tab.id"
-      :ref="(el) => tabWidthTrans.setTabElement(tab.id, el as HTMLDivElement | null)"
+      v-for="tab in localTabs"
+      :key="tab.path"
+      :ref="(el) => tabWidthTrans.setTabElement(tab.path, el as HTMLDivElement | null)"
       :class="
         cn(
           'group relative flex h-full min-w-0 shrink-0 items-center justify-center select-none transition-[width] duration-200 ease-out after:absolute after:inset-x-0 after:-bottom-px after:h-px after:origin-center after:scale-x-0 after:bg-default after:content-[\'\']',
-          tab.id === activeTabId ? 'z-10 bg-default after:scale-x-100' : 'hover:bg-elevated hover:dark:bg-default',
-          tabWidthTrans.closingTabIds.value.has(tab.id) && 'pointer-events-none',
+          tab.path === activeTabPath ? 'z-10 bg-default after:scale-x-100' : 'hover:bg-elevated hover:dark:bg-default',
+          tabWidthTrans.closingTabIds.value.has(tab.path) && 'pointer-events-none',
         )
       "
-      :style="tabWidthTrans.getTabWidthTransitionStyle(tab.id)"
-      @click="activeTabId = tab.id"
-      @transitionend.self="tabWidthTrans.handleTabWidthTransitionEnd($event, tab.id)"
+      :style="tabWidthTrans.getTabWidthTransitionStyle(tab.path)"
+      @click="selectTab(tab.path)"
+      @transitionend.self="tabWidthTrans.handleTabWidthTransitionEnd($event, tab.path)"
     >
       <div class="flex h-full min-w-0 flex-1 items-center justify-center overflow-hidden">
         <div class="flex min-w-max items-center justify-center px-3">
-          <UIcon class="mr-2 shrink-0" :name="tab.icon" size="18" />
+          <UIcon v-if="typeof tab.icon === 'string' && tab.icon.startsWith('i-')" class="mr-2 shrink-0" :name="tab.icon" size="18" />
+          <picture v-else-if="isTabImageIcon(tab.icon)" class="mr-2 flex size-[18px] shrink-0 items-center justify-center">
+            <source media="(prefers-color-scheme: dark)" :srcset="getTabImageIcon(tab.icon, 'dark')" />
+            <img class="size-[18px] object-contain" :src="getTabImageIcon(tab.icon)" />
+          </picture>
 
           <span class="text-sm leading-none">{{ tab.title }}</span>
 
-          <button class="ml-3 flex size-5 shrink-0 items-center justify-center rounded-full opacity-60 hover:bg-accented hover:opacity-100" type="button" @click.stop="closeTab(tab.id)">
+          <button
+            v-if="isTabClosable(tab)"
+            class="ml-3 flex size-5 shrink-0 items-center justify-center rounded-full opacity-60 hover:bg-accented hover:opacity-100"
+            type="button"
+            title="关闭标签页"
+            @click.stop="closeTab(tab.path)"
+          >
             <UIcon name="i-lucide-x" size="14" />
+          </button>
+
+          <button v-else class="ml-3 flex size-5 shrink-0 cursor-default items-center justify-center rounded-full opacity-60" type="button" title="固定标签页" disabled @click.stop>
+            <UIcon name="i-lucide-pin" size="14" />
           </button>
         </div>
       </div>
@@ -87,12 +130,8 @@ async function addTab() {
       <span
         aria-hidden="true"
         class="pointer-events-none absolute top-0 right-0 -bottom-px z-10 w-px bg-border transition-opacity duration-200 ease-out"
-        :class="tabWidthTrans.closingTabIds.value.has(tab.id) ? 'opacity-0' : 'opacity-100'"
+        :class="tabWidthTrans.closingTabIds.value.has(tab.path) ? 'opacity-0' : 'opacity-100'"
       />
     </div>
-
-    <button class="flex h-full w-10 shrink-0 items-center justify-center border-r border-default select-none hover:bg-elevated hover:dark:bg-default" type="button" @click="addTab">
-      <UIcon name="i-lucide-plus" size="20" />
-    </button>
   </div>
 </template>

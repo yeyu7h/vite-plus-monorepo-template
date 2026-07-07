@@ -12,6 +12,7 @@
     "prepare": "vp config"
   },
   "devDependencies": {
+    "npm-run-all2": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {

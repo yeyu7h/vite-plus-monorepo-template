@@ -14,23 +14,20 @@ catalog:
   typescript: ~6
   tailwindcss: ^4.3.0
   vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
   unplugin-vue: ^7.2.0
   tailwind-merge: ^3.6.0
   clsx: ^2.1.1
+  npm-run-all2: ^9.0.2
 
 overrides:
   vite: 'catalog:'
-  vitest: 'catalog:'
 
 peerDependencyRules:
   allowAny:
     - vite
-    - vitest
   allowedVersions:
     vite: '*'
-    vitest: '*'
 
 catalogs:
   vue3:

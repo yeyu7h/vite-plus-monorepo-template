@@ -145,9 +145,9 @@ function syncLocalTabs(tabs: AdminTabItem[]) {
       <div class="flex h-full min-w-0 flex-1 items-center justify-center overflow-hidden">
         <div class="flex min-w-max items-center justify-center px-3">
           <UIcon v-if="typeof tab.icon === 'string' && tab.icon.startsWith('i-')" class="mr-2 shrink-0" :name="tab.icon" size="18" />
-          <picture v-else-if="isTabImageIcon(tab.icon)" class="mr-2 flex size-[18px] shrink-0 items-center justify-center">
+          <picture v-else-if="isTabImageIcon(tab.icon)">
             <source media="(prefers-color-scheme: dark)" :srcset="getTabImageIcon(tab.icon, 'dark')" />
-            <img class="size-[18px] object-contain" :src="getTabImageIcon(tab.icon)" />
+            <img class="mr-2 size-4.5 object-contain" :src="getTabImageIcon(tab.icon)" />
           </picture>
 
           <span class="text-sm leading-none">{{ tab.title }}</span>

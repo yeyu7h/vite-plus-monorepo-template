@@ -35,11 +35,11 @@ function isBreadcrumbImageIcon(icon: unknown): icon is AdminMenuImageIcon {
   <UDashboardNavbar :ui="{ root: 'bg-muted/50 dark:bg-muted/20' }">
     <template #left>
       <UBreadcrumb v-if="items.length" :items="items">
-        <template #item-leading="{ item, active, ui }">
-          <UIcon v-if="typeof item.menuIcon === 'string' && item.menuIcon.startsWith('i-')" :name="item.menuIcon" :class="ui.linkLeadingIcon({ active })" />
-          <picture v-else-if="isBreadcrumbImageIcon(item.menuIcon)" class="flex size-5 shrink-0 items-center justify-center">
+        <template #item-leading="{ item }">
+          <UIcon v-if="typeof item.menuIcon === 'string' && item.menuIcon.startsWith('i-')" :name="item.menuIcon" size="18" />
+          <picture v-else-if="isBreadcrumbImageIcon(item.menuIcon)" class="flex size-4.5 shrink-0 items-center justify-center">
             <source media="(prefers-color-scheme: dark)" :srcset="getBreadcrumbImageIcon(item.menuIcon, 'dark')" />
-            <img class="size-5 object-contain" :src="getBreadcrumbImageIcon(item.menuIcon)" />
+            <img class="size-4.5 object-contain" :src="getBreadcrumbImageIcon(item.menuIcon)" />
           </picture>
         </template>
       </UBreadcrumb>

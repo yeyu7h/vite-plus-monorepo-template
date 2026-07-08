@@ -8,7 +8,7 @@ const router = useRouter()
 const route = useRoute()
 const tabs = ref<AdminTabItem[]>([])
 
-const activePath = computed(() => route.fullPath)
+const activePath = computed(() => resolveRouteTab().path)
 
 watch(
   () => route.fullPath,
@@ -19,12 +19,13 @@ watch(
 )
 
 function addRouteTab() {
-  if (route.meta.hideInTab || !route.meta.title) return
   if (route.meta.externalLink) return
 
-  const path = route.fullPath
+  const tab = resolveRouteTab()
+  if (!tab.title) return
+
+  const path = tab.path
   const existingIndex = tabs.value.findIndex((tab) => tab.path === path)
-  const tab = createRouteTab()
 
   if (existingIndex === -1) {
     tabs.value = [...tabs.value, tab]
@@ -34,12 +35,17 @@ function addRouteTab() {
   tabs.value = tabs.value.map((item, index) => (index === existingIndex ? tab : item))
 }
 
-function createRouteTab(): AdminTabItem {
+function resolveRouteTab(): AdminTabItem {
+  const parentTabPath = route.meta.hideInTab ? route.meta.activePath : undefined
+  const path = typeof parentTabPath === 'string' ? parentTabPath : route.fullPath
+  const resolvedRoute = typeof parentTabPath === 'string' ? router.resolve(parentTabPath) : route
+  const title = resolvedRoute.meta.title ?? route.meta.title
+
   return {
-    active: route.fullPath === activePath.value,
-    icon: route.meta.icon,
-    path: route.fullPath,
-    title: route.meta.title ?? activePath.value,
+    active: path === activePath.value,
+    icon: resolvedRoute.meta.icon ?? route.meta.icon,
+    path,
+    title: title ?? path,
   }
 }
 
@@ -56,13 +62,13 @@ async function closeTab(path: string) {
   const nextTab = tabs.value[index + 1] ?? tabs.value[index - 1]
   tabs.value = tabs.value.filter((tab) => tab.path !== path)
 
-  if (path === route.fullPath && nextTab) {
+  if (path === activePath.value && nextTab) {
     await router.push(nextTab.path)
   }
 }
 
 function refreshTab(path: string) {
-  if (path !== route.fullPath) return
+  if (path !== activePath.value) return
   router.go(0)
 }
 </script>

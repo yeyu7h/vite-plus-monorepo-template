@@ -44,6 +44,127 @@ test('prefers matched parent route meta for breadcrumb names and icons', () => {
   ])
 })
 
+test('respects canonical hideInBreadcrumb when parent should be hidden', () => {
+  const breadcrumbs = buildAdminBreadcrumbs(
+    {
+      matched: [
+        { path: '/system', meta: { title: '系统' } },
+        { path: '/system/role', meta: { title: '角色管理', icon: 'i-lucide-shield-check' } },
+      ],
+      path: '/system/role',
+      meta: { title: '角色管理', icon: 'i-lucide-shield-check' },
+    },
+    [
+      { path: '/system', meta: { title: '系统', hideInBreadcrumb: true } },
+      { path: '/system/role', meta: { title: '角色管理', icon: 'i-lucide-shield-check' } },
+    ],
+  )
+
+  expect(breadcrumbs).toEqual([
+    {
+      icon: 'i-lucide-shield-check',
+      path: undefined,
+      title: '角色管理',
+    },
+  ])
+})
+
+test('skips placeholder parent routes without title when menu group already covers the section', () => {
+  const breadcrumbs = buildAdminBreadcrumbs(
+    {
+      matched: [
+        { path: '/system', meta: {} },
+        { path: '/system/role', meta: { title: '角色管理', icon: 'i-lucide-shield-check' } },
+      ],
+      path: '/system/role',
+      meta: {
+        title: '角色管理',
+        icon: 'i-lucide-shield-check',
+        menuGroup: '系统管理',
+      },
+    },
+    [
+      { path: '/system', meta: {} },
+      { path: '/system/role', meta: { title: '角色管理', icon: 'i-lucide-shield-check' } },
+    ],
+  )
+
+  expect(breadcrumbs).toEqual([
+    {
+      icon: 'i-lucide-shield-check',
+      path: undefined,
+      title: '角色管理',
+    },
+  ])
+})
+
+test('does not inherit parent hideInBreadcrumb onto current child route', () => {
+  const breadcrumbs = buildAdminBreadcrumbs(
+    {
+      matched: [
+        { path: '/dashboard', meta: { title: '仪表盘', hideInBreadcrumb: true } },
+        { path: '/dashboard/workbench', meta: { title: '工作台', icon: 'i-lucide-layout-dashboard' } },
+      ],
+      path: '/dashboard/workbench',
+      meta: {
+        title: '工作台',
+        icon: 'i-lucide-layout-dashboard',
+        hideInBreadcrumb: true,
+        menuGroup: '概览',
+      },
+    },
+    [
+      { path: '/dashboard', meta: { title: '仪表盘', hideInBreadcrumb: true } },
+      { path: '/dashboard/workbench', meta: { title: '工作台', icon: 'i-lucide-layout-dashboard' } },
+    ],
+  )
+
+  expect(breadcrumbs).toEqual([
+    {
+      icon: 'i-lucide-layout-dashboard',
+      path: undefined,
+      title: '工作台',
+    },
+  ])
+})
+
+test('deduplicates repeated matched paths from index file routes', () => {
+  const breadcrumbs = buildAdminBreadcrumbs({
+    matched: [
+      { path: '/user', meta: {} },
+      { path: '/user/', meta: {} },
+      { path: '', meta: { title: '用户' } },
+    ],
+    path: '/user',
+    meta: { title: '用户' },
+  })
+
+  expect(breadcrumbs).toEqual([
+    {
+      icon: undefined,
+      path: undefined,
+      title: '用户',
+    },
+  ])
+})
+
+test('keeps fallback parents non-clickable when only placeholder route exists', () => {
+  const breadcrumbs = buildAdminBreadcrumbs({ path: '/docs/vite-plus', meta: { title: 'Vite+ Docs' } }, [{ path: '/docs', meta: {} }])
+
+  expect(breadcrumbs).toEqual([
+    {
+      icon: undefined,
+      path: undefined,
+      title: 'Docs',
+    },
+    {
+      icon: undefined,
+      path: undefined,
+      title: 'Vite+ Docs',
+    },
+  ])
+})
+
 test('creates non-clickable synthetic parents when no parent route exists', () => {
   const breadcrumbs = buildAdminBreadcrumbs({ path: '/dashboard/workbench', meta: { title: '工作台' } })
 

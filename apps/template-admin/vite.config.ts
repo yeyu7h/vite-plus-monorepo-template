@@ -21,7 +21,7 @@ export default defineConfig({
     NuxtUI({
       ui: { colors: { neutral: 'neutral' } },
       autoImport: false,
-      scanPackages: ['@monorepo-admin-core/layout-ui'],
+      scanPackages: ['@monorepo-admin-core/layout-ui', '@monorepo-admin-core/tabs-ui', '@monorepo-admin-core/layout-effect'],
     }),
     VueDevTools(),
   ],

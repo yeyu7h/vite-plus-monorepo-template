@@ -17,6 +17,9 @@
     // Disable emitting output during `vue-tsc --build`, which is used for type-checking only.
     "noEmit": false,
 
+    // Redirect emitted JS and declaration files into a temp directory to avoid generating `vite.config.js` next to the source config file.
+    "outDir": "./node_modules/.tmp/tsconfig-node-output",
+
     // `vue-tsc --build` produces a .tsbuildinfo file for incremental type-checking.
     // Specified here to keep it out of the root directory.
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",

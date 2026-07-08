@@ -32,10 +32,6 @@
       "types": "./global.d.ts",
       "default": "./global.d.ts"
     },
-    "./vue-router": {
-      "types": "./vue-router.d.ts",
-      "default": "./vue-router.d.ts"
-    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -58,7 +54,6 @@
   },
   "devDependencies": {
     "@types/node": "^25.6.2",
-    "@typescript/native-preview": "7.0.0-dev.20260509.2",
     "bumpp": "^11.1.0",
     "typescript": "^6.0.3",
     "vite": "catalog:",

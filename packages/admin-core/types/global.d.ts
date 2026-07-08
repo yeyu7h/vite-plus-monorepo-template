@@ -1,4 +1,4 @@
-import type { AdminRouteMeta } from './src/app.d.ts'
+import type { AdminRouteMeta } from './src/route.d.ts'
 
 import 'vue-router'
 

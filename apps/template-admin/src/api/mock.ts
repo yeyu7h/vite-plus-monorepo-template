@@ -6,46 +6,84 @@ export interface AdminLoginParams {
 }
 
 export interface AdminLoginResult {
-  accessToken: string
+  access_token: string
 }
 
 export interface AdminUserInfo {
   avatar?: string
-  homePath: string
-  realName: string
+  home_path: string
+  real_name: string
   roles: string[]
-  userId: string
+  user_id: string
   username: string
+}
+
+type AdminBackendMenuAuthorityDto = string[]
+
+interface AdminBackendMenuImageIconDto {
+  dark?: string
+  light: string
+}
+
+type AdminBackendMenuIconDto = AdminBackendMenuImageIconDto | string
+
+interface AdminBackendMenuGroupMetaDto {
+  id?: string
+  label: string
+  order?: number
+}
+
+interface AdminBackendMenuMetaDto {
+  active_path?: string
+  authority?: AdminBackendMenuAuthorityDto
+  external_link?: string
+  hide_in_breadcrumb?: boolean
+  hide_in_menu?: boolean
+  hide_in_tab?: boolean
+  icon?: AdminBackendMenuIconDto
+  ignore_access?: boolean
+  menu_group?: AdminBackendMenuGroupMetaDto | string
+  menu_visible_with_forbidden?: boolean
+  order?: number
+  show_active_tab_border?: boolean
+  title: string
+}
+
+interface AdminBackendMenuDto {
+  children?: AdminBackendMenuDto[]
+  id: string
+  meta: AdminBackendMenuMetaDto
+  path: string
 }
 
 const mockUsers: Record<string, AdminUserInfo & { password: string }> = {
   admin: {
     avatar: 'https://avatar.vercel.sh/admin',
-    homePath: '/dashboard/workbench',
+    home_path: '/dashboard/workbench',
     password: 'admin123',
-    realName: 'Admin User',
+    real_name: 'Admin User',
     roles: ['admin'],
-    userId: '1',
+    user_id: '1',
     username: 'admin',
   },
   user: {
     avatar: 'https://avatar.vercel.sh/user',
-    homePath: '/dashboard/workbench',
+    home_path: '/dashboard/workbench',
     password: 'user123',
-    realName: 'Normal User',
+    real_name: 'Normal User',
     roles: ['user'],
-    userId: '2',
+    user_id: '2',
     username: 'user',
   },
 }
 
-const backendMenus: AdminBackendMenu[] = [
+const backendMenus: AdminBackendMenuDto[] = [
   {
     id: 'dashboard',
     path: '/dashboard',
     meta: {
       icon: 'i-lucide-layout-dashboard',
-      menuGroup: { id: 'workspace', label: '工作台', order: 10 },
+      menu_group: { id: 'workspace', label: '工作台', order: 10 },
       order: 10,
       title: 'Dashboard',
     },
@@ -66,7 +104,7 @@ const backendMenus: AdminBackendMenu[] = [
     path: '/reports',
     meta: {
       icon: 'i-lucide-chart-column',
-      menuGroup: { id: 'workspace', label: '工作台', order: 10 },
+      menu_group: { id: 'workspace', label: '工作台', order: 10 },
       order: 20,
       title: '报表',
     },
@@ -90,7 +128,7 @@ const backendMenus: AdminBackendMenu[] = [
         dark: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/Apple.png',
         light: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/Apple.png',
       },
-      menuGroup: { id: 'ops', label: '运维', order: 20 },
+      menu_group: { id: 'ops', label: '运维', order: 20 },
       order: 30,
       title: '监控',
     },
@@ -114,7 +152,7 @@ const backendMenus: AdminBackendMenu[] = [
     path: '/user/',
     meta: {
       icon: 'i-lucide-users',
-      menuGroup: { id: 'workspace', label: '工作台', order: 10 },
+      menu_group: { id: 'workspace', label: '工作台', order: 10 },
       order: 40,
       title: '用户列表',
     },
@@ -124,9 +162,9 @@ const backendMenus: AdminBackendMenu[] = [
     path: '/map',
     meta: {
       icon: 'i-lucide-map',
-      menuGroup: { id: 'ops', label: '运维', order: 20 },
+      menu_group: { id: 'ops', label: '运维', order: 20 },
       order: 35,
-      showActiveTabBorder: true,
+      show_active_tab_border: true,
       title: '地图',
     },
   },
@@ -135,7 +173,7 @@ const backendMenus: AdminBackendMenu[] = [
     path: '/access',
     meta: {
       icon: 'i-lucide-key-round',
-      menuGroup: { id: 'workspace', label: '工作台', order: 10 },
+      menu_group: { id: 'workspace', label: '工作台', order: 10 },
       order: 45,
       title: '权限演示',
     },
@@ -146,7 +184,7 @@ const backendMenus: AdminBackendMenu[] = [
         meta: {
           authority: ['admin'],
           icon: 'i-lucide-eye-off',
-          menuVisibleWithForbidden: true,
+          menu_visible_with_forbidden: true,
           order: 10,
           title: '可见但无权限',
         },
@@ -159,7 +197,7 @@ const backendMenus: AdminBackendMenu[] = [
     meta: {
       authority: ['admin'],
       icon: 'i-lucide-settings',
-      menuGroup: { id: 'system', label: '系统管理', order: 30 },
+      menu_group: { id: 'system', label: '系统管理', order: 30 },
       order: 50,
       title: '系统',
     },
@@ -188,10 +226,10 @@ const backendMenus: AdminBackendMenu[] = [
         id: 'system-settings-theme',
         path: '/system/settings/theme',
         meta: {
-          activePath: '/system/settings',
+          active_path: '/system/settings',
           authority: ['admin'],
-          hideInMenu: true,
-          hideInTab: true,
+          hide_in_menu: true,
+          hide_in_tab: true,
           order: 30,
           title: '主题设置',
         },
@@ -200,10 +238,10 @@ const backendMenus: AdminBackendMenu[] = [
         id: 'system-settings-notification',
         path: '/system/settings/notification',
         meta: {
-          activePath: '/system/settings',
+          active_path: '/system/settings',
           authority: ['admin'],
-          hideInMenu: true,
-          hideInTab: true,
+          hide_in_menu: true,
+          hide_in_tab: true,
           order: 40,
           title: '通知设置',
         },
@@ -214,9 +252,9 @@ const backendMenus: AdminBackendMenu[] = [
     id: 'docs-vite-plus',
     path: '/docs/vite-plus',
     meta: {
-      externalLink: 'https://viteplus.dev/guide/',
+      external_link: 'https://viteplus.dev/guide/',
       icon: 'i-lucide-book-open',
-      menuGroup: { id: 'links', label: '链接', order: 40 },
+      menu_group: { id: 'links', label: '链接', order: 40 },
       order: 60,
       title: 'Vite+ 文档',
     },
@@ -239,7 +277,7 @@ export async function loginApi(params: AdminLoginParams): Promise<AdminLoginResu
     throw new Error('用户名或密码错误')
   }
 
-  return { accessToken: `mock-token:${user.username}` }
+  return { access_token: `mock-token:${user.username}` }
 }
 
 export async function getUserInfoApi(accessToken: string): Promise<AdminUserInfo> {
@@ -255,5 +293,25 @@ export async function getUserInfoApi(accessToken: string): Promise<AdminUserInfo
 }
 
 export async function getBackendMenusApi(): Promise<AdminBackendMenu[]> {
-  return backendMenus
+  return snakeToCamelDeep<AdminBackendMenu[]>(backendMenus)
+}
+
+function snakeToCamel(value: string) {
+  return value.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase())
+}
+
+function snakeToCamelDeep<T>(value: unknown): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => snakeToCamelDeep(item)) as T
+  }
+
+  if (isPlainObject(value)) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [snakeToCamel(key), snakeToCamelDeep(item)])) as T
+  }
+
+  return value as T
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Object.prototype.toString.call(value) === '[object Object]'
 }

@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useAdminAccessStore } from '@/stores/access'
 
 const accessStore = useAdminAccessStore()
-const userLabel = computed(() => accessStore.userInfo?.realName ?? accessStore.userInfo?.username ?? 'User')
+const userLabel = computed(() => accessStore.userInfo?.real_name ?? accessStore.userInfo?.username ?? 'User')
 </script>
 
 <template>

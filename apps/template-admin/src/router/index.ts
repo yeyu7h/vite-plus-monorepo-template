@@ -27,14 +27,14 @@ router.beforeEach(async (to) => {
   const normalizedPath = normalizeAdminPath(to.path)
 
   if (normalizedPath === '/') {
-    return accessStore.isLoggedIn ? (accessStore.userInfo?.homePath ?? '/dashboard/workbench') : '/auth/login'
+    return accessStore.isLoggedIn ? (accessStore.userInfo?.home_path ?? '/dashboard/workbench') : '/auth/login'
   }
 
   if (isPublicRoutePath(normalizedPath)) {
     if (normalizedPath === '/auth/login' && accessStore.isLoggedIn) {
       try {
         await accessStore.restoreAccess()
-        return accessStore.userInfo?.homePath ?? '/dashboard/workbench'
+        return accessStore.userInfo?.home_path ?? '/dashboard/workbench'
       } catch {
         return true
       }

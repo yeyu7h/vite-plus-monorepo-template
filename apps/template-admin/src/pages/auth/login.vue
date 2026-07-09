@@ -17,7 +17,7 @@ async function handleLogin() {
 
   try {
     await accessStore.login({ password: password.value, username: username.value })
-    const redirect = typeof route.query.redirect === 'string' ? decodeURIComponent(route.query.redirect) : (accessStore.userInfo?.homePath ?? '/dashboard/workbench')
+    const redirect = typeof route.query.redirect === 'string' ? decodeURIComponent(route.query.redirect) : (accessStore.userInfo?.home_path ?? '/dashboard/workbench')
     await router.replace(redirect)
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '登录失败'

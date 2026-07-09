@@ -25,7 +25,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
 
   async function login(params: AdminLoginParams) {
     const result = await loginApi(params)
-    setAccessToken(result.accessToken)
+    setAccessToken(result.access_token)
     await setupAccess()
   }
 

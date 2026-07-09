@@ -3,13 +3,18 @@ import type { AdminMenuGroup, AdminMenuImageIcon, AdminMenuItem } from '@monorep
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
+interface LayoutNavigationMenuItem extends NavigationMenuItem {
+  menuIcon?: AdminMenuItem['icon']
+}
+
 const props = defineProps<{
   collapsed: boolean
   groups: AdminMenuGroup[]
   opened: boolean
 }>()
 
-const navigationItems = computed<NavigationMenuItem[][]>(() => props.groups.map(toNavigationMenuGroup).filter((group) => group.length > 0))
+const isMenuCollapsed = computed(() => props.collapsed && !props.opened)
+const navigationItems = computed<LayoutNavigationMenuItem[][]>(() => props.groups.map(toNavigationMenuGroup).filter((group) => group.length > 0))
 const activeMenuValue = computed(() => findExpandedMenuValue(props.groups))
 const openedMenuValue = ref<string | undefined>()
 
@@ -21,14 +26,14 @@ onMounted(async () => {
   const value = activeMenuValue.value
   if (!value) return
 
-  openedMenuValue.value = undefined
+  openedMenuValue.value = void 0
   await nextTick()
   requestAnimationFrame(() => {
     openedMenuValue.value = value
   })
 })
 
-function toNavigationMenuGroup(group: AdminMenuGroup): NavigationMenuItem[] {
+function toNavigationMenuGroup(group: AdminMenuGroup): LayoutNavigationMenuItem[] {
   return [
     ...(group.label
       ? [
@@ -42,17 +47,20 @@ function toNavigationMenuGroup(group: AdminMenuGroup): NavigationMenuItem[] {
   ]
 }
 
-function toNavigationMenuItem(menu: AdminMenuItem): NavigationMenuItem {
+function toNavigationMenuItem(menu: AdminMenuItem): LayoutNavigationMenuItem {
   const hasChildren = Boolean(menu.children?.length)
+  const icon = typeof menu.icon === 'string' ? menu.icon : void 0
 
   return {
     active: menu.active,
     children: menu.children?.map(toNavigationMenuItem),
-    icon: menu.icon,
+    class: hasChildren && menu.active && !isMenuCollapsed.value ? 'before:!bg-transparent hover:before:!bg-elevated/50' : void 0,
+    icon,
     label: menu.title,
-    target: menu.externalLink ? '_blank' : undefined,
+    menuIcon: menu.icon,
+    target: menu.externalLink ? '_blank' : void 0,
     to: menu.externalLink ?? menu.path,
-    type: hasChildren ? 'trigger' : undefined,
+    type: hasChildren ? 'trigger' : void 0,
     value: menu.id,
   }
 }
@@ -87,7 +95,7 @@ function findExpandedMenuItemValue(items: readonly AdminMenuItem[]) {
 <template>
   <UNavigationMenu
     v-model="openedMenuValue"
-    :collapsed="collapsed && !opened"
+    :collapsed="isMenuCollapsed"
     :items="navigationItems"
     popover
     :highlight="false"
@@ -96,10 +104,10 @@ function findExpandedMenuItemValue(items: readonly AdminMenuItem[]) {
     :ui="{ list: 'space-y-1', childList: 'space-y-1 pt-1' }"
   >
     <template #item-leading="{ item }">
-      <UIcon v-if="typeof item.icon !== 'object' && (item.icon as string)?.startsWith('i-')" class="font-bold text-dimmed" :class="{ 'text-primary': item.active }" :name="item.icon" size="20" />
-      <picture v-else-if="item.type !== 'label' && isMenuImageIcon(item.icon)">
-        <source media="(prefers-color-scheme: dark)" :srcset="getMenuImageIcon(item.icon, 'dark')" />
-        <img class="w-5 h-5 object-cover" :src="getMenuImageIcon(item.icon)" />
+      <UIcon v-if="typeof item.menuIcon === 'string' && item.menuIcon.startsWith('i-')" class="font-bold text-dimmed" :class="{ 'text-primary': item.active }" :name="item.menuIcon" size="20" />
+      <picture v-else-if="item.type !== 'label' && isMenuImageIcon(item.menuIcon)">
+        <source media="(prefers-color-scheme: dark)" :srcset="getMenuImageIcon(item.menuIcon, 'dark')" />
+        <img class="w-5 h-5 object-cover" :src="getMenuImageIcon(item.menuIcon)" />
       </picture>
     </template>
   </UNavigationMenu>

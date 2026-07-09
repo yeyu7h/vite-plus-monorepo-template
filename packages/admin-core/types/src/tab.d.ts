@@ -9,6 +9,8 @@ export interface AdminTabItem {
   icon?: AdminMenuIcon
   /** 标签页对应的唯一路径 */
   path: string
+  /** 激活状态下是否显示标签页下边框 */
+  showActiveTabBorder?: boolean
   /** 标签页显示标题 */
   title: string
 }

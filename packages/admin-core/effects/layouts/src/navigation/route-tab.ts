@@ -31,6 +31,7 @@ export function createAdminTab(route: AdminNavigationRouteRecord, options: Creat
   return {
     icon: resolvedRoute?.meta.icon ?? route.meta.icon,
     path: tabPath,
+    showActiveTabBorder: resolvedRoute?.meta.showActiveTabBorder ?? route.meta.showActiveTabBorder,
     title,
   }
 }

@@ -3,7 +3,7 @@ import { closeAdminTab, createAdminTab, markActiveAdminTabs, upsertAdminTab } fr
 
 test('creates a route tab from the current route', () => {
   const tab = createAdminTab({
-    meta: { icon: 'i-lucide-layout-dashboard', title: '工作台' },
+    meta: { icon: 'i-lucide-layout-dashboard', showActiveTabBorder: true, title: '工作台' },
     path: '/dashboard/workbench',
   })
 
@@ -11,6 +11,7 @@ test('creates a route tab from the current route', () => {
     closable: undefined,
     icon: 'i-lucide-layout-dashboard',
     path: '/dashboard/workbench',
+    showActiveTabBorder: true,
     title: '工作台',
   })
 })
@@ -29,6 +30,7 @@ test('reuses parent tab metadata when hideInTab and activePath are set', () => {
       resolveRoute: (path) => ({
         meta: {
           icon: 'i-lucide-settings',
+          showActiveTabBorder: true,
           title: '系统设置',
         },
         path,
@@ -39,6 +41,7 @@ test('reuses parent tab metadata when hideInTab and activePath are set', () => {
   expect(tab).toEqual({
     icon: 'i-lucide-settings',
     path: '/system/settings',
+    showActiveTabBorder: true,
     title: '系统设置',
   })
 })

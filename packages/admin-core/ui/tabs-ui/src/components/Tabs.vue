@@ -133,8 +133,8 @@ function syncLocalTabs(tabs: AdminTabItem[]) {
       :ref="(el) => tabWidthTrans.setTabElement(tab.path, el as HTMLDivElement | null)"
       :class="
         cn(
-          'group relative flex h-full min-w-0 shrink-0 items-center justify-center select-none transition-[width] duration-200 ease-out after:absolute after:inset-x-0 after:-bottom-px after:h-px after:origin-center after:scale-x-0 after:bg-default after:content-[\'\']',
-          tab.path === activeTabPath ? 'z-10 bg-default after:scale-x-100' : 'hover:bg-elevated hover:dark:bg-default',
+          'group relative flex h-full min-w-0 shrink-0 items-center justify-center select-none transition-[width] duration-200 ease-out after:absolute after:inset-x-0 after:-bottom-px after:h-px after:origin-center after:scale-x-0 after:content-[\'\']',
+          tab.path === activeTabPath ? cn('z-10 bg-default after:scale-x-100', tab.showActiveTabBorder ? 'after:bg-border' : 'after:bg-default') : 'hover:bg-elevated hover:dark:bg-default',
           tabWidthTrans.closingTabIds.value.has(tab.path) && 'pointer-events-none',
         )
       "

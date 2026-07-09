@@ -5,12 +5,13 @@ export type AdminForbiddenComponent = RouteRecordRaw['component']
 
 export function filterRoutesByAuthority(routes: readonly RouteRecordRaw[], roles: readonly string[], forbiddenComponent: AdminForbiddenComponent): RouteRecordRaw[] {
   return routes.flatMap((route) => {
-    if (!hasRouteAuthority(route.meta, roles)) return []
+    const meta = route.meta as AdminRouteMeta | undefined
+    if (!hasRouteAuthority(meta, roles)) return []
 
     const children = route.children ? filterRoutesByAuthority(route.children, roles, forbiddenComponent) : void 0
 
     const nextRoute = { ...route } as RouteRecordRaw
-    if (isMenuVisibleWithForbidden(route.meta, roles)) {
+    if (isMenuVisibleWithForbidden(meta, roles)) {
       nextRoute.component = forbiddenComponent
     }
 

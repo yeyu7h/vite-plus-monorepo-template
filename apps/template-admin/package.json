@@ -11,6 +11,7 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@monorepo-admin-core/access-effect": "workspace:*",
     "@monorepo-admin-core/layout-effect": "workspace:*",
     "@monorepo-admin-core/layout-ui": "workspace:*",
     "@monorepo-admin-core/types": "workspace:*",

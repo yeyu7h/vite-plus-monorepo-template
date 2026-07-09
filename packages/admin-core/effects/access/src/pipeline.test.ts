@@ -3,6 +3,7 @@ import { expect, test } from 'vite-plus/test'
 import { mergeBackendMenusWithFileRoutes } from './merge'
 import { createAdminNavigationRoutes } from './navigation'
 import { filterRoutesByAuthority } from './permission'
+import { resolveAdminAccess } from './resolve'
 import { splitAdminFileRoutes } from './source'
 
 const component = { template: '<div />' }
@@ -154,4 +155,48 @@ test('derives canonical active and tab paths from activePath and hideInTab meta'
       tabPath: '/system/settings',
     },
   ])
+})
+
+test('resolves accessible routes menus and route paths with injected forbidden component', () => {
+  const result = resolveAdminAccess(
+    [
+      { component, path: '/dashboard', meta: { title: 'Dashboard' } },
+      { component, path: '/access' },
+      { component, path: '/access/menu-visible-403' },
+      { component, path: '/system/role' },
+    ],
+    [
+      {
+        id: 'dashboard',
+        path: '/dashboard',
+        meta: { menuGroup: { label: '工作台', order: 10 }, title: 'Dashboard' },
+      },
+      {
+        id: 'access',
+        path: '/access',
+        meta: { menuGroup: { label: '工作台', order: 10 }, title: '权限演示' },
+        children: [
+          {
+            id: 'access-menu-visible-403',
+            path: '/access/menu-visible-403',
+            meta: { authority: ['admin'], menuVisibleWithForbidden: true, title: '可见但无权限' },
+          },
+        ],
+      },
+      {
+        id: 'system-role',
+        path: '/system/role',
+        meta: { authority: ['admin'], title: '角色管理' },
+      },
+    ],
+    ['user'],
+    { forbiddenComponent },
+  )
+
+  const accessRoute = result.accessibleRoutes.find((route) => route.path === '/access')
+  const forbiddenRoute = accessRoute?.children?.find((route) => route.path === '/access/menu-visible-403')
+
+  expect([...result.routePathSet]).toEqual(['/dashboard', '/access', '/access/menu-visible-403'])
+  expect(result.menuGroups.flatMap((group) => group.children).map((item) => item.path)).toEqual(['/dashboard', '/access'])
+  expect(forbiddenRoute?.component).toBe(forbiddenComponent)
 })

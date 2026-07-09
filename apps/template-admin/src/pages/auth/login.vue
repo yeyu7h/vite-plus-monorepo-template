@@ -2,10 +2,13 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminAccessStore } from '@/stores/access'
+import { useAdminUserStore } from '@/stores/user'
+import { resolvePostLoginPath } from '@/router/access'
 
 const route = useRoute()
 const router = useRouter()
 const accessStore = useAdminAccessStore()
+const userStore = useAdminUserStore()
 const username = ref('admin')
 const password = ref('admin123')
 const loading = ref(false)
@@ -17,7 +20,10 @@ async function handleLogin() {
 
   try {
     await accessStore.login({ password: password.value, username: username.value })
-    const redirect = typeof route.query.redirect === 'string' ? decodeURIComponent(route.query.redirect) : (accessStore.userInfo?.home_path ?? '/dashboard/workbench')
+    const redirect = resolvePostLoginPath(route.query.redirect, {
+      canAccessPath: accessStore.canAccessPath,
+      fallbackPath: accessStore.resolveAccessiblePath(userStore.homePath),
+    })
     await router.replace(redirect)
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '登录失败'

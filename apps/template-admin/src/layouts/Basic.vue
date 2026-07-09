@@ -2,9 +2,11 @@
 import { AdminLayout } from '@monorepo-admin-core/layout-effect'
 import { computed } from 'vue'
 import { useAdminAccessStore } from '@/stores/access'
+import { useAdminUserStore } from '@/stores/user'
 
 const accessStore = useAdminAccessStore()
-const userLabel = computed(() => accessStore.userInfo?.real_name ?? accessStore.userInfo?.username ?? 'User')
+const userStore = useAdminUserStore()
+const userLabel = computed(() => userStore.userInfo?.real_name ?? userStore.userInfo?.username ?? 'User')
 </script>
 
 <template>
@@ -20,7 +22,7 @@ const userLabel = computed(() => accessStore.userInfo?.real_name ?? accessStore.
               type: 'label',
             },
             {
-              label: `角色：${accessStore.userInfo?.roles.join(', ') || '-'}`,
+              label: `角色：${userStore.roles.join(', ') || '-'}`,
               type: 'label',
             },
           ],

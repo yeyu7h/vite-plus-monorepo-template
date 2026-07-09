@@ -1,0 +1,39 @@
+{
+  "name": "@monorepo-admin-core/access-effect",
+  "version": "0.0.0",
+  "description": "Admin access route and guard effects.",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "production": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "dependencies": {
+    "@monorepo-admin-core/layout-effect": "workspace:*",
+    "@monorepo-admin-core/types": "workspace:*",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vue-router": "catalog:vue3"
+  }
+}

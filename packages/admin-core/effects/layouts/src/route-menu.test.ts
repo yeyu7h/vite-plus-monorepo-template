@@ -189,6 +189,27 @@ test('uses an unlabeled default group for routes without menuGroup', () => {
   ])
 })
 
+test('inherits grouped menu children from nearest parent menuGroup', () => {
+  const groups = buildAdminMenuGroups([
+    { path: '/monitor', meta: { title: '监控', menuGroup: { label: '运维', order: 10 } } },
+    { path: '/monitor/jobs', meta: { title: '任务监控' } },
+  ])
+
+  expect(groups).toHaveLength(1)
+  expect(groups[0]).toMatchObject({
+    id: 'group:运维',
+    label: '运维',
+    order: 10,
+    children: [
+      {
+        id: '/monitor',
+        title: '监控',
+        children: [{ id: '/monitor/jobs', title: '任务监控' }],
+      },
+    ],
+  })
+})
+
 test('limits grouped route menus to two item levels by default', () => {
   const groups = buildAdminMenuGroups([{ path: '/one/two/three', meta: { title: 'Three', menuGroup: 'Deep' } }])
 

@@ -95,9 +95,10 @@ export function buildAdminMenuGroups(routes: readonly AdminNavigationRouteRecord
   const maxDepth = resolveMenuMaxDepth(options.maxDepth ?? DEFAULT_GROUP_MAX_DEPTH)
   const buckets = new Map<string, MenuGroupBucket>()
   const visibleRoutes = routes.map((route) => ({ ...route, path: normalizeAdminNavigationPath(route.path) })).filter((route) => isMenuRoute(route))
+  const routeByPath = new Map(visibleRoutes.map((route) => [route.path, route]))
 
   for (const route of visibleRoutes) {
-    const meta = resolveMenuGroupMeta(route.meta.menuGroup, options.defaultGroup)
+    const meta = resolveMenuGroupMeta(resolveInheritedMenuGroup(route, routeByPath), options.defaultGroup)
     const bucket = ensureMenuGroupBucket(buckets, meta)
     bucket.routes.push(route)
   }
@@ -111,6 +112,24 @@ export function buildAdminMenuGroups(routes: readonly AdminNavigationRouteRecord
     }))
     .filter((group) => group.children.length > 0)
     .sort(compareMenuGroups)
+}
+
+/**
+ * 子级未声明分组时继承最近父级分组 避免同一菜单树被拆到默认分组产生占位父菜单
+ * @param route 当前路由
+ * @param routeByPath 可见路由索引
+ */
+function resolveInheritedMenuGroup(route: AdminNavigationRouteRecord, routeByPath: ReadonlyMap<string, AdminNavigationRouteRecord>) {
+  if (route.meta.menuGroup) return route.meta.menuGroup
+
+  const segments = route.path.split('/').filter(Boolean)
+
+  for (let index = segments.length - 1; index > 0; index -= 1) {
+    const parentPath = `/${segments.slice(0, index).join('/')}`
+    const menuGroup = routeByPath.get(parentPath)?.meta.menuGroup
+
+    if (menuGroup) return menuGroup
+  }
 }
 
 /**

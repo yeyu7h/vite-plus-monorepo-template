@@ -45,6 +45,8 @@ function isBreadcrumbImageIcon(icon: unknown): icon is AdminMenuImageIcon {
       </UBreadcrumb>
     </template>
 
-    <template #right>123123</template>
+    <template #right>
+      <slot name="right" />
+    </template>
   </UDashboardNavbar>
 </template>

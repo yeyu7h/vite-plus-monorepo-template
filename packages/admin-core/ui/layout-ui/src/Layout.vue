@@ -23,7 +23,11 @@ const { tabbar } = useLayout(props)
 
     <UDashboardPanel :ui="{ body: 'relative' }">
       <template #header>
-        <LayoutHeader :breadcrumb-prefix="props.breadcrumbPrefix" :breadcrumbs="props.breadcrumbs" />
+        <LayoutHeader :breadcrumb-prefix="props.breadcrumbPrefix" :breadcrumbs="props.breadcrumbs">
+          <template #right>
+            <slot name="header-right" />
+          </template>
+        </LayoutHeader>
 
         <LayoutTabbar v-if="tabbar">
           <slot name="tabbar" />

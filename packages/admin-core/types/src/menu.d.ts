@@ -51,3 +51,43 @@ export interface AdminMenuGroup {
   /** 菜单分组排序权重 */
   order?: number
 }
+
+export interface AdminBackendMenuMeta {
+  /** 指定当前路由高亮时对应的菜单路径 */
+  activePath?: string
+  /** 声明访问该菜单和路由项所需的权限标识 */
+  authority?: AdminMenuAuthority
+  /** 将菜单跳转目标替换为外部链接地址 */
+  externalLink?: string
+  /** 在自动生成的面包屑中隐藏该路由 */
+  hideInBreadcrumb?: boolean
+  /** 在自动生成的菜单中隐藏该路由 */
+  hideInMenu?: boolean
+  /** 复用父级标签页，而不是为该路由单独打开标签页 */
+  hideInTab?: boolean
+  /** 声明当前路由不进入登录权限拦截 */
+  ignoreAccess?: boolean
+  /** 菜单、面包屑和标签页图标 */
+  icon?: AdminMenuIcon
+  /** 指定该菜单所属分组 */
+  menuGroup?: AdminMenuGroupMeta | string
+  /** 菜单可见 但权限不命中时访问页面渲染 403 */
+  menuVisibleWithForbidden?: boolean
+  /** 菜单排序权重 */
+  order?: number
+  /** 控制激活状态下的标签页是否显示下边框 默认隐藏 */
+  showActiveTabBorder?: boolean
+  /** 菜单显示标题 */
+  title: string
+}
+
+export interface AdminBackendMenu {
+  /** 后端菜单稳定标识 */
+  id: string
+  /** 子级菜单 */
+  children?: AdminBackendMenu[]
+  /** 菜单元数据 */
+  meta: AdminBackendMenuMeta
+  /** 必须和前端文件路由 path 对齐 外链菜单除外 */
+  path: string
+}

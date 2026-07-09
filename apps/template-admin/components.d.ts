@@ -14,12 +14,18 @@ declare module 'vue' {
   export interface GlobalComponents {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    UAlert: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Alert.vue')['default']
     UBreadcrumb: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Breadcrumb.vue')['default']
+    UButton: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
+    UCard: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Card.vue')['default']
     UDashboardGroup: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DashboardGroup.vue')['default']
     UDashboardNavbar: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DashboardNavbar.vue')['default']
     UDashboardPanel: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DashboardPanel.vue')['default']
     UDashboardSidebar: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DashboardSidebar.vue')['default']
+    UDropdownMenu: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DropdownMenu.vue')['default']
+    UFormField: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/FormField.vue')['default']
     UIcon: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/vue/components/Icon.vue')['default']
+    UInput: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
     UNavigationMenu: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/NavigationMenu.vue')['default']
   }
 }
@@ -28,11 +34,17 @@ declare module 'vue' {
 declare global {
   const RouterLink: (typeof import('vue-router'))['RouterLink']
   const RouterView: (typeof import('vue-router'))['RouterView']
+  const UAlert: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Alert.vue'))['default']
   const UBreadcrumb: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Breadcrumb.vue'))['default']
+  const UButton: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Button.vue'))['default']
+  const UCard: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Card.vue'))['default']
   const UDashboardGroup: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DashboardGroup.vue'))['default']
   const UDashboardNavbar: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DashboardNavbar.vue'))['default']
   const UDashboardPanel: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DashboardPanel.vue'))['default']
   const UDashboardSidebar: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DashboardSidebar.vue'))['default']
+  const UDropdownMenu: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/DropdownMenu.vue'))['default']
+  const UFormField: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/FormField.vue'))['default']
   const UIcon: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/vue/components/Icon.vue'))['default']
+  const UInput: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/Input.vue'))['default']
   const UNavigationMenu: (typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.9.0_351818cd59f94b2c1033a7989b7c181b/node_modules/@nuxt/ui/dist/runtime/components/NavigationMenu.vue'))['default']
 }

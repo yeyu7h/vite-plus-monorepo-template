@@ -6,16 +6,22 @@ import { LayoutTabbar } from './basic/tabbar'
 import { LayoutMenu } from './basic/menu'
 import { buildAdminBreadcrumbPrefix, buildAdminBreadcrumbs } from './navigation/route-breadcrumb'
 import { buildAdminMenuGroups, markActiveAdminMenuGroups } from './navigation/route-menu'
+import type { AdminMenuGroup, AdminNavigationRouteRecord } from '@monorepo-admin-core/types'
+
+const props = defineProps<{
+  menuGroups?: AdminMenuGroup[]
+  routeRecords?: AdminNavigationRouteRecord[]
+}>()
 
 const router = useRouter()
 const route = useRoute()
 
 // 把路由表和当前激活路径统一收口 避免模板层再次拼接路由语义
-const routeRecords = computed(() => router.getRoutes())
+const routeRecords = computed(() => props.routeRecords ?? router.getRoutes())
 const activeMenuPath = computed(() => route.meta.activePath ?? route.path)
 const breadcrumbPrefix = computed(() => buildAdminBreadcrumbPrefix(route))
 const breadcrumbs = computed(() => buildAdminBreadcrumbs(route, routeRecords.value))
-const menuGroups = computed(() => markActiveAdminMenuGroups(buildAdminMenuGroups(routeRecords.value), activeMenuPath.value))
+const menuGroups = computed(() => markActiveAdminMenuGroups(props.menuGroups ?? buildAdminMenuGroups(routeRecords.value), activeMenuPath.value))
 </script>
 
 <template>
@@ -28,6 +34,10 @@ const menuGroups = computed(() => markActiveAdminMenuGroups(buildAdminMenuGroups
 
     <template #tabbar>
       <LayoutTabbar />
+    </template>
+
+    <template #header-right>
+      <slot name="header-right" />
     </template>
   </Layout>
 </template>

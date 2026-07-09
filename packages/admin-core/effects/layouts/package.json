@@ -20,10 +20,19 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
-    "types": "./src/index.ts",
-    "development": "./src/index.ts",
-    "production": "./src/index.ts",
-    "default": "./dist/index.mjs"
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "production": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    },
+    "./navigation": {
+      "types": "./src/navigation/index.ts",
+      "development": "./src/navigation/index.ts",
+      "production": "./src/navigation/index.ts",
+      "default": "./src/navigation/index.ts"
+    },
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"

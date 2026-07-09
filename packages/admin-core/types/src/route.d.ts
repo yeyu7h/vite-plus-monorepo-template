@@ -1,5 +1,7 @@
 import type { AdminMenuAuthority, AdminMenuGroupMeta, AdminMenuIcon } from './menu'
 
+export type AdminRouteSource = 'access' | 'core' | 'fallback'
+
 export interface AdminRouteMeta {
   /** 指定当前路由高亮时对应的菜单路径 */
   activePath?: string
@@ -13,12 +15,20 @@ export interface AdminRouteMeta {
   hideInMenu?: boolean
   /** 复用父级标签页，而不是为该路由单独打开标签页 */
   hideInTab?: boolean
+  /** 声明当前路由不进入登录权限拦截 */
+  ignoreAccess?: boolean
   /** 定义该路由在菜单、面包屑和标签页中显示的图标 */
   icon?: AdminMenuIcon
   /** 指定该路由所属的菜单分组，并可配置分组标题和排序 */
   menuGroup?: AdminMenuGroupMeta | string
+  /** 菜单可见 但权限不命中时访问页面渲染 403 */
+  menuVisibleWithForbidden?: boolean
   /** 控制菜单项或菜单分组的升序排序权重 */
   order?: number
+  /** 控制激活状态下的标签页是否显示下边框 默认隐藏 */
+  showActiveTabBorder?: boolean
+  /** 标记路由来源分类 供权限注册流程拆分使用 */
+  source?: AdminRouteSource
   /** 提供导航相关 UI 使用的显示标题 */
   title?: string
 }

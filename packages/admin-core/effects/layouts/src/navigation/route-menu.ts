@@ -122,13 +122,13 @@ export function buildAdminMenuGroups(routes: readonly AdminNavigationRouteRecord
 function resolveInheritedMenuGroup(route: AdminNavigationRouteRecord, routeByPath: ReadonlyMap<string, AdminNavigationRouteRecord>) {
   if (route.meta.menuGroup) return route.meta.menuGroup
 
-  const segments = route.path.split('/').filter(Boolean)
+  let parentPath = route.parentPath ?? getParentNavigationPath(route.path)
 
-  for (let index = segments.length - 1; index > 0; index -= 1) {
-    const parentPath = `/${segments.slice(0, index).join('/')}`
+  while (parentPath) {
     const menuGroup = routeByPath.get(parentPath)?.meta.menuGroup
 
     if (menuGroup) return menuGroup
+    parentPath = getParentNavigationPath(parentPath)
   }
 }
 
@@ -153,7 +153,7 @@ export function markActiveAdminMenus(items: readonly AdminMenuItem[], activePath
   const normalizedActivePath = normalizeAdminNavigationPath(activePath)
 
   return items.map((item) => {
-    const children = item.children ? markActiveAdminMenus(item.children, normalizedActivePath) : undefined
+    const children = item.children ? markActiveAdminMenus(item.children, normalizedActivePath) : void 0
     const childActive = children?.some((child) => child.active) ?? false
     const selfActive = isMenuActive(item, normalizedActivePath)
 
@@ -185,7 +185,7 @@ function ensureMenuNode(nodes: Map<string, MenuNode>, id: string, segment: strin
     } satisfies MenuNode)
 
   if (route) {
-    node.activePath = route.meta.activePath
+    node.activePath = route.activePath ?? route.meta.activePath
     node.authority = route.meta.authority
     node.externalLink = route.meta.externalLink
     node.icon = route.meta.icon
@@ -223,7 +223,7 @@ function finalizeMenuNode(node: MenuNode): AdminMenuItem {
   return {
     activePath: node.activePath,
     authority: node.authority,
-    children: children.length > 0 ? children : undefined,
+    children: children.length > 0 ? children : void 0,
     externalLink: node.externalLink,
     icon: node.icon,
     id: node.id,
@@ -341,4 +341,11 @@ function isMenuActive(item: AdminMenuItem, activePath: string) {
   const navigationPath = normalizeAdminNavigationPath(item.path)
 
   return activePath === itemPath || activePath.startsWith(`${itemPath}/`) || activePath === navigationPath
+}
+
+function getParentNavigationPath(path: string) {
+  const segments = normalizeAdminNavigationPath(path).split('/').filter(Boolean)
+  if (segments.length <= 1) return void 0
+
+  return `/${segments.slice(0, -1).join('/')}`
 }

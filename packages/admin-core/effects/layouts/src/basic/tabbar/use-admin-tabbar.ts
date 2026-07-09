@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { closeAdminTab, createAdminTab, markActiveAdminTabs, upsertAdminTab } from '../../navigation/route-tab'
+import { normalizeAdminNavigationPath } from '../../navigation/shared'
 
 /**
  * 管理布局层 Tabbar 的路由驱动状态
@@ -65,6 +66,7 @@ export function useAdminTabbar() {
         matched: route.matched,
         meta: route.meta,
         path: route.fullPath,
+        tabPath: resolveRouteTabPath(route),
       },
       {
         resolveRoute: (path) => {
@@ -101,6 +103,7 @@ function createInitialTabs(route: ReturnType<typeof useRoute>, router: ReturnTyp
       matched: route.matched,
       meta: route.meta,
       path: route.fullPath,
+      tabPath: resolveRouteTabPath(route),
     },
     {
       resolveRoute: (path) => {
@@ -117,4 +120,12 @@ function createInitialTabs(route: ReturnType<typeof useRoute>, router: ReturnTyp
   )
 
   return initialTab ? [initialTab] : []
+}
+
+function resolveRouteTabPath(route: ReturnType<typeof useRoute>) {
+  if (route.meta.hideInTab && typeof route.meta.activePath === 'string') {
+    return normalizeAdminNavigationPath(route.meta.activePath)
+  }
+
+  return normalizeAdminNavigationPath(route.fullPath)
 }

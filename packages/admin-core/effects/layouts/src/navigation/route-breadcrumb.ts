@@ -12,7 +12,7 @@ export function buildAdminBreadcrumbs(route: AdminCurrentRouteRecord, routes: re
   const currentPath = normalizeAdminNavigationPath(route.path)
   if (currentPath === '/') {
     if (!route.meta.title || route.meta.hideInBreadcrumb) return []
-    return [createBreadcrumbItem(route.meta, route.meta.title, undefined)]
+    return [createBreadcrumbItem(route.meta, route.meta.title, void 0)]
   }
 
   const routeByPath = createRouteByPath(routes)
@@ -61,11 +61,7 @@ function createRouteByPath(routes: readonly AdminNavigationRouteRecord[]) {
 
   for (const route of routes) {
     const normalizedPath = normalizeAdminNavigationPath(route.path)
-    const currentRoute = routeByPath.get(normalizedPath)
-
-    if (!currentRoute || getRouteMetaScore(route.meta) >= getRouteMetaScore(currentRoute.meta)) {
-      routeByPath.set(normalizedPath, route)
-    }
+    if (!routeByPath.has(normalizedPath)) routeByPath.set(normalizedPath, route)
   }
 
   return routeByPath
@@ -87,10 +83,10 @@ function resolveBreadcrumbRoute(
   routeByPath: Map<string, AdminNavigationRouteRecord>,
 ) {
   if (path === currentPath) {
-    return pickBetterRouteRecord(matchedByPath.get(path), routeByPath.get(path)) ?? route
+    return routeByPath.get(path) ?? route
   }
 
-  return pickBetterRouteRecord(matchedByPath.get(path), routeByPath.get(path))
+  return routeByPath.get(path) ?? matchedByPath.get(path)
 }
 
 /**
@@ -101,8 +97,8 @@ function resolveBreadcrumbRoute(
  * @param hasExplicitTitle 是否具备显式标题
  */
 function createBreadcrumbPath(path: string, currentPath: string, route: AdminNavigationRouteRecord | undefined, hasExplicitTitle: boolean) {
-  if (!route || !hasExplicitTitle) return undefined
-  if (path !== currentPath) return undefined
+  if (!route || !hasExplicitTitle) return void 0
+  if (path !== currentPath) return void 0
 
   return createAdminNavigationItemPath(path, route.meta, currentPath)
 }
@@ -111,39 +107,6 @@ function createBreadcrumbPath(path: string, currentPath: string, route: AdminNav
  * 在同一路径出现多条 route record 时 优先保留更像真实导航节点的记录
  * @param left 路由记录
  * @param right 路由记录
- */
-function pickBetterRouteRecord(left: AdminNavigationRouteRecord | undefined, right: AdminNavigationRouteRecord | undefined) {
-  if (!left) return right
-  if (!right) return left
-
-  return getRouteMetaScore(left.meta) >= getRouteMetaScore(right.meta) ? left : right
-}
-
-/**
- * 通过导航相关 meta 为 route record 打分
- * @param meta 路由元信息
- */
-function getRouteMetaScore(meta: AdminRouteMeta | undefined) {
-  if (!meta) return 0
-
-  let score = 0
-
-  if (meta.title) score += 4
-  if ('hideInBreadcrumb' in meta) score += 3
-  if (meta.menuGroup) score += 2
-  if (meta.icon) score += 1
-  if (meta.activePath) score += 1
-  if (meta.externalLink) score += 1
-  if (meta.authority?.length) score += 1
-
-  return score
-}
-
-/**
- * 创建对外使用的面包屑结构
- * @param meta 路由元信息
- * @param title 面包屑标题
- * @param path 面包屑跳转路径
  */
 function createBreadcrumbItem(meta: AdminRouteMeta | undefined, title: string, path: string | undefined): AdminBreadcrumbItem {
   return {

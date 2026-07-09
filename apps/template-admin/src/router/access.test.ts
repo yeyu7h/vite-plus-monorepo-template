@@ -1,7 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { expect, test, vi } from 'vite-plus/test'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess, splitAdminFileRoutes } from './access.js'
+import { normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess, splitAdminFileRoutes } from './access'
 
 vi.mock('virtual:generated-layouts', () => ({
   setupLayouts: (routes: RouteRecordRaw[]) => routes,

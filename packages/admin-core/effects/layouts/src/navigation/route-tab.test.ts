@@ -8,7 +8,7 @@ test('creates a route tab from the current route', () => {
   })
 
   expect(tab).toEqual({
-    closable: undefined,
+    closable: void 0,
     icon: 'i-lucide-layout-dashboard',
     path: '/dashboard/workbench',
     showActiveTabBorder: true,
@@ -42,6 +42,36 @@ test('reuses parent tab metadata when hideInTab and activePath are set', () => {
     icon: 'i-lucide-settings',
     path: '/system/settings',
     showActiveTabBorder: true,
+    title: '系统设置',
+  })
+})
+
+test('uses canonical tabPath before falling back to route meta activePath', () => {
+  const tab = createAdminTab(
+    {
+      meta: {
+        activePath: '/fallback/settings',
+        hideInTab: true,
+        title: '通知设置',
+      },
+      path: '/system/settings/notification',
+      tabPath: '/system/settings',
+    },
+    {
+      resolveRoute: (path) => ({
+        meta: {
+          icon: 'i-lucide-sliders-horizontal',
+          title: '系统设置',
+        },
+        path,
+      }),
+    },
+  )
+
+  expect(tab).toEqual({
+    icon: 'i-lucide-sliders-horizontal',
+    path: '/system/settings',
+    showActiveTabBorder: void 0,
     title: '系统设置',
   })
 })

@@ -18,15 +18,13 @@ export interface CloseAdminTabResult {
  * @param options 解析选项
  */
 export function createAdminTab(route: AdminNavigationRouteRecord, options: CreateAdminTabOptions = {}): AdminTabItem | undefined {
-  if (route.meta.externalLink) return undefined
+  if (route.meta.externalLink) return void 0
 
-  // hideInTab 表示当前页面复用父级 tab 因此标题 图标 路径都要改从 activePath 解析
-  const parentTabPath = route.meta.hideInTab ? route.meta.activePath : undefined
-  const resolvedRoute = typeof parentTabPath === 'string' ? options.resolveRoute?.(parentTabPath) : route
-  const tabPath = typeof parentTabPath === 'string' ? parentTabPath : route.path
+  const tabPath = route.tabPath ?? (route.meta.hideInTab ? route.meta.activePath : void 0) ?? route.path
+  const resolvedRoute = tabPath !== route.path ? (options.resolveRoute?.(tabPath) ?? route) : route
   const title = resolvedRoute?.meta.title ?? route.meta.title
 
-  if (!title) return undefined
+  if (!title) return void 0
 
   return {
     icon: resolvedRoute?.meta.icon ?? route.meta.icon,
@@ -78,7 +76,7 @@ export function closeAdminTab(tabs: readonly AdminTabItem[], path: string, activ
   const nextTabs = tabs.filter((tab) => tab.path !== path)
 
   return {
-    nextActivePath: path === activePath ? nextTab?.path : undefined,
+    nextActivePath: path === activePath ? nextTab?.path : void 0,
     tabs: nextTabs,
   }
 }

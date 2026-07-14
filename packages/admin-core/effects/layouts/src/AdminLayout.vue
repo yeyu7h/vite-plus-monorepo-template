@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Layout } from '@monorepo-admin-core/layout-ui'
+import type { LayoutType } from '@monorepo-admin-core/types'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { LayoutTabbar } from './basic/tabbar'
@@ -9,6 +10,7 @@ import { buildAdminMenuGroups, markActiveAdminMenuGroups } from './navigation/ro
 import type { AdminMenuGroup, AdminNavigationRouteRecord } from '@monorepo-admin-core/types'
 
 const props = defineProps<{
+  layout?: LayoutType
   menuGroups?: AdminMenuGroup[]
   routeRecords?: AdminNavigationRouteRecord[]
 }>()
@@ -25,7 +27,7 @@ const menuGroups = computed(() => markActiveAdminMenuGroups(props.menuGroups ?? 
 </script>
 
 <template>
-  <Layout :breadcrumb-prefix="breadcrumbPrefix" :breadcrumbs="breadcrumbs" :tabbar-enable="true">
+  <Layout :breadcrumb-prefix="breadcrumbPrefix" :breadcrumbs="breadcrumbs" :layout="layout" :tabbar-enable="true">
     <slot />
 
     <template #menu="{ collapsed, opened }">

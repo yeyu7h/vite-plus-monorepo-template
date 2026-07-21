@@ -1,6 +1,6 @@
 import { computed, nextTick, ref, type CSSProperties } from 'vue'
 
-interface UseTabWidthTransitionOptions {
+interface UseTabTransitionOptions {
   /** 关闭动画结束后触发 */
   onClosed: (id: string) => void
 }
@@ -23,7 +23,7 @@ interface OpeningTabTransition {
  * 管理 Tab 打开和关闭时的宽度过渡动画状态
  * @param options
  */
-export function useTabWidthTransition(options: UseTabWidthTransitionOptions) {
+export function useTabTransition(options: UseTabTransitionOptions) {
   const { tabEls, setTabElement } = createTabElementRegistry()
 
   // 每个 Tab 的动画状态集中保存宽度快照和下一帧阶段标记
@@ -71,19 +71,19 @@ export function useTabWidthTransition(options: UseTabWidthTransitionOptions) {
    * @param e transitionend 事件对象
    * @param id 触发过渡结束的 tab 唯一标识
    */
-  function handleTabWidthTransitionEnd(e: TransitionEvent, id: string) {
+  function handleTabTransitionEnd(e: TransitionEvent, id: string) {
     if (e.propertyName !== 'width') return
     if (openingTabs.value[id]?.expanding) return finishTabOpenTransition(id)
     if (!closingTabs.value[id]?.collapsing) return
 
-    finishTabWidthTransition(id)
+    finishTabTransition(id)
   }
 
   /**
    * 结束关闭动画：清理关闭状态和 DOM 引用，并通知调用方移除 Tab
    * @param id 已完成关闭动画的 Tab 唯一标识
    */
-  function finishTabWidthTransition(id: string) {
+  function finishTabTransition(id: string) {
     if (!closingTabs.value[id]) return
 
     const { [id]: _, ...nextClosingTabs } = closingTabs.value
@@ -97,7 +97,7 @@ export function useTabWidthTransition(options: UseTabWidthTransitionOptions) {
    * 根据当前动画阶段返回 `width` 样式，未处于动画中的 Tab 不返回样式
    * @param id 需要计算宽度样式的 Tab 唯一标识
    */
-  function getTabWidthTransitionStyle(id: string): CSSProperties | undefined {
+  function getTabTransitionStyle(id: string): CSSProperties | undefined {
     const openingTab = openingTabs.value[id]
     if (openingTab) return { width: openingTab.expanding ? `${openingTab.width}px` : '0px' }
 
@@ -164,8 +164,8 @@ export function useTabWidthTransition(options: UseTabWidthTransitionOptions) {
     closingTabIds,
     setTabElement,
 
-    getTabWidthTransitionStyle,
-    handleTabWidthTransitionEnd,
+    getTabTransitionStyle,
+    handleTabTransitionEnd,
 
     prepareTabOpenTransition,
     startTabOpenTransition,

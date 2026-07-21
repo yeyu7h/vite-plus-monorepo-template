@@ -2,7 +2,7 @@
 import type { AdminMenuImageIcon, AdminTabItem } from '@monorepo-admin-core/types'
 import { computed, nextTick, ref, watch } from 'vue'
 import { cn } from '@monorepo/shared/utils'
-import { useTabWidthTransition } from './use-tab-width-transition'
+import { useTabTransition } from './use-tab-transition'
 
 const props = defineProps<{
   activePath: string
@@ -14,7 +14,8 @@ const emit = defineEmits<{
   select: [path: string]
 }>()
 
-const tabWidthTrans = useTabWidthTransition({ onClosed: finishTabClose })
+const tabTransition = useTabTransition({ onClosed: finishTabClose })
+
 const hasHydratedTabs = ref(false)
 const localTabs = ref<AdminTabItem[]>([])
 const pendingCloseTabIds = ref<Record<string, true>>({})
@@ -33,7 +34,7 @@ watch(
 
     for (const tab of tabs) {
       if (!previousPaths.has(tab.path)) {
-        tabWidthTrans.prepareTabOpenTransition(tab.path)
+        tabTransition.prepareTabOpenTransition(tab.path)
       }
     }
 
@@ -43,7 +44,7 @@ watch(
 
     for (const tab of tabs) {
       if (!previousPaths.has(tab.path)) {
-        tabWidthTrans.startTabOpenTransition(tab.path)
+        tabTransition.startTabOpenTransition(tab.path)
       }
     }
   },
@@ -59,7 +60,7 @@ function closeTab(path: string) {
   const tab = localTabs.value[index]
   if (!tab || !isTabClosable(tab)) return
 
-  const started = tabWidthTrans.startTabCloseTransition(path)
+  const started = tabTransition.startTabCloseTransition(path)
   if (!started) return
 
   pendingCloseTabIds.value = {
@@ -134,17 +135,17 @@ function syncLocalTabs(tabs: AdminTabItem[]) {
     <div
       v-for="tab in localTabs"
       :key="tab.path"
-      :ref="(el) => tabWidthTrans.setTabElement(tab.path, el as HTMLDivElement | null)"
+      :ref="(el) => tabTransition.setTabElement(tab.path, el as HTMLDivElement | null)"
       :class="
         cn(
           'group/tab relative flex h-full min-w-0 shrink-0 items-center justify-center select-none transition-[width] duration-200 ease-out after:absolute after:inset-x-0 after:-bottom-px after:h-px after:origin-center after:scale-x-0 after:content-[\'\']',
           isActiveTab(tab) ? cn('is-active z-10 bg-default after:scale-x-100', tab.showActiveTabBorder ? 'after:bg-border' : 'after:bg-default') : 'hover:bg-elevated hover:dark:bg-default',
-          tabWidthTrans.closingTabIds.value.has(tab.path) && 'pointer-events-none',
+          tabTransition.closingTabIds.value.has(tab.path) && 'pointer-events-none',
         )
       "
-      :style="tabWidthTrans.getTabWidthTransitionStyle(tab.path)"
+      :style="tabTransition.getTabTransitionStyle(tab.path)"
       @click="selectTab(tab.path)"
-      @transitionend.self="tabWidthTrans.handleTabWidthTransitionEnd($event, tab.path)"
+      @transitionend.self="tabTransition.handleTabTransitionEnd($event, tab.path)"
     >
       <div class="flex h-full min-w-0 flex-1 items-center justify-center overflow-hidden">
         <div class="flex min-w-max items-center justify-center px-3">
@@ -175,7 +176,7 @@ function syncLocalTabs(tabs: AdminTabItem[]) {
       <span
         aria-hidden="true"
         class="pointer-events-none absolute top-0 right-0 -bottom-px z-10 w-px bg-border transition-opacity duration-200 ease-out"
-        :class="tabWidthTrans.closingTabIds.value.has(tab.path) ? 'opacity-0' : 'opacity-100'"
+        :class="tabTransition.closingTabIds.value.has(tab.path) ? 'opacity-0' : 'opacity-100'"
       />
     </div>
   </div>

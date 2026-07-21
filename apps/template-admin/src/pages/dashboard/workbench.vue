@@ -1,4 +1,16 @@
 <script setup lang="ts">
+definePage({
+  meta: {
+    title: '工作台',
+    icon: 'i-lucide-layout-dashboard',
+    menuGroup: {
+      label: '概览',
+      order: 10,
+    },
+    order: 10,
+  },
+})
+
 const metrics = [
   { label: '访问量', value: '128,430' },
   { label: '转化率', value: '18.6%' },
@@ -21,17 +33,3 @@ const metrics = [
     </div>
   </div>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "title": "工作台",
-    "icon": "i-lucide-layout-dashboard",
-    "menuGroup": {
-      "label": "概览",
-      "order": 10
-    },
-    "order": 10
-  }
-}
-</route>

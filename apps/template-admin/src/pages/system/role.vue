@@ -1,4 +1,17 @@
 <script setup lang="ts">
+definePage({
+  meta: {
+    title: '角色管理',
+    icon: 'i-lucide-shield-check',
+    menuGroup: {
+      label: '系统管理',
+      order: 20,
+    },
+    order: 20,
+    authority: ['admin'],
+  },
+})
+
 const roles = ['管理员', '运营', '审计员']
 </script>
 
@@ -17,18 +30,3 @@ const roles = ['管理员', '运营', '审计员']
     </div>
   </div>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "title": "角色管理",
-    "icon": "i-lucide-shield-check",
-    "menuGroup": {
-      "label": "系统管理",
-      "order": 20
-    },
-    "order": 20,
-    "authority": ["admin"]
-  }
-}
-</route>

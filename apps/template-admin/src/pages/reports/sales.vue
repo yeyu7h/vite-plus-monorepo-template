@@ -1,4 +1,12 @@
 <script setup lang="ts">
+definePage({
+  meta: {
+    title: '销售报表',
+    icon: 'i-lucide-chart-line',
+    order: 40,
+  },
+})
+
 const summary = [
   { label: '本月收入', value: '¥128,400' },
   { label: '订单数', value: '2,430' },
@@ -21,13 +29,3 @@ const summary = [
     </div>
   </div>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "title": "销售报表",
-    "icon": "i-lucide-chart-line",
-    "order": 40
-  }
-}
-</route>

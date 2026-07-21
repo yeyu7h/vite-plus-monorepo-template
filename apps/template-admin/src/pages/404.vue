@@ -1,3 +1,16 @@
+<script setup lang="ts">
+definePage({
+  meta: {
+    initial: true,
+    layout: false,
+    source: 'fallback',
+    ignoreAccess: true,
+    hideInMenu: true,
+    title: '页面不存在',
+  },
+})
+</script>
+
 <template>
   <main class="grid min-h-screen place-items-center bg-muted/30 px-4">
     <UCard class="w-full max-w-md text-center">
@@ -10,14 +23,3 @@
     </UCard>
   </main>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "source": "fallback",
-    "ignoreAccess": true,
-    "hideInMenu": true,
-    "title": "页面不存在"
-  }
-}
-</route>

@@ -2,6 +2,18 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+definePage({
+  meta: {
+    title: '系统设置',
+    icon: 'i-lucide-settings',
+    menuGroup: {
+      label: '系统管理',
+      order: 20,
+    },
+    order: 30,
+  },
+})
+
 const route = useRoute()
 
 const settingsMenus = [
@@ -54,17 +66,3 @@ const activeMenu = computed(() => settingsMenus.find((item) => route.path === it
     </div>
   </div>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "title": "系统设置",
-    "icon": "i-lucide-settings",
-    "menuGroup": {
-      "label": "系统管理",
-      "order": 20
-    },
-    "order": 30
-  }
-}
-</route>

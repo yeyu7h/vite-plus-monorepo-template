@@ -1,4 +1,15 @@
 <script setup lang="ts">
+definePage({
+  meta: {
+    title: '任务监控',
+    icon: {
+      light: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/App_Store.png',
+      dark: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/App_Store.png',
+    },
+    order: 50,
+  },
+})
+
 const jobs = [
   { name: '同步用户数据', status: 'running' },
   { name: '生成日报', status: 'idle' },
@@ -21,16 +32,3 @@ const jobs = [
     </div>
   </div>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "title": "任务监控",
-    "icon": {
-      "light": "https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/App_Store.png",
-      "dark": "https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/App_Store.png"
-    },
-    "order": 50
-  }
-}
-</route>

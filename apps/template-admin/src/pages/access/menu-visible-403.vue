@@ -1,3 +1,12 @@
+<script setup lang="ts">
+definePage({
+  meta: {
+    title: '可见但无权限',
+    icon: 'i-lucide-eye-off',
+  },
+})
+</script>
+
 <template>
   <section class="space-y-4">
     <div>
@@ -13,12 +22,3 @@
     </UCard>
   </section>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "title": "可见但无权限",
-    "icon": "i-lucide-eye-off"
-  }
-}
-</route>

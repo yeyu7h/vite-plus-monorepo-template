@@ -9,6 +9,18 @@ import Button from '@nuxt/ui/components/Button.vue'
 import Input from '@nuxt/ui/components/Input.vue'
 import Table from '@nuxt/ui/components/Table.vue'
 
+definePage({
+  meta: {
+    title: '用户',
+    icon: 'i-lucide-users',
+    menuGroup: {
+      label: '系统管理',
+      order: 20,
+    },
+    order: 30,
+  },
+})
+
 const toast = useToast()
 
 type Payment = {
@@ -336,17 +348,3 @@ function randomize() {
     </div>
   </div>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "title": "用户",
-    "icon": "i-lucide-users",
-    "menuGroup": {
-      "label": "系统管理",
-      "order": 20
-    },
-    "order": 30
-  }
-}
-</route>

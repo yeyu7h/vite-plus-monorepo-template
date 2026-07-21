@@ -5,6 +5,17 @@ import { useAdminAccessStore } from '@/stores/access'
 import { useAdminUserStore } from '@/stores/user'
 import { resolvePostLoginPath } from '@/router/access'
 
+definePage({
+  meta: {
+    initial: true,
+    layout: false,
+    source: 'core',
+    ignoreAccess: true,
+    hideInMenu: true,
+    title: '登录',
+  },
+})
+
 const route = useRoute()
 const router = useRouter()
 const accessStore = useAdminAccessStore()
@@ -74,14 +85,3 @@ function useDemoAccount(type: 'admin' | 'user') {
     </UCard>
   </main>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "source": "core",
-    "ignoreAccess": true,
-    "hideInMenu": true,
-    "title": "登录"
-  }
-}
-</route>

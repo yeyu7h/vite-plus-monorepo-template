@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { useAdminAccessStore } from '@/stores/access'
 
+definePage({
+  meta: {
+    initial: true,
+    source: 'fallback',
+    ignoreAccess: true,
+    hideInMenu: true,
+    title: '无权限',
+  },
+})
+
 const accessStore = useAdminAccessStore()
 </script>
 
@@ -17,14 +27,3 @@ const accessStore = useAdminAccessStore()
     </UCard>
   </main>
 </template>
-
-<route lang="json">
-{
-  "meta": {
-    "source": "fallback",
-    "ignoreAccess": true,
-    "hideInMenu": true,
-    "title": "无权限"
-  }
-}
-</route>

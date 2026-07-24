@@ -2,33 +2,21 @@ import type { RouteRecordRaw } from 'vue-router'
 import { expect, test } from 'vite-plus/test'
 import { mergeBackendMenusWithFileRoutes } from './merge'
 import { createAdminNavigationRoutes } from './navigation'
+import { collectRawRoutePaths, filterRawRouteRecords } from './path'
 import { filterRoutesByAuthority } from './permission'
 import { resolveAdminAccess } from './resolve'
-import { splitAdminFileRoutes } from './source'
 
 const component = { template: '<div />' }
 const forbiddenComponent = { template: '<div>403</div>' }
 
-test('splits file routes into source buckets before access resolution', () => {
-  const result = splitAdminFileRoutes([
-    { component, path: '/auth/login' },
-    { component, path: '/404' },
+test('merges backend menu meta onto matching file routes only', () => {
+  const routes: RouteRecordRaw[] = [
     {
       component,
       path: '/dashboard',
-      children: [{ component, path: 'workbench' }],
+      meta: { title: 'Old dashboard' },
+      children: [{ component, path: 'workbench', meta: { title: 'Old workbench' } }],
     },
-  ])
-
-  expect(result.coreRoutes.map((route) => route.path)).toEqual(['/auth/login'])
-  expect(result.fallbackRoutes.map((route) => route.path)).toEqual(['/404'])
-  expect(result.accessFileRoutes.map((route) => route.path)).toEqual(['/dashboard', '/dashboard/workbench'])
-})
-
-test('merges backend menu meta onto matching file routes only', () => {
-  const routes: RouteRecordRaw[] = [
-    { component, path: '/dashboard', meta: { title: 'Old dashboard' } },
-    { component, path: '/dashboard/workbench', meta: { title: 'Old workbench' } },
   ]
   const menus: Parameters<typeof mergeBackendMenusWithFileRoutes>[0] = [
     {
@@ -38,12 +26,12 @@ test('merges backend menu meta onto matching file routes only', () => {
       children: [
         {
           id: 'dashboard-workbench',
-          path: '/dashboard/workbench',
+          path: 'workbench',
           meta: { icon: 'i-lucide-monitor', title: '工作台' },
         },
         {
           id: 'missing',
-          path: '/missing',
+          path: 'missing',
           meta: { title: '不存在' },
         },
       ],
@@ -54,8 +42,41 @@ test('merges backend menu meta onto matching file routes only', () => {
 
   expect(mergedRoutes).toHaveLength(1)
   expect(mergedRoutes[0]?.meta?.title).toBe('Dashboard')
-  expect(mergedRoutes[0]?.children?.map((route) => route.path)).toEqual(['/dashboard/workbench'])
+  expect(mergedRoutes[0]?.children?.map((route) => route.path)).toEqual(['workbench'])
   expect(mergedRoutes[0]?.children?.[0]?.meta?.menuGroup).toEqual({ label: '工作台', order: 10 })
+})
+
+test('promotes a deeply nested file page to an absolute top-level backend route', () => {
+  const routes: RouteRecordRaw[] = [
+    {
+      path: '/docs',
+      children: [{ component, path: 'vite-plus' }],
+    },
+  ]
+
+  const mergedRoutes = mergeBackendMenusWithFileRoutes([{ id: 'docs-vite-plus', path: '/docs/vite-plus', meta: { title: 'Vite+ Docs' } }], routes)
+
+  expect(mergedRoutes[0]?.path).toBe('/docs/vite-plus')
+  expect(mergedRoutes[0]?.component).toBe(component)
+})
+
+test('filters route trees without flattening and collects canonical paths', () => {
+  const routes: RouteRecordRaw[] = [
+    {
+      path: '/auth',
+      children: [
+        { component, path: 'login', meta: { initial: true } },
+        { component, path: 'register' },
+      ],
+    },
+  ]
+
+  const initialRoutes = filterRawRouteRecords(routes, (route) => route.meta?.initial === true)
+
+  expect(initialRoutes).toHaveLength(1)
+  expect(initialRoutes[0]?.path).toBe('/auth')
+  expect(initialRoutes[0]?.children?.map((route) => route.path)).toEqual(['login'])
+  expect(collectRawRoutePaths(initialRoutes)).toEqual(['/auth', '/auth/login'])
 })
 
 test('filters unauthorized routes while keeping visible forbidden menu entries', () => {
@@ -90,7 +111,6 @@ test('creates default canonical navigation fields from route paths and sources',
   expect(navigationRoutes).toEqual([
     {
       activePath: '/dashboard',
-      matched: void 0,
       meta: { source: 'access', title: 'Dashboard' },
       parentPath: void 0,
       path: '/dashboard',
@@ -99,7 +119,6 @@ test('creates default canonical navigation fields from route paths and sources',
     },
     {
       activePath: '/dashboard/workbench',
-      matched: void 0,
       meta: { source: 'access', title: '工作台' },
       parentPath: '/dashboard',
       path: '/dashboard/workbench',
@@ -133,7 +152,6 @@ test('derives canonical active and tab paths from activePath and hideInTab meta'
   expect(navigationRoutes).toEqual([
     {
       activePath: '/system',
-      matched: void 0,
       meta: { menuGroup: { label: '系统管理', order: 30 }, title: '系统' },
       parentPath: void 0,
       path: '/system',
@@ -142,7 +160,6 @@ test('derives canonical active and tab paths from activePath and hideInTab meta'
     },
     {
       activePath: '/system/settings',
-      matched: void 0,
       meta: {
         activePath: '/system/settings',
         hideInMenu: true,
@@ -161,9 +178,8 @@ test('resolves accessible routes menus and route paths with injected forbidden c
   const result = resolveAdminAccess(
     [
       { component, path: '/dashboard', meta: { title: 'Dashboard' } },
-      { component, path: '/access' },
-      { component, path: '/access/menu-visible-403' },
-      { component, path: '/system/role' },
+      { component, path: '/access', children: [{ component, path: 'menu-visible-403' }] },
+      { component, path: '/system', children: [{ component, path: 'role' }] },
     ],
     [
       {
@@ -178,15 +194,22 @@ test('resolves accessible routes menus and route paths with injected forbidden c
         children: [
           {
             id: 'access-menu-visible-403',
-            path: '/access/menu-visible-403',
+            path: 'menu-visible-403',
             meta: { authority: ['admin'], menuVisibleWithForbidden: true, title: '可见但无权限' },
           },
         ],
       },
       {
-        id: 'system-role',
-        path: '/system/role',
-        meta: { authority: ['admin'], title: '角色管理' },
+        id: 'system',
+        path: '/system',
+        meta: { authority: ['admin'], title: '系统' },
+        children: [
+          {
+            id: 'system-role',
+            path: 'role',
+            meta: { authority: ['admin'], title: '角色管理' },
+          },
+        ],
       },
     ],
     ['user'],
@@ -194,7 +217,7 @@ test('resolves accessible routes menus and route paths with injected forbidden c
   )
 
   const accessRoute = result.accessibleRoutes.find((route) => route.path === '/access')
-  const forbiddenRoute = accessRoute?.children?.find((route) => route.path === '/access/menu-visible-403')
+  const forbiddenRoute = accessRoute?.children?.find((route) => route.path === 'menu-visible-403')
 
   expect([...result.routePathSet]).toEqual(['/dashboard', '/access', '/access/menu-visible-403'])
   expect(result.menuGroups.flatMap((group) => group.children).map((item) => item.path)).toEqual(['/dashboard', '/access'])

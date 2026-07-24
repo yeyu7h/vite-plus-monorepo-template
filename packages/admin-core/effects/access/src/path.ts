@@ -27,15 +27,28 @@ export function getAdminParentPath(path: string) {
   return `/${segments.slice(0, -1).join('/')}`
 }
 
-export function flattenRawRouteRecords(routes: readonly RouteRecordRaw[], parentPath = ''): RouteRecordRaw[] {
+export function collectRawRoutePaths(routes: readonly RouteRecordRaw[], parentPath = ''): string[] {
   return routes.flatMap((route) => {
     const path = resolveAdminRoutePath(parentPath, route.path)
-    const currentRoute = {
-      ...route,
-      path,
-    } as RouteRecordRaw
-    const children = route.children ? flattenRawRouteRecords(route.children, path) : []
+    const children = route.children ? collectRawRoutePaths(route.children, path) : []
 
-    return [currentRoute, ...children]
+    return [path, ...children]
+  })
+}
+
+export function filterRawRouteRecords(routes: readonly RouteRecordRaw[], predicate: (route: RouteRecordRaw) => boolean): RouteRecordRaw[] {
+  return routes.flatMap((route) => {
+    const children = route.children ? filterRawRouteRecords(route.children, predicate) : []
+
+    if (!predicate(route) && children.length === 0) return []
+
+    const nextRoute = { ...route } as RouteRecordRaw
+    delete nextRoute.children
+
+    if (children.length) {
+      nextRoute.children = children
+    }
+
+    return [nextRoute]
   })
 }

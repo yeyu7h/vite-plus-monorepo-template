@@ -11,7 +11,6 @@ export function createAdminNavigationRoutes(routes: readonly RouteRecordRaw[], p
     const tabPath = meta.hideInTab && meta.activePath ? normalizeAdminPath(meta.activePath) : path
     const currentRoute: AdminNavigationRouteRecord = {
       activePath,
-      matched: void 0,
       meta,
       parentPath: parent,
       path,

@@ -36,6 +36,7 @@ interface AdminBackendMenuGroupMetaDto {
 interface AdminBackendMenuMetaDto {
   active_path?: string
   authority?: AdminBackendMenuAuthorityDto
+  description?: string
   external_link?: string
   hide_in_breadcrumb?: boolean
   hide_in_menu?: boolean
@@ -90,7 +91,7 @@ const backendMenus: AdminBackendMenuDto[] = [
     children: [
       {
         id: 'dashboard-workbench',
-        path: '/dashboard/workbench',
+        path: 'workbench',
         meta: {
           icon: 'i-lucide-monitor',
           order: 10,
@@ -111,7 +112,7 @@ const backendMenus: AdminBackendMenuDto[] = [
     children: [
       {
         id: 'reports-sales',
-        path: '/reports/sales',
+        path: 'sales',
         meta: {
           icon: 'i-lucide-chart-no-axes-combined',
           order: 10,
@@ -135,7 +136,7 @@ const backendMenus: AdminBackendMenuDto[] = [
     children: [
       {
         id: 'monitor-jobs',
-        path: '/monitor/jobs',
+        path: 'jobs',
         meta: {
           icon: {
             dark: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/App_Store.png',
@@ -180,7 +181,7 @@ const backendMenus: AdminBackendMenuDto[] = [
     children: [
       {
         id: 'access-menu-visible-403',
-        path: '/access/menu-visible-403',
+        path: 'menu-visible-403',
         meta: {
           authority: ['admin'],
           icon: 'i-lucide-eye-off',
@@ -204,7 +205,7 @@ const backendMenus: AdminBackendMenuDto[] = [
     children: [
       {
         id: 'system-role',
-        path: '/system/role',
+        path: 'role',
         meta: {
           authority: ['admin'],
           icon: 'i-lucide-shield',
@@ -214,37 +215,40 @@ const backendMenus: AdminBackendMenuDto[] = [
       },
       {
         id: 'system-settings',
-        path: '/system/settings',
+        path: 'settings',
         meta: {
           authority: ['admin'],
           icon: 'i-lucide-sliders-horizontal',
           order: 20,
           title: '设置中心',
         },
-      },
-      {
-        id: 'system-settings-theme',
-        path: '/system/settings/theme',
-        meta: {
-          active_path: '/system/settings',
-          authority: ['admin'],
-          hide_in_menu: true,
-          hide_in_tab: true,
-          order: 30,
-          title: '主题设置',
-        },
-      },
-      {
-        id: 'system-settings-notification',
-        path: '/system/settings/notification',
-        meta: {
-          active_path: '/system/settings',
-          authority: ['admin'],
-          hide_in_menu: true,
-          hide_in_tab: true,
-          order: 40,
-          title: '通知设置',
-        },
+        children: [
+          // {
+          //   id: 'system-settings-theme',
+          //   path: 'theme',
+          //   meta: {
+          //     active_path: '/system/settings',
+          //     authority: ['admin'],
+          //     hide_in_menu: true,
+          //     hide_in_tab: true,
+          //     order: 30,
+          //     title: '主题设置',
+          //   },
+          // },
+          {
+            id: 'system-settings-notification',
+            path: 'notification',
+            meta: {
+              active_path: '/system/settings',
+              authority: ['admin'],
+              description: '邮件、站内信和安全提醒',
+              hide_in_menu: true,
+              hide_in_tab: true,
+              order: 40,
+              title: '通知设置',
+            },
+          },
+        ],
       },
     ],
   },

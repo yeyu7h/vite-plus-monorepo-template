@@ -1,6 +1,6 @@
 import type { AdminBackendMenu, AdminRouteMeta } from '@monorepo-admin-core/types'
 import type { RouteRecordRaw } from 'vue-router'
-import { flattenRawRouteRecords, normalizeAdminPath } from './path'
+import { resolveAdminRoutePath } from './path'
 
 export function mergeBackendMenusWithFileRoutes(backendMenus: readonly AdminBackendMenu[], accessFileRoutes: readonly RouteRecordRaw[]): RouteRecordRaw[] {
   const fileRouteMap = createRouteMap(accessFileRoutes)
@@ -11,9 +11,14 @@ export function mergeBackendMenusWithFileRoutes(backendMenus: readonly AdminBack
   })
 }
 
-function mergeBackendMenuWithFileRoute(menu: AdminBackendMenu, fileRouteMap: Map<string, RouteRecordRaw>, inheritedMenuGroup?: AdminRouteMeta['menuGroup']): RouteRecordRaw | undefined {
-  const normalizedPath = normalizeAdminPath(menu.path)
-  const fileRoute = fileRouteMap.get(normalizedPath)
+function mergeBackendMenuWithFileRoute(
+  menu: AdminBackendMenu,
+  fileRouteMap: Map<string, RouteRecordRaw>,
+  parentPath = '',
+  inheritedMenuGroup?: AdminRouteMeta['menuGroup'],
+): RouteRecordRaw | undefined {
+  const fullPath = resolveAdminRoutePath(parentPath, menu.path)
+  const fileRoute = fileRouteMap.get(fullPath)
 
   if (!fileRoute) {
     return void 0
@@ -21,7 +26,7 @@ function mergeBackendMenuWithFileRoute(menu: AdminBackendMenu, fileRouteMap: Map
 
   const menuGroup = menu.meta.menuGroup ?? inheritedMenuGroup
   const children = menu.children?.flatMap((child) => {
-    const route = mergeBackendMenuWithFileRoute(child, fileRouteMap, menuGroup)
+    const route = mergeBackendMenuWithFileRoute(child, fileRouteMap, fullPath, menuGroup)
     return route ? [route] : []
   })
 
@@ -33,7 +38,7 @@ function mergeBackendMenuWithFileRoute(menu: AdminBackendMenu, fileRouteMap: Map
       menuGroup,
       source: 'access',
     },
-    path: fileRoute.path,
+    path: resolveMergedRoutePath(parentPath, fullPath),
   } as RouteRecordRaw
   delete nextRoute.children
 
@@ -44,14 +49,26 @@ function mergeBackendMenuWithFileRoute(menu: AdminBackendMenu, fileRouteMap: Map
   return nextRoute
 }
 
-function createRouteMap(routes: readonly RouteRecordRaw[]) {
-  const routeMap = new Map<string, RouteRecordRaw>()
-
+function createRouteMap(routes: readonly RouteRecordRaw[], parentPath = '', routeMap = new Map<string, RouteRecordRaw>()) {
   for (const route of routes) {
-    for (const flattenedRoute of flattenRawRouteRecords([route])) {
-      routeMap.set(normalizeAdminPath(flattenedRoute.path), flattenedRoute)
+    const fullPath = resolveAdminRoutePath(parentPath, route.path)
+    const candidate = { ...route } as RouteRecordRaw
+    delete candidate.children
+
+    routeMap.set(fullPath, candidate)
+
+    if (route.children) {
+      createRouteMap(route.children, fullPath, routeMap)
     }
   }
 
   return routeMap
+}
+
+function resolveMergedRoutePath(parentPath: string, fullPath: string) {
+  if (!parentPath) return fullPath
+  if (fullPath === parentPath) return ''
+
+  const parentPrefix = parentPath === '/' ? '/' : `${parentPath}/`
+  return fullPath.startsWith(parentPrefix) ? fullPath.slice(parentPrefix.length) : fullPath
 }

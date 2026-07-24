@@ -1,7 +1,8 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { expect, test, vi } from 'vite-plus/test'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess, splitAdminFileRoutes } from './access'
+import { normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from './access'
+import { selectAccessFileRoutes, selectInitialFileRoutes } from './file-routes'
 
 vi.mock('virtual:generated-layouts', () => ({
   setupLayouts: (routes: RouteRecordRaw[]) => routes,
@@ -9,30 +10,49 @@ vi.mock('virtual:generated-layouts', () => ({
 
 const component = { template: '<div />' }
 
-test('keeps core and fallback routes out of access candidates', () => {
-  const result = splitAdminFileRoutes([
-    { component, path: '/auth/login' },
-    { component, path: '/403' },
+test('selects initial and access routes without flattening their trees', () => {
+  const routes: RouteRecordRaw[] = [
+    {
+      path: '/auth',
+      children: [
+        { component, path: 'login', meta: { initial: true, layout: false } },
+        { component, path: 'register' },
+      ],
+    },
     {
       component,
       path: '/dashboard',
       children: [{ component, path: 'workbench' }],
     },
-  ])
+  ]
 
-  expect(result.coreRoutes.map((route) => route.path)).toEqual(['/auth/login'])
-  expect(result.fallbackRoutes.map((route) => route.path)).toEqual(['/403'])
-  expect(result.accessFileRoutes.map((route) => route.path)).toEqual(['/dashboard', '/dashboard/workbench'])
-  expect(result.accessFileRoutes.every((route) => !route.children?.length)).toBe(true)
+  const initialRoutes = selectInitialFileRoutes(routes)
+  const selectedAccessRoutes = selectAccessFileRoutes(routes)
+
+  expect(initialRoutes[0]?.path).toBe('/auth')
+  expect(initialRoutes[0]?.meta?.layout).toBe(false)
+  expect(initialRoutes[0]?.children?.map((route) => route.path)).toEqual(['login'])
+  expect(selectedAccessRoutes.map((route) => route.path)).toEqual(['/auth', '/dashboard'])
+  expect(selectedAccessRoutes[0]?.children?.map((route) => route.path)).toEqual(['register'])
+  expect(selectedAccessRoutes[1]?.children?.map((route) => route.path)).toEqual(['workbench'])
 })
 
 const accessFileRoutes: RouteRecordRaw[] = [
-  { component, path: '/dashboard', meta: { menuGroup: { label: '旧分组', order: 1 }, title: 'Old dashboard' } },
-  { component, path: '/dashboard/workbench', meta: { menuGroup: { label: '旧分组', order: 1 }, title: 'Old title' } },
-  { component, path: '/access' },
-  { component, path: '/access/menu-visible-403' },
-  { component, path: '/system/role' },
-  { component, path: '/system/settings/theme' },
+  {
+    component,
+    path: '/dashboard',
+    meta: { menuGroup: { label: '旧分组', order: 1 }, title: 'Old dashboard' },
+    children: [{ component, path: 'workbench', meta: { menuGroup: { label: '旧分组', order: 1 }, title: 'Old title' } }],
+  },
+  { component, path: '/access', children: [{ component, path: 'menu-visible-403' }] },
+  {
+    component,
+    path: '/system',
+    children: [
+      { component, path: 'role' },
+      { component, path: 'settings', children: [{ component, path: 'theme' }] },
+    ],
+  },
 ]
 
 const backendMenus = [
@@ -43,7 +63,7 @@ const backendMenus = [
     children: [
       {
         id: 'dashboard-workbench',
-        path: '/dashboard/workbench',
+        path: 'workbench',
         meta: { icon: 'i-lucide-monitor', order: 10, title: '工作台' },
       },
     ],
@@ -55,20 +75,34 @@ const backendMenus = [
     children: [
       {
         id: 'access-menu-visible-403',
-        path: '/access/menu-visible-403',
+        path: 'menu-visible-403',
         meta: { authority: ['admin'], icon: 'i-lucide-eye-off', menuVisibleWithForbidden: true, order: 10, title: '可见但无权限' },
       },
     ],
   },
   {
-    id: 'system-role',
-    path: '/system/role',
-    meta: { authority: ['admin'], icon: 'i-lucide-shield', order: 20, title: '角色管理' },
-  },
-  {
-    id: 'system-settings-theme',
-    path: '/system/settings/theme',
-    meta: { activePath: '/system/settings', authority: ['admin'], hideInMenu: true, hideInTab: true, title: '主题设置' },
+    id: 'system',
+    path: '/system',
+    meta: { authority: ['admin'], title: '系统' },
+    children: [
+      {
+        id: 'system-role',
+        path: 'role',
+        meta: { authority: ['admin'], icon: 'i-lucide-shield', order: 20, title: '角色管理' },
+      },
+      {
+        id: 'system-settings',
+        path: 'settings',
+        meta: { authority: ['admin'], title: '设置中心' },
+        children: [
+          {
+            id: 'system-settings-theme',
+            path: 'theme',
+            meta: { activePath: '/system/settings', authority: ['admin'], hideInMenu: true, hideInTab: true, title: '主题设置' },
+          },
+        ],
+      },
+    ],
   },
   {
     id: 'missing',
@@ -85,6 +119,7 @@ test('merges backend meta into matching file routes and ignores missing paths', 
   expect(result.accessibleRoutes[0]?.meta?.title).toBe('Dashboard')
   expect(result.accessibleRoutes[0]?.meta?.menuGroup).toEqual({ label: '工作台', order: 10 })
   expect(result.accessibleRoutes[0]?.children?.[0]?.meta?.title).toBe('工作台')
+  expect(result.accessibleRoutes[0]?.children?.[0]?.path).toBe('workbench')
   expect(result.accessibleRoutes[0]?.children?.[0]?.meta?.icon).toBe('i-lucide-monitor')
   expect(result.accessibleRoutes[0]?.children?.[0]?.meta?.menuGroup).toEqual({ label: '工作台', order: 10 })
 })
@@ -100,7 +135,7 @@ test('filters routes by authority after merging backend menus', () => {
 test('keeps visible forbidden menus and replaces their page component with forbidden component', () => {
   const result = resolveAdminAccess(accessFileRoutes, backendMenus, ['user'])
   const accessRoute = result.accessibleRoutes.find((route) => route.path === '/access')
-  const forbiddenRoute = accessRoute?.children?.find((route) => route.path === '/access/menu-visible-403')
+  const forbiddenRoute = accessRoute?.children?.find((route) => route.path === 'menu-visible-403')
 
   expect(result.routePathSet.has('/access/menu-visible-403')).toBe(true)
   expect(JSON.stringify(result.menuGroups)).toContain('/access/menu-visible-403')
@@ -110,7 +145,7 @@ test('keeps visible forbidden menus and replaces their page component with forbi
 test('keeps real page component when visible forbidden route authority matches', () => {
   const result = resolveAdminAccess(accessFileRoutes, backendMenus, ['admin'])
   const accessRoute = result.accessibleRoutes.find((route) => route.path === '/access')
-  const forbiddenRoute = accessRoute?.children?.find((route) => route.path === '/access/menu-visible-403')
+  const forbiddenRoute = accessRoute?.children?.find((route) => route.path === 'menu-visible-403')
 
   expect(forbiddenRoute?.component).toBe(component)
 })
@@ -128,10 +163,17 @@ test('adds and removes dynamic routes', () => {
     routes: [{ component, path: '/auth/login' }],
   })
 
-  registerAdminAccessRoutes(router, [{ component, path: '/dashboard/workbench' }])
+  registerAdminAccessRoutes(router, [
+    {
+      component,
+      path: '/dashboard',
+      children: [{ component, path: 'workbench' }],
+    },
+  ])
 
   expect(router.hasRoute('/dashboard/workbench')).toBe(false)
   expect(router.resolve('/dashboard/workbench').matched.some((route) => normalizeAdminPath(route.path) === '/dashboard/workbench')).toBe(true)
+  expect(router.resolve('/dashboard/workbench').matched.map((route) => route.path)).toEqual(['/dashboard', '/dashboard/workbench'])
 
   resetAdminAccessRoutes()
 

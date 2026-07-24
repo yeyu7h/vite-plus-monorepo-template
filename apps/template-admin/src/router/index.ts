@@ -2,13 +2,12 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
 import { setupLayouts } from 'virtual:generated-layouts'
 import { routes as fileRoutes, handleHotUpdate } from 'vue-router/auto-routes'
 import { useAdminAccessStore } from '@/stores/access'
-import { normalizeAdminPath, resolveAdminAccessGuard, splitAdminFileRoutes } from './access'
+import { collectRawRoutePaths, resolveAdminAccessGuard } from '@monorepo-admin-core/access-effect'
+import { selectAccessFileRoutes, selectInitialFileRoutes } from './file-routes'
 
-const { accessFileRoutes, coreRoutes, fallbackRoutes } = splitAdminFileRoutes(fileRoutes)
-const accessRoutePathSet = new Set(accessFileRoutes.map((route) => normalizeAdminPath(route.path)))
-const initialRoutes = [...coreRoutes, ...fallbackRoutes]
-const layoutlessInitialRoutes = initialRoutes.filter(isLayoutlessInitialRoute)
-const layoutInitialRoutes = initialRoutes.filter((route) => !isLayoutlessInitialRoute(route))
+const initialRoutes = selectInitialFileRoutes(fileRoutes)
+const accessFileRoutes = selectAccessFileRoutes(fileRoutes)
+const accessRoutePathSet = new Set(collectRawRoutePaths(accessFileRoutes))
 
 const router = createRouter({
   history: import.meta.env.VITE_ROUTER_HISTORY === 'hash' ? createWebHashHistory(import.meta.env.VITE_BASE) : createWebHistory(import.meta.env.VITE_BASE),
@@ -18,7 +17,7 @@ const router = createRouter({
     return to.hash ? { behavior: 'smooth', el: to.hash } : { left: 0, top: 0 }
   },
 
-  routes: [...layoutlessInitialRoutes, ...setupLayouts(layoutInitialRoutes)],
+  routes: setupLayouts(initialRoutes),
 })
 
 if (import.meta.hot) handleHotUpdate(router)
@@ -39,9 +38,3 @@ router.beforeEach((to) =>
 )
 
 export { accessFileRoutes, router }
-
-function isLayoutlessInitialRoute(route: (typeof initialRoutes)[number]) {
-  const path = normalizeAdminPath(route.path)
-
-  return path === '/auth/login' || path === '/404' || path.includes(':pathMatch') || path.includes('(.*)') || path.includes('...')
-}

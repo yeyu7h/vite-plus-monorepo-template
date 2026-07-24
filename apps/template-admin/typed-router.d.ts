@@ -108,6 +108,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/layout-example': RouteRecordInfo<
+      '/layout-example',
+      '/layout-example',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/map': RouteRecordInfo<
       '/map',
       '/map',
@@ -287,6 +294,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/internal/audit.vue': {
       routes:
         | '/internal/audit'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/layout-example.vue': {
+      routes:
+        | '/layout-example'
       views:
         | never
       pathParamNames:

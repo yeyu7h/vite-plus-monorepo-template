@@ -2,10 +2,10 @@
 definePage({
   meta: {
     title: '主题设置',
+    description: '主题色、圆角和显示密度',
     hideInMenu: true,
     activePath: '/system/settings',
     hideInTab: true,
-    hideInBreadcrumb: true,
     order: 20,
   },
 })

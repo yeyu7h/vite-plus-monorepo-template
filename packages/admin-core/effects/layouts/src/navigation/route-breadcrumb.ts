@@ -1,7 +1,11 @@
 import type { AdminBreadcrumbItem, AdminNavigationRouteRecord, AdminRouteMeta } from '@monorepo-admin-core/types'
 import { createAdminNavigationItemPath, formatAdminNavigationTitle, normalizeAdminNavigationPath } from './shared'
 
-export type AdminCurrentRouteRecord = AdminNavigationRouteRecord
+/** 当前地址对应的运行时路由记录 */
+export interface AdminCurrentRouteRecord extends AdminNavigationRouteRecord {
+  /** Vue Router 为当前地址匹配到的父子路由记录链 */
+  matched?: readonly AdminNavigationRouteRecord[]
+}
 
 /**
  * 从当前路由和完整路由表生成面包屑列表

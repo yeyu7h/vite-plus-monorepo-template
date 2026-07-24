@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAdminAccessStore } from '@/stores/access'
 
 definePage({
   meta: {
@@ -15,21 +16,21 @@ definePage({
 })
 
 const route = useRoute()
+const accessStore = useAdminAccessStore()
 
-const settingsMenus = [
-  {
-    description: '邮件、站内信和安全提醒',
-    path: '/system/settings/notification',
-    title: '通知设置',
-  },
-  {
-    description: '主题色、圆角和显示密度',
-    path: '/system/settings/theme',
-    title: '主题设置',
-  },
-]
+const settingsMenus = computed(() =>
+  accessStore.navigationRoutes
+    .flatMap((routeRecord) => {
+      const { description, order = 0, title } = routeRecord.meta
 
-const activeMenu = computed(() => settingsMenus.find((item) => route.path === item.path))
+      if (routeRecord.parentPath !== '/system/settings' || !title) return []
+
+      return [{ description, order, path: routeRecord.path, title }]
+    })
+    .sort((left, right) => left.order - right.order),
+)
+
+const activeMenu = computed(() => settingsMenus.value.find((item) => route.path === item.path))
 </script>
 
 <template>

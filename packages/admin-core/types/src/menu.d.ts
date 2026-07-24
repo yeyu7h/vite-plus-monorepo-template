@@ -57,6 +57,8 @@ export interface AdminBackendMenuMeta {
   activePath?: string
   /** 声明访问该菜单和路由项所需的权限标识 */
   authority?: AdminMenuAuthority
+  /** 页面或导航项的辅助说明 */
+  description?: string
   /** 将菜单跳转目标替换为外部链接地址 */
   externalLink?: string
   /** 在自动生成的面包屑中隐藏该路由 */
@@ -88,6 +90,6 @@ export interface AdminBackendMenu {
   children?: AdminBackendMenu[]
   /** 菜单元数据 */
   meta: AdminBackendMenuMeta
-  /** 必须和前端文件路由 path 对齐 外链菜单除外 */
+  /** 顶层使用绝对路径 子级可使用相对父级的路径 外链菜单除外 */
   path: string
 }

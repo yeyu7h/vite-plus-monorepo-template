@@ -14,9 +14,8 @@ export {
   resolveAdminAccessGuard,
   resolveLoginRedirect,
   resolvePostLoginPath,
-  splitAdminFileRoutes,
 } from '@monorepo-admin-core/access-effect'
-export type { ResolvedAdminAccess, SplitAdminFileRoutesResult } from '@monorepo-admin-core/access-effect'
+export type { ResolvedAdminAccess } from '@monorepo-admin-core/access-effect'
 export { registerAdminAccessRoutes, resetAdminAccessRoutes } from './register'
 
 const forbiddenComponent = () => import('@/pages/403.vue')

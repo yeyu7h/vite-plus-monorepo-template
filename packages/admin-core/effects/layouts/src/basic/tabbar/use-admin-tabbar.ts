@@ -63,7 +63,6 @@ export function useAdminTabbar() {
   function createCurrentRouteTab() {
     return createAdminTab(
       {
-        matched: route.matched,
         meta: route.meta,
         path: route.fullPath,
         tabPath: resolveRouteTabPath(route),
@@ -74,7 +73,6 @@ export function useAdminTabbar() {
 
           // 重新包一层统一结构 让 route-tab helper 不直接依赖 vue-router 的具体类型
           return {
-            matched: resolved.matched,
             meta: resolved.meta,
             path: resolved.fullPath,
           }
@@ -100,7 +98,6 @@ export function useAdminTabbar() {
 function createInitialTabs(route: ReturnType<typeof useRoute>, router: ReturnType<typeof useRouter>) {
   const initialTab = createAdminTab(
     {
-      matched: route.matched,
       meta: route.meta,
       path: route.fullPath,
       tabPath: resolveRouteTabPath(route),
@@ -111,7 +108,6 @@ function createInitialTabs(route: ReturnType<typeof useRoute>, router: ReturnTyp
 
         // 初始 tab 和运行时新增 tab 走同一套解析逻辑 避免首屏与后续行为不一致
         return {
-          matched: resolved.matched,
           meta: resolved.meta,
           path: resolved.fullPath,
         }

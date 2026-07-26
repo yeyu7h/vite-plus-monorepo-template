@@ -15,7 +15,7 @@ const accessStore = useAdminAccessStore()
 </script>
 
 <template>
-  <main class="grid min-h-screen place-items-center bg-muted/30 px-4">
+  <main class="absolute inset-0 grid place-items-center p-4">
     <UCard class="w-full max-w-md text-center">
       <p class="text-6xl font-semibold text-warning">403</p>
       <h1 class="mt-4 text-xl font-semibold text-highlighted">无访问权限</h1>

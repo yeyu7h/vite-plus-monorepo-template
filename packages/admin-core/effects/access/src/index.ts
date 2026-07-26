@@ -13,7 +13,7 @@ export {
 export type { AdminAccessGuardOptions, AdminAccessGuardState } from './guard'
 export { mergeBackendMenusWithFileRoutes } from './merge'
 export { createAdminNavigationRoutes } from './navigation'
-export { collectRawRoutePaths, filterRawRouteRecords, getAdminParentPath, normalizeAdminPath, resolveAdminRoutePath } from './path'
+export { collectRawRoutePaths, createAdminRoutePathMatcher, filterRawRouteRecords, getAdminParentPath, normalizeAdminPath, resolveAdminRoutePath } from './path'
 export { filterRoutesByAuthority } from './permission'
 export type { AdminForbiddenComponent } from './permission'
 export { resolveAdminAccess } from './resolve'

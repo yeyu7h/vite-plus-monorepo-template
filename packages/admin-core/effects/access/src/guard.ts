@@ -14,7 +14,7 @@ export interface AdminAccessGuardState {
 }
 
 export interface AdminAccessGuardOptions {
-  accessRoutePathSet: ReadonlySet<string>
+  matchesAccessPath: (path: string) => boolean
   resolveRoute: (fullPath: string) => RouteLocationRaw
 }
 
@@ -35,6 +35,11 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
       }
     }
 
+    return true
+  }
+
+  const shouldResolveFallbackRoute = to.meta?.source === 'fallback' && (accessState.isLoggedIn || isKnownAccessRoutePath(normalizedPath, options.matchesAccessPath))
+  if (to.meta?.ignoreAccess && !shouldResolveFallbackRoute) {
     return true
   }
 
@@ -62,7 +67,7 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
   }
 
   if (!isAccessibleRoutePath(normalizedPath, accessState.canAccessPath)) {
-    if (isKnownAccessRoutePath(normalizedPath, options.accessRoutePathSet)) {
+    if (isKnownAccessRoutePath(normalizedPath, options.matchesAccessPath)) {
       return {
         path: FORBIDDEN_ROUTE_PATH,
         replace: true,
@@ -92,8 +97,8 @@ export function isAccessibleRoutePath(path: string, canAccessPath: (path: string
   return canAccessPath(normalizeAdminPath(path))
 }
 
-export function isKnownAccessRoutePath(path: string, accessRoutePathSet: ReadonlySet<string>) {
-  return accessRoutePathSet.has(normalizeAdminPath(path))
+export function isKnownAccessRoutePath(path: string, matchesAccessPath: (path: string) => boolean) {
+  return matchesAccessPath(normalizeAdminPath(path))
 }
 
 export function resolveLoginRedirect(fullPath: string) {

@@ -5,8 +5,8 @@ definePage({
     description: '主题色、圆角和显示密度',
     hideInMenu: true,
     activePath: '/system/settings',
-    hideInTab: true,
     order: 20,
+    tabPath: '/system/settings',
   },
 })
 

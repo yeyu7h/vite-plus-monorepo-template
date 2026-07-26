@@ -8,50 +8,33 @@ test('creates a route tab from the current route', () => {
   })
 
   expect(tab).toEqual({
-    closable: void 0,
     icon: 'i-lucide-layout-dashboard',
-    path: '/dashboard/workbench',
+    key: '/dashboard/workbench',
     showActiveTabBorder: true,
     title: '工作台',
+    to: '/dashboard/workbench',
   })
 })
 
-test('reuses parent tab metadata when hideInTab and activePath are set', () => {
-  const tab = createAdminTab(
-    {
-      meta: {
-        activePath: '/system/settings',
-        hideInTab: true,
-        title: '通知设置',
-      },
-      path: '/system/settings/notification',
+test('skips tab creation when hideInTab is set', () => {
+  const tab = createAdminTab({
+    meta: {
+      activePath: '/system/settings',
+      hideInTab: true,
+      title: '通知设置',
     },
-    {
-      resolveRoute: (path) => ({
-        meta: {
-          icon: 'i-lucide-settings',
-          showActiveTabBorder: true,
-          title: '系统设置',
-        },
-        path,
-      }),
-    },
-  )
-
-  expect(tab).toEqual({
-    icon: 'i-lucide-settings',
-    path: '/system/settings',
-    showActiveTabBorder: true,
-    title: '系统设置',
+    path: '/system/settings/notification',
+    tabPath: '/system/settings',
   })
+
+  expect(tab).toBeUndefined()
 })
 
-test('uses canonical tabPath before falling back to route meta activePath', () => {
+test('reuses explicit canonical tabPath independently from activePath', () => {
   const tab = createAdminTab(
     {
       meta: {
         activePath: '/fallback/settings',
-        hideInTab: true,
         title: '通知设置',
       },
       path: '/system/settings/notification',
@@ -70,9 +53,45 @@ test('uses canonical tabPath before falling back to route meta activePath', () =
 
   expect(tab).toEqual({
     icon: 'i-lucide-sliders-horizontal',
-    path: '/system/settings',
+    key: '/system/settings',
     showActiveTabBorder: void 0,
     title: '系统设置',
+    to: '/system/settings',
+  })
+})
+
+test('does not reuse activePath when tabPath is not set', () => {
+  const tab = createAdminTab({
+    meta: {
+      activePath: '/system/settings',
+      title: '通知设置',
+    },
+    path: '/system/settings/notification',
+  })
+
+  expect(tab).toEqual({
+    icon: void 0,
+    key: '/system/settings/notification',
+    showActiveTabBorder: void 0,
+    title: '通知设置',
+    to: '/system/settings/notification',
+  })
+})
+
+test('preserves query and hash in the default tab identity and target', () => {
+  const tab = createAdminTab({
+    meta: {
+      title: '销售报表',
+    },
+    path: '/reports/sales?range=week#chart',
+  })
+
+  expect(tab).toEqual({
+    icon: void 0,
+    key: '/reports/sales?range=week#chart',
+    showActiveTabBorder: void 0,
+    title: '销售报表',
+    to: '/reports/sales?range=week#chart',
   })
 })
 
@@ -92,65 +111,78 @@ test('upserts route tabs without duplicating the same path', () => {
   const tabs = upsertAdminTab(
     [
       {
-        path: '/dashboard/workbench',
+        key: '/dashboard/workbench',
         title: '工作台',
+        to: '/dashboard/workbench',
       },
     ],
     {
       icon: 'i-lucide-layout-dashboard',
-      path: '/dashboard/workbench',
+      key: '/dashboard/workbench',
       title: '工作台',
+      to: '/dashboard/workbench',
     },
   )
 
   expect(tabs).toEqual([
     {
       icon: 'i-lucide-layout-dashboard',
-      path: '/dashboard/workbench',
+      key: '/dashboard/workbench',
       title: '工作台',
+      to: '/dashboard/workbench',
     },
   ])
+})
+
+test('keeps tabs with different query parameters separate', () => {
+  const tabs = upsertAdminTab([{ key: '/reports/sales?range=week', title: '销售报表', to: '/reports/sales?range=week' }], {
+    key: '/reports/sales?range=month',
+    title: '销售报表',
+    to: '/reports/sales?range=month',
+  })
+
+  expect(tabs).toHaveLength(2)
 })
 
 test('marks only the current route tab active', () => {
   const tabs = markActiveAdminTabs(
     [
-      { path: '/dashboard/workbench', title: '工作台' },
-      { path: '/system/settings', title: '系统设置' },
+      { key: '/dashboard/workbench', title: '工作台', to: '/dashboard/workbench' },
+      { key: '/system/settings', title: '系统设置', to: '/system/settings' },
     ],
     '/system/settings',
   )
 
   expect(tabs).toEqual([
-    { active: false, path: '/dashboard/workbench', title: '工作台' },
-    { active: true, path: '/system/settings', title: '系统设置' },
+    { active: false, key: '/dashboard/workbench', title: '工作台', to: '/dashboard/workbench' },
+    { active: true, key: '/system/settings', title: '系统设置', to: '/system/settings' },
   ])
 })
 
 test('closes the active tab and prefers the next tab on the right', () => {
   const result = closeAdminTab(
     [
-      { path: '/dashboard/workbench', title: '工作台' },
-      { path: '/system/settings', title: '系统设置' },
-      { path: '/reports/sales', title: '销售报表' },
+      { key: '/dashboard/workbench', title: '工作台', to: '/dashboard/workbench' },
+      { key: '/system/settings', title: '系统设置', to: '/system/settings?section=general' },
+      { key: '/reports/sales', title: '销售报表', to: '/reports/sales?range=week#chart' },
     ],
     '/system/settings',
     '/system/settings',
   )
 
   expect(result).toEqual({
-    nextActivePath: '/reports/sales',
+    nextActiveTarget: '/reports/sales?range=week#chart',
     tabs: [
-      { path: '/dashboard/workbench', title: '工作台' },
-      { path: '/reports/sales', title: '销售报表' },
+      { key: '/dashboard/workbench', title: '工作台', to: '/dashboard/workbench' },
+      { key: '/reports/sales', title: '销售报表', to: '/reports/sales?range=week#chart' },
     ],
   })
 })
 
 test('does not close the final remaining tab', () => {
-  const result = closeAdminTab([{ path: '/dashboard/workbench', title: '工作台' }], '/dashboard/workbench', '/dashboard/workbench')
+  const result = closeAdminTab([{ key: '/dashboard/workbench', title: '工作台', to: '/dashboard/workbench' }], '/dashboard/workbench', '/dashboard/workbench')
 
   expect(result).toEqual({
-    tabs: [{ path: '/dashboard/workbench', title: '工作台' }],
+    tabs: [{ key: '/dashboard/workbench', title: '工作台', to: '/dashboard/workbench' }],
   })
 })

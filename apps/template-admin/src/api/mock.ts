@@ -47,6 +47,7 @@ interface AdminBackendMenuMetaDto {
   menu_visible_with_forbidden?: boolean
   order?: number
   show_active_tab_border?: boolean
+  tab_path?: string
   title: string
 }
 
@@ -223,18 +224,18 @@ const backendMenus: AdminBackendMenuDto[] = [
           title: '设置中心',
         },
         children: [
-          // {
-          //   id: 'system-settings-theme',
-          //   path: 'theme',
-          //   meta: {
-          //     active_path: '/system/settings',
-          //     authority: ['admin'],
-          //     hide_in_menu: true,
-          //     hide_in_tab: true,
-          //     order: 30,
-          //     title: '主题设置',
-          //   },
-          // },
+          {
+            id: 'system-settings-theme',
+            path: 'theme',
+            meta: {
+              active_path: '/system/settings',
+              authority: ['admin'],
+              hide_in_menu: true,
+              order: 30,
+              tab_path: '/system/settings',
+              title: '主题设置',
+            },
+          },
           {
             id: 'system-settings-notification',
             path: 'notification',
@@ -243,9 +244,22 @@ const backendMenus: AdminBackendMenuDto[] = [
               authority: ['admin'],
               description: '邮件、站内信和安全提醒',
               hide_in_menu: true,
-              hide_in_tab: true,
               order: 40,
+              tab_path: '/system/settings',
               title: '通知设置',
+            },
+          },
+          {
+            id: 'system-settings-account',
+            path: 'account',
+            meta: {
+              // active_path: '/system/settings',
+              authority: ['admin'],
+              description: '修改密码、绑定邮箱和手机号',
+              // hide_in_menu: true,
+              order: 41,
+              // tab_path: '/system/settings',
+              title: '账户设置',
             },
           },
         ],

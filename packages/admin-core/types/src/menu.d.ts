@@ -65,7 +65,7 @@ export interface AdminBackendMenuMeta {
   hideInBreadcrumb?: boolean
   /** 在自动生成的菜单中隐藏该路由 */
   hideInMenu?: boolean
-  /** 复用父级标签页，而不是为该路由单独打开标签页 */
+  /** 禁止为该路由创建标签页 */
   hideInTab?: boolean
   /** 声明当前路由不进入登录权限拦截 */
   ignoreAccess?: boolean
@@ -79,6 +79,8 @@ export interface AdminBackendMenuMeta {
   order?: number
   /** 控制激活状态下的标签页是否显示下边框 默认隐藏 */
   showActiveTabBorder?: boolean
+  /** 指定当前路由复用的标签页路径 */
+  tabPath?: string
   /** 菜单显示标题 */
   title: string
 }

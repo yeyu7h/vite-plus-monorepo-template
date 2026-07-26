@@ -12,8 +12,8 @@ export function useAdminTabbar() {
   const rawTabs = ref(createInitialTabs(route, router))
 
   // 当前激活项要和 createAdminTab 的复用规则保持一致 不能直接拿 fullPath
-  const activePath = computed(() => createCurrentRouteTab()?.path ?? route.fullPath)
-  const tabs = computed(() => markActiveAdminTabs(rawTabs.value, activePath.value))
+  const activeKey = computed(() => createCurrentRouteTab()?.key ?? route.fullPath)
+  const tabs = computed(() => markActiveAdminTabs(rawTabs.value, activeKey.value))
 
   watch(
     () => route.fullPath,
@@ -29,31 +29,34 @@ export function useAdminTabbar() {
 
   /**
    * 切换到指定标签页
-   * @param path 目标标签路径
+   * @param key 目标标签标识
    */
-  async function selectTab(path: string) {
-    await router.push(path)
+  async function selectTab(key: string) {
+    const tab = rawTabs.value.find((item) => item.key === key)
+    if (!tab) return
+
+    await router.push(tab.to)
   }
 
   /**
    * 关闭指定标签页 如果关闭的是当前页 则跳到相邻标签
-   * @param path 待关闭标签路径
+   * @param key 待关闭标签标识
    */
-  async function closeTab(path: string) {
-    const result = closeAdminTab(rawTabs.value, path, activePath.value)
+  async function closeTab(key: string) {
+    const result = closeAdminTab(rawTabs.value, key, activeKey.value)
     rawTabs.value = result.tabs
 
-    if (result.nextActivePath) {
-      await router.push(result.nextActivePath)
+    if (result.nextActiveTarget) {
+      await router.push(result.nextActiveTarget)
     }
   }
 
   /**
    * 刷新当前激活标签页
-   * @param path 待刷新标签路径
+   * @param key 待刷新标签标识
    */
-  function refreshTab(path: string) {
-    if (path !== activePath.value) return
+  function refreshTab(key: string) {
+    if (key !== activeKey.value) return
     router.go(0)
   }
 
@@ -82,7 +85,7 @@ export function useAdminTabbar() {
   }
 
   return {
-    activePath,
+    activeKey,
     closeTab,
     refreshTab,
     selectTab,
@@ -119,9 +122,9 @@ function createInitialTabs(route: ReturnType<typeof useRoute>, router: ReturnTyp
 }
 
 function resolveRouteTabPath(route: ReturnType<typeof useRoute>) {
-  if (route.meta.hideInTab && typeof route.meta.activePath === 'string') {
-    return normalizeAdminNavigationPath(route.meta.activePath)
+  if (typeof route.meta.tabPath === 'string') {
+    return normalizeAdminNavigationPath(route.meta.tabPath)
   }
 
-  return normalizeAdminNavigationPath(route.fullPath)
+  return route.fullPath
 }

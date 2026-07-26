@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 export function normalizeAdminPath(path: string) {
   if (!path) return '/'
@@ -34,6 +35,15 @@ export function collectRawRoutePaths(routes: readonly RouteRecordRaw[], parentPa
 
     return [path, ...children]
   })
+}
+
+export function createAdminRoutePathMatcher(routes: readonly RouteRecordRaw[]) {
+  const matcherRouter = createRouter({
+    history: createMemoryHistory(),
+    routes: [...routes],
+  })
+
+  return (path: string) => matcherRouter.resolve(normalizeAdminPath(path)).matched.length > 0
 }
 
 export function filterRawRouteRecords(routes: readonly RouteRecordRaw[], predicate: (route: RouteRecordRaw) => boolean): RouteRecordRaw[] {

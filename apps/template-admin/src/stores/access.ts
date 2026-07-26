@@ -7,7 +7,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getBackendMenusApi, getUserInfoApi, loginApi } from '@/api/mock'
 import { accessFileRoutes } from '@/router'
-import { DEFAULT_ADMIN_HOME_PATH, FORBIDDEN_ROUTE_PATH, normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from '@/router/access'
+import { createAdminRoutePathMatcher, DEFAULT_ADMIN_HOME_PATH, FORBIDDEN_ROUTE_PATH, normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from '@/router/access'
 import { useAdminUserStore } from './user'
 
 const ACCESS_TOKEN_KEY = 'template-admin:access-token'
@@ -17,16 +17,18 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   const userStore = useAdminUserStore()
   const accessToken = ref(localStorage.getItem(ACCESS_TOKEN_KEY))
   const accessibleRoutes = ref<RouteRecordRaw[]>([])
+  const isAccessInitialized = ref(false)
   const menuGroups = ref<AdminMenuGroup[]>([])
   const navigationRoutes = ref<AdminNavigationRouteRecord[]>([])
   const routePaths = ref<string[]>([])
+  let accessSetupPromise: Promise<boolean> | undefined
+  let matchesAccessiblePath: (path: string) => boolean = () => false
 
   const isLoggedIn = computed(() => Boolean(accessToken.value))
-  const isAccessReady = computed(() => routePaths.value.length > 0)
   const homePath = computed(() => {
     const preferredHomePath = normalizeAdminPath(userStore.homePath)
 
-    if (!routePaths.value.length || routePaths.value.includes(preferredHomePath)) {
+    if (!routePaths.value.length || matchesAccessiblePath(preferredHomePath)) {
       return preferredHomePath
     }
 
@@ -40,11 +42,10 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   }
 
   async function restoreAccess() {
-    if (!accessToken.value || isAccessReady.value) return false
+    if (!accessToken.value || isAccessInitialized.value) return false
 
     try {
-      await setupAccess()
-      return true
+      return await setupAccess()
     } catch {
       clearAccess()
       throw new Error('登录状态无效')
@@ -52,18 +53,38 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   }
 
   async function setupAccess() {
-    if (!accessToken.value) return
+    const setupToken = accessToken.value
+    if (!setupToken) return false
+    if (accessSetupPromise) return accessSetupPromise
 
-    const [nextUserInfo, backendMenus] = await Promise.all([getUserInfoApi(accessToken.value), getBackendMenusApi()])
-    const resolvedAccess = resolveAdminAccess(accessFileRoutes, backendMenus, nextUserInfo.roles)
+    const nextSetupPromise = (async () => {
+      const [nextUserInfo, backendMenus] = await Promise.all([getUserInfoApi(setupToken), getBackendMenusApi()])
+      const resolvedAccess = resolveAdminAccess(accessFileRoutes, backendMenus, nextUserInfo.roles)
 
-    userStore.setUserInfo(nextUserInfo)
-    accessibleRoutes.value = resolvedAccess.accessibleRoutes
-    menuGroups.value = resolvedAccess.menuGroups
-    navigationRoutes.value = resolvedAccess.navigationRoutes
-    routePaths.value = [...resolvedAccess.routePathSet]
+      // 请求期间可能已经退出登录或切换账号，旧结果不能覆盖新会话
+      if (accessToken.value !== setupToken) return false
 
-    registerAdminAccessRoutes(router, resolvedAccess.accessibleRoutes)
+      registerAdminAccessRoutes(router, resolvedAccess.accessibleRoutes)
+      matchesAccessiblePath = createAdminRoutePathMatcher(resolvedAccess.accessibleRoutes)
+      userStore.setUserInfo(nextUserInfo)
+      accessibleRoutes.value = resolvedAccess.accessibleRoutes
+      menuGroups.value = resolvedAccess.menuGroups
+      navigationRoutes.value = resolvedAccess.navigationRoutes
+      routePaths.value = [...resolvedAccess.routePathSet]
+      isAccessInitialized.value = true
+
+      return true
+    })()
+
+    accessSetupPromise = nextSetupPromise
+
+    try {
+      return await nextSetupPromise
+    } finally {
+      if (accessSetupPromise === nextSetupPromise) {
+        accessSetupPromise = void 0
+      }
+    }
   }
 
   async function logout(redirect = true) {
@@ -75,7 +96,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   }
 
   function canAccessPath(path: string) {
-    return routePaths.value.includes(normalizeAdminPath(path))
+    return matchesAccessiblePath(normalizeAdminPath(path))
   }
 
   function resolveAccessiblePath(path: string) {
@@ -87,7 +108,10 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
 
   function clearAccess() {
     accessToken.value = null
+    accessSetupPromise = void 0
+    matchesAccessiblePath = () => false
     accessibleRoutes.value = []
+    isAccessInitialized.value = false
     menuGroups.value = []
     navigationRoutes.value = []
     routePaths.value = []
@@ -97,6 +121,11 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   }
 
   function setAccessToken(token: string) {
+    if (accessToken.value !== token) {
+      accessSetupPromise = void 0
+      isAccessInitialized.value = false
+    }
+
     accessToken.value = token
     localStorage.setItem(ACCESS_TOKEN_KEY, token)
   }
@@ -104,6 +133,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   return {
     canAccessPath,
     homePath,
+    isAccessInitialized,
     isLoggedIn,
     login,
     logout,

@@ -98,7 +98,7 @@ const backendMenus = [
           {
             id: 'system-settings-theme',
             path: 'theme',
-            meta: { activePath: '/system/settings', authority: ['admin'], hideInMenu: true, hideInTab: true, title: '主题设置' },
+            meta: { activePath: '/system/settings', authority: ['admin'], hideInMenu: true, tabPath: '/system/settings', title: '主题设置' },
           },
         ],
       },

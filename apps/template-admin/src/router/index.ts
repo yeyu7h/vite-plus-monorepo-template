@@ -2,12 +2,12 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
 import { setupLayouts } from 'virtual:generated-layouts'
 import { routes as fileRoutes, handleHotUpdate } from 'vue-router/auto-routes'
 import { useAdminAccessStore } from '@/stores/access'
-import { collectRawRoutePaths, resolveAdminAccessGuard } from '@monorepo-admin-core/access-effect'
+import { createAdminRoutePathMatcher, resolveAdminAccessGuard } from '@monorepo-admin-core/access-effect'
 import { selectAccessFileRoutes, selectInitialFileRoutes } from './file-routes'
 
 const initialRoutes = selectInitialFileRoutes(fileRoutes)
 const accessFileRoutes = selectAccessFileRoutes(fileRoutes)
-const accessRoutePathSet = new Set(collectRawRoutePaths(accessFileRoutes))
+const matchesAccessPath = createAdminRoutePathMatcher(accessFileRoutes)
 
 const router = createRouter({
   history: import.meta.env.VITE_ROUTER_HISTORY === 'hash' ? createWebHashHistory(import.meta.env.VITE_BASE) : createWebHistory(import.meta.env.VITE_BASE),
@@ -24,7 +24,7 @@ if (import.meta.hot) handleHotUpdate(router)
 
 router.beforeEach((to) =>
   resolveAdminAccessGuard(to, useAdminAccessStore(), {
-    accessRoutePathSet,
+    matchesAccessPath,
     resolveRoute: (fullPath) => {
       const resolvedRoute = router.resolve(fullPath)
 

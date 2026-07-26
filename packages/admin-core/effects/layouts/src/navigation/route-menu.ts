@@ -60,14 +60,18 @@ export function buildAdminMenus(routes: readonly AdminNavigationRouteRecord[], o
   for (const route of visibleRoutes) {
     const segments = route.path.split('/').filter(Boolean)
     const depth = Math.min(segments.length, maxDepth)
+    const shouldPromote = segments.length > maxDepth
     let parent: MenuNode | undefined
 
-    // 逐级补齐父节点 让 `/system/settings/theme` 这类路径也能稳定生成两层菜单树
+    if (shouldPromote) warnPromotedMenuRoute(route.path, maxDepth)
+
+    // 逐级补齐父节点 深层路由保留完整路径并提升到菜单允许的最深层级 避免共享路径前缀的路由互相覆盖
     for (let index = 0; index < depth; index += 1) {
-      const segment = segments[index]
+      const isPromotedLeaf = shouldPromote && index === depth - 1
+      const segment = isPromotedLeaf ? segments.at(-1) : segments[index]
       if (!segment) continue
 
-      const nodeId = `/${segments.slice(0, index + 1).join('/')}`
+      const nodeId = isPromotedLeaf ? route.path : `/${segments.slice(0, index + 1).join('/')}`
       const ancestorRoute = routeByPath.get(nodeId)
       // 只有最深一层直接使用当前路由 中间层优先复用已存在的祖先路由信息
       const nodeRoute = index === depth - 1 ? route : ancestorRoute
@@ -266,6 +270,15 @@ function resolveMenuOrder(children: readonly AdminMenuItem[]) {
  */
 function resolveMenuMaxDepth(maxDepth = DEFAULT_MAX_DEPTH) {
   return Math.max(1, Math.min(maxDepth, MAX_MENU_DEPTH))
+}
+
+/**
+ * 提示深层路由已被投影到菜单允许的最深层级
+ * @param path 被提升的完整路由路径
+ * @param maxDepth 菜单允许的最大深度
+ */
+function warnPromotedMenuRoute(path: string, maxDepth: number) {
+  console.warn(`[admin-menu] 路由 "${path}" 超过 ${maxDepth} 级菜单限制，已自动提升为第 ${maxDepth} 级菜单项；如无需展示，请设置 meta.hideInMenu`)
 }
 
 /**

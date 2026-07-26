@@ -7,6 +7,7 @@ export {
   FORBIDDEN_ROUTE_PATH,
   LOGIN_ROUTE_PATH,
   NOT_FOUND_ROUTE_PATH,
+  createAdminRoutePathMatcher,
   isAccessibleRoutePath,
   isKnownAccessRoutePath,
   isPublicRoutePath,

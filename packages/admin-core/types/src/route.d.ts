@@ -35,6 +35,8 @@ export interface AdminRouteMeta {
   showActiveTabBorder?: boolean
   /** 标记路由来源分类 供权限注册流程拆分使用 */
   source?: AdminRouteSource
+  /** 指定当前路由复用的标签页路径 */
+  tabPath?: string
   /** 提供导航相关 UI 使用的显示标题 */
   title?: string
 }
@@ -42,7 +44,7 @@ export interface AdminRouteMeta {
 export interface AdminNavigationRouteRecord {
   /**
    * 当前路由用于菜单激活匹配的规范化路径
-   * - 由导航模型生成阶段统一解析。默认等于 `path`，当 `meta.activePath` 存在时使用 `meta.activePath`。菜单渲染层只消费该字段，不再自行推导
+   * - 由导航模型生成阶段统一解析。默认等于 `path`，当 `meta.activePath` 存在时使用 `meta.activePath`，菜单渲染层只消费该字段，不再自行推导
    */
   activePath?: string
   /** 导航层消费的路由元信息 */
@@ -58,7 +60,7 @@ export interface AdminNavigationRouteRecord {
   source?: AdminRouteSource
   /**
    * 当前路由对应的标签页规范化路径
-   * - 默认等于 `path`。当 `meta.hideInTab` 为 true 且存在 `meta.activePath` 时使用 `meta.activePath`，表示当前页面复用父级标签页
+   * - 默认等于 `path`。当 `meta.tabPath` 存在时使用其规范化路径，表示当前页面复用指定标签页
    */
   tabPath?: string
 }

@@ -44,7 +44,7 @@ test('falls back when post-login redirect is unsafe public empty invalid or unau
 
 test('redirects anonymous protected access to login with encoded redirect', async () => {
   const result = await resolveAdminAccessGuard(createRoute('/system/role?tab=users#top'), createAccessState(), {
-    accessRoutePathSet: new Set(['/system/role']),
+    matchesAccessPath: createPathMatcher(['/system/role']),
     resolveRoute,
   })
 
@@ -55,6 +55,104 @@ test('redirects anonymous protected access to login with encoded redirect', asyn
   })
 })
 
+test('allows anonymous routes marked with ignoreAccess without restoring access', async () => {
+  const restoreAccess = vi.fn<() => Promise<boolean>>(async () => false)
+  const result = await resolveAdminAccessGuard(createRoute('/not-exists', { ignoreAccess: true, source: 'fallback' }), createAccessState({ restoreAccess }), {
+    matchesAccessPath: createPathMatcher(),
+    resolveRoute,
+  })
+
+  expect(result).toBe(true)
+  expect(restoreAccess).not.toHaveBeenCalled()
+})
+
+test('redirects an anonymous known access path when the initial match is fallback', async () => {
+  const restoreAccess = vi.fn<() => Promise<boolean>>(async () => false)
+  const result = await resolveAdminAccessGuard(
+    createRoute('/system/role?tab=users', {
+      ignoreAccess: true,
+      source: 'fallback',
+    }),
+    createAccessState({ restoreAccess }),
+    {
+      matchesAccessPath: createPathMatcher(['/system/role']),
+      resolveRoute,
+    },
+  )
+
+  expect(result).toEqual({
+    path: LOGIN_ROUTE_PATH,
+    query: { redirect: encodeURIComponent('/system/role?tab=users') },
+    replace: true,
+  })
+  expect(restoreAccess).not.toHaveBeenCalled()
+})
+
+test('allows logged-in routes marked with ignoreAccess without checking dynamic access', async () => {
+  const restoreAccess = vi.fn<() => Promise<boolean>>(async () => false)
+  const result = await resolveAdminAccessGuard(
+    createRoute('/public/about', { ignoreAccess: true }),
+    createAccessState({
+      isLoggedIn: true,
+      restoreAccess,
+    }),
+    {
+      matchesAccessPath: createPathMatcher(['/public/about']),
+      resolveRoute,
+    },
+  )
+
+  expect(result).toBe(true)
+  expect(restoreAccess).not.toHaveBeenCalled()
+})
+
+test('restores dynamic routes before resolving a logged-in fallback match', async () => {
+  const restoreAccess = vi.fn<() => Promise<boolean>>(async () => true)
+  const result = await resolveAdminAccessGuard(
+    createRoute('/dashboard/workbench?view=compact', {
+      ignoreAccess: true,
+      source: 'fallback',
+    }),
+    createAccessState({
+      canAccessPath: (path) => path === '/dashboard/workbench',
+      isLoggedIn: true,
+      restoreAccess,
+    }),
+    {
+      matchesAccessPath: createPathMatcher(['/dashboard/workbench']),
+      resolveRoute,
+    },
+  )
+
+  expect(restoreAccess).toHaveBeenCalledOnce()
+  expect(result).toEqual({
+    hash: '',
+    path: '/dashboard/workbench',
+    query: { view: 'compact' },
+    replace: true,
+  })
+})
+
+test('keeps root navigation behavior when the route is marked with ignoreAccess', async () => {
+  const anonymousResult = await resolveAdminAccessGuard(createRoute('/', { ignoreAccess: true }), createAccessState(), {
+    matchesAccessPath: createPathMatcher(),
+    resolveRoute,
+  })
+  const loggedInResult = await resolveAdminAccessGuard(
+    createRoute('/', { ignoreAccess: true }),
+    createAccessState({
+      isLoggedIn: true,
+    }),
+    {
+      matchesAccessPath: createPathMatcher(),
+      resolveRoute,
+    },
+  )
+
+  expect(anonymousResult).toBe(LOGIN_ROUTE_PATH)
+  expect(loggedInResult).toBe(DEFAULT_ADMIN_HOME_PATH)
+})
+
 test('redirects logged-in user to forbidden when target exists but is not accessible', async () => {
   const result = await resolveAdminAccessGuard(
     createRoute('/system/role'),
@@ -63,7 +161,7 @@ test('redirects logged-in user to forbidden when target exists but is not access
       restoreAccess: vi.fn<() => Promise<boolean>>(async () => false),
     }),
     {
-      accessRoutePathSet: new Set(['/system/role']),
+      matchesAccessPath: createPathMatcher(['/system/role']),
       resolveRoute,
     },
   )
@@ -82,7 +180,7 @@ test('allows unknown logged-in targets to fall through to fallback routes', asyn
       restoreAccess: vi.fn<() => Promise<boolean>>(async () => false),
     }),
     {
-      accessRoutePathSet: new Set(['/system/role']),
+      matchesAccessPath: createPathMatcher(['/system/role']),
       resolveRoute,
     },
   )
@@ -99,7 +197,7 @@ test('re-resolves target after dynamic access routes are restored', async () => 
       restoreAccess: vi.fn<() => Promise<boolean>>(async () => true),
     }),
     {
-      accessRoutePathSet: new Set(['/system/role']),
+      matchesAccessPath: createPathMatcher(['/system/role']),
       resolveRoute,
     },
   )
@@ -122,9 +220,10 @@ function createAccessState(overrides: Partial<AdminAccessGuardState> = {}): Admi
   }
 }
 
-function createRoute(fullPath: string): RouteLocationNormalized {
+function createRoute(fullPath: string, meta: RouteLocationNormalized['meta'] = {}): RouteLocationNormalized {
   return {
     fullPath,
+    meta,
     path: fullPath.split(/[?#]/)[0] ?? '/',
   } as RouteLocationNormalized
 }
@@ -139,4 +238,9 @@ function resolveRoute(fullPath: string) {
     path: path || '/',
     query,
   }
+}
+
+function createPathMatcher(paths: readonly string[] = []) {
+  const pathSet = new Set(paths)
+  return (path: string) => pathSet.has(path)
 }

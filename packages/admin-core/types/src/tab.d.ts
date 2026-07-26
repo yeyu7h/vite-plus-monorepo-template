@@ -7,10 +7,12 @@ export interface AdminTabItem {
   closable?: boolean
   /** 标签页展示的图标 */
   icon?: AdminMenuIcon
-  /** 标签页对应的唯一路径 */
-  path: string
+  /** 标签页唯一标识，默认使用包含 query 和 hash 的完整路由地址 */
+  key: string
   /** 激活状态下是否显示标签页下边框 */
   showActiveTabBorder?: boolean
   /** 标签页显示标题 */
   title: string
+  /** 点击标签页时恢复的完整路由地址 */
+  to: string
 }

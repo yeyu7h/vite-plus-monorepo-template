@@ -4,8 +4,8 @@ definePage({
     title: '通知设置',
     hideInMenu: true,
     activePath: '/system/settings',
-    hideInTab: true,
     order: 10,
+    tabPath: '/system/settings',
   },
 })
 

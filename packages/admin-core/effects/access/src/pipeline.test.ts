@@ -2,7 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import { expect, test } from 'vite-plus/test'
 import { mergeBackendMenusWithFileRoutes } from './merge'
 import { createAdminNavigationRoutes } from './navigation'
-import { collectRawRoutePaths, filterRawRouteRecords } from './path'
+import { collectRawRoutePaths, createAdminRoutePathMatcher, filterRawRouteRecords } from './path'
 import { filterRoutesByAuthority } from './permission'
 import { resolveAdminAccess } from './resolve'
 
@@ -79,6 +79,21 @@ test('filters route trees without flattening and collects canonical paths', () =
   expect(collectRawRoutePaths(initialRoutes)).toEqual(['/auth', '/auth/login'])
 })
 
+test('matches dynamic access paths and aliases with the Vue Router matcher', () => {
+  const matchesAccessPath = createAdminRoutePathMatcher([
+    {
+      alias: '/members/:id',
+      component,
+      path: '/users/:id',
+    },
+  ])
+
+  expect(matchesAccessPath('/users/42?tab=profile')).toBe(true)
+  expect(matchesAccessPath('/members/42')).toBe(true)
+  expect(matchesAccessPath('/users')).toBe(false)
+  expect(matchesAccessPath('/unknown/42')).toBe(false)
+})
+
 test('filters unauthorized routes while keeping visible forbidden menu entries', () => {
   const routes: RouteRecordRaw[] = [
     { component, path: '/dashboard', meta: { title: 'Dashboard' } },
@@ -128,7 +143,7 @@ test('creates default canonical navigation fields from route paths and sources',
   ])
 })
 
-test('derives canonical active and tab paths from activePath and hideInTab meta', () => {
+test('derives canonical active and tab paths independently from route meta', () => {
   const navigationRoutes = createAdminNavigationRoutes([
     {
       component,
@@ -141,7 +156,7 @@ test('derives canonical active and tab paths from activePath and hideInTab meta'
           meta: {
             activePath: '/system/settings',
             hideInMenu: true,
-            hideInTab: true,
+            tabPath: '/system/settings',
             title: '主题设置',
           },
         },
@@ -163,7 +178,7 @@ test('derives canonical active and tab paths from activePath and hideInTab meta'
       meta: {
         activePath: '/system/settings',
         hideInMenu: true,
-        hideInTab: true,
+        tabPath: '/system/settings',
         title: '主题设置',
       },
       parentPath: '/system/settings',

@@ -6,8 +6,8 @@ export interface CreateAdminTabOptions {
 }
 
 export interface CloseAdminTabResult {
-  /** 关闭后应该切换到的下一个激活路径 */
-  nextActivePath?: string
+  /** 关闭后应该切换到的下一个完整路由地址 */
+  nextActiveTarget?: string
   /** 关闭操作后的标签页列表 */
   tabs: AdminTabItem[]
 }
@@ -18,19 +18,20 @@ export interface CloseAdminTabResult {
  * @param options 解析选项
  */
 export function createAdminTab(route: AdminNavigationRouteRecord, options: CreateAdminTabOptions = {}): AdminTabItem | undefined {
-  if (route.meta.externalLink) return void 0
+  if (route.meta.externalLink || route.meta.hideInTab) return void 0
 
-  const tabPath = route.tabPath ?? (route.meta.hideInTab ? route.meta.activePath : void 0) ?? route.path
-  const resolvedRoute = tabPath !== route.path ? (options.resolveRoute?.(tabPath) ?? route) : route
+  const tabTarget = route.tabPath ?? route.meta.tabPath ?? route.path
+  const resolvedRoute = tabTarget !== route.path ? (options.resolveRoute?.(tabTarget) ?? route) : route
   const title = resolvedRoute?.meta.title ?? route.meta.title
 
   if (!title) return void 0
 
   return {
     icon: resolvedRoute?.meta.icon ?? route.meta.icon,
-    path: tabPath,
+    key: tabTarget,
     showActiveTabBorder: resolvedRoute?.meta.showActiveTabBorder ?? route.meta.showActiveTabBorder,
     title,
+    to: tabTarget,
   }
 }
 
@@ -40,7 +41,7 @@ export function createAdminTab(route: AdminNavigationRouteRecord, options: Creat
  * @param tab 待插入标签页
  */
 export function upsertAdminTab(tabs: readonly AdminTabItem[], tab: AdminTabItem): AdminTabItem[] {
-  const existingIndex = tabs.findIndex((item) => item.path === tab.path)
+  const existingIndex = tabs.findIndex((item) => item.key === tab.key)
 
   if (existingIndex === -1) return [...tabs, tab]
 
@@ -50,33 +51,33 @@ export function upsertAdminTab(tabs: readonly AdminTabItem[], tab: AdminTabItem)
 /**
  * 为标签页列表标记当前激活项
  * @param tabs 标签页列表
- * @param activePath 当前激活路径
+ * @param activeKey 当前激活标签标识
  */
-export function markActiveAdminTabs(tabs: readonly AdminTabItem[], activePath: string): AdminTabItem[] {
+export function markActiveAdminTabs(tabs: readonly AdminTabItem[], activeKey: string): AdminTabItem[] {
   return tabs.map((tab) => ({
     ...tab,
-    active: tab.path === activePath,
+    active: tab.key === activeKey,
   }))
 }
 
 /**
  * 关闭指定标签页 并给出关闭后应跳转的目标标签
  * @param tabs 当前标签页列表
- * @param path 待关闭标签路径
- * @param activePath 当前激活路径
+ * @param key 待关闭标签标识
+ * @param activeKey 当前激活标签标识
  */
-export function closeAdminTab(tabs: readonly AdminTabItem[], path: string, activePath: string): CloseAdminTabResult {
+export function closeAdminTab(tabs: readonly AdminTabItem[], key: string, activeKey: string): CloseAdminTabResult {
   if (tabs.length <= 1) return { tabs: [...tabs] }
 
-  const index = tabs.findIndex((tab) => tab.path === path)
+  const index = tabs.findIndex((tab) => tab.key === key)
   if (index === -1) return { tabs: [...tabs] }
 
   // 关闭当前 tab 时 优先切右边 没有右边再退回左边
   const nextTab = tabs[index + 1] ?? tabs[index - 1]
-  const nextTabs = tabs.filter((tab) => tab.path !== path)
+  const nextTabs = tabs.filter((tab) => tab.key !== key)
 
   return {
-    nextActivePath: path === activePath ? nextTab?.path : void 0,
+    nextActiveTarget: key === activeKey ? nextTab?.to : void 0,
     tabs: nextTabs,
   }
 }

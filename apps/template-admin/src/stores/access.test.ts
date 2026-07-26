@@ -50,6 +50,7 @@ vi.mock('@/router/access', () => ({
 }))
 
 const storage = new Map<string, string>()
+const sessionStorageValues = new Map<string, string>()
 const userInfo: AdminUserInfo = {
   home_path: '/dashboard/workbench',
   real_name: 'No Menu User',
@@ -61,6 +62,7 @@ const userInfo: AdminUserInfo = {
 beforeEach(() => {
   vi.clearAllMocks()
   storage.clear()
+  sessionStorageValues.clear()
   setActivePinia(createPinia())
 
   Object.defineProperty(globalThis, 'localStorage', {
@@ -69,6 +71,14 @@ beforeEach(() => {
       getItem: (key: string) => storage.get(key) ?? null,
       removeItem: (key: string) => storage.delete(key),
       setItem: (key: string, value: string) => storage.set(key, value),
+    },
+  })
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    configurable: true,
+    value: {
+      getItem: (key: string) => sessionStorageValues.get(key) ?? null,
+      removeItem: (key: string) => sessionStorageValues.delete(key),
+      setItem: (key: string, value: string) => sessionStorageValues.set(key, value),
     },
   })
 
@@ -121,4 +131,15 @@ test('reuses an in-flight access setup across concurrent restores', async () => 
   await expect(Promise.all([firstRestore, secondRestore])).resolves.toEqual([true, true])
   expect(store.isAccessInitialized).toBe(true)
   expect(mocks.registerAdminAccessRoutes).toHaveBeenCalledOnce()
+})
+
+test('clears persisted application tabs when restoring an invalid login before layout initialization', async () => {
+  storage.set('template-admin:access-token', 'mock-token:invalid')
+  sessionStorageValues.set('template-admin:open-tabs', '{"version":1,"tabs":[{"to":"/dashboard","viewPath":"/dashboard"}]}')
+  mocks.getUserInfoApi.mockRejectedValue(new Error('invalid token'))
+
+  const store = useAdminAccessStore()
+
+  await expect(store.restoreAccess()).rejects.toThrow('登录状态无效')
+  expect(sessionStorageValues.has('template-admin:open-tabs')).toBe(false)
 })

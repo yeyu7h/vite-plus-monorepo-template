@@ -1,5 +1,5 @@
 import { expect, test } from 'vite-plus/test'
-import { closeAdminTab, createAdminTab, markActiveAdminTabs, upsertAdminTab } from './route-tab'
+import { closeAdminTab, createAdminTab, createAdminTabRecord, markActiveAdminTabs, upsertAdminTab } from './route-tab'
 
 test('creates a route tab from the current route', () => {
   const tab = createAdminTab({
@@ -13,6 +13,35 @@ test('creates a route tab from the current route', () => {
     showActiveTabBorder: true,
     title: '工作台',
     to: '/dashboard/workbench',
+  })
+})
+
+test('creates a runtime tab record with an independent view path and keep-alive meta', () => {
+  const tab = createAdminTabRecord({
+    meta: {
+      iframeSrc: ' https://example.com/docs ',
+      keepAlive: true,
+      tabPath: '/docs',
+      title: '文档详情',
+    },
+    path: '/docs/detail?section=api#request',
+    tabPath: '/docs',
+  })
+
+  expect(tab).toEqual({
+    iframeSrc: 'https://example.com/docs',
+    keepAlive: true,
+    key: '/docs',
+    meta: {
+      iframeSrc: ' https://example.com/docs ',
+      keepAlive: true,
+      tabPath: '/docs',
+      title: '文档详情',
+    },
+    showActiveTabBorder: void 0,
+    title: '文档详情',
+    to: '/docs',
+    viewPath: '/docs/detail?section=api#request',
   })
 })
 

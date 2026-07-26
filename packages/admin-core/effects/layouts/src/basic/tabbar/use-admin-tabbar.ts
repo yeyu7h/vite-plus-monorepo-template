@@ -1,29 +1,48 @@
-import { computed, ref, watch } from 'vue'
+import type { AdminTabRecord } from '@monorepo-admin-core/types'
+import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { AdminRouteMeta } from '@monorepo-admin-core/types'
-import { closeAdminTab, createAdminTab, markActiveAdminTabs, upsertAdminTab } from '../../navigation/route-tab'
+import { createAdminTabRecord } from '../../navigation/route-tab'
 import { normalizeAdminNavigationPath } from '../../navigation/shared'
+import { DEFAULT_ADMIN_TAB_STORAGE_KEY, useAdminTabStore } from '../../stores'
+
+export interface UseAdminTabbarOptions {
+  storageKey?: string
+}
 
 /**
  * 管理布局层 Tabbar 的路由驱动状态
  */
-export function useAdminTabbar() {
+export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
   const router = useRouter()
   const route = useRoute()
-  const rawTabs = ref(createInitialTabs(route, router))
+  const tabStore = useAdminTabStore()
+  const { activeKey, tabs } = storeToRefs(tabStore)
+  const storageKey = options.storageKey ?? DEFAULT_ADMIN_TAB_STORAGE_KEY
 
-  // 当前激活项要和 createAdminTab 的复用规则保持一致 不能直接拿 fullPath
-  const activeKey = computed(() => createCurrentRouteTab()?.key ?? route.fullPath)
-  const tabs = computed(() => markActiveAdminTabs(rawTabs.value, activeKey.value))
+  if (!tabStore.initialized || tabStore.storageKey !== storageKey) {
+    const restoredRecords = tabStore
+      .readPersistedTabs(storageKey)
+      .map((item) => createTabRecordFromPath(item.viewPath, router))
+      .filter((item): item is AdminTabRecord => Boolean(item))
+
+    tabStore.initialize(storageKey, restoredRecords)
+  }
 
   watch(
     () => route.fullPath,
     () => {
       const currentTab = createCurrentRouteTab()
-      if (!currentTab) return
+      if (!currentTab) {
+        tabStore.setActive(route.fullPath)
+        return
+      }
 
       // 同一路径重复进入时只更新标签内容 不追加重复标签
-      rawTabs.value = upsertAdminTab(rawTabs.value, currentTab)
+      tabStore.setActive(currentTab.key)
+      tabStore.upsert(currentTab)
     },
     { immediate: true },
   )
@@ -33,10 +52,10 @@ export function useAdminTabbar() {
    * @param key 目标标签标识
    */
   async function selectTab(key: string) {
-    const tab = rawTabs.value.find((item) => item.key === key)
+    const tab = tabStore.records.find((item) => item.key === key)
     if (!tab) return
 
-    await router.push(tab.to)
+    await router.push(tab.viewPath)
   }
 
   /**
@@ -44,11 +63,10 @@ export function useAdminTabbar() {
    * @param key 待关闭标签标识
    */
   async function closeTab(key: string) {
-    const result = closeAdminTab(rawTabs.value, key, activeKey.value)
-    rawTabs.value = result.tabs
+    const nextActiveTarget = tabStore.close(key)
 
-    if (result.nextActiveTarget) {
-      await router.push(result.nextActiveTarget)
+    if (nextActiveTarget) {
+      await router.push(nextActiveTarget)
     }
   }
 
@@ -58,14 +76,14 @@ export function useAdminTabbar() {
    */
   function refreshTab(key: string) {
     if (key !== activeKey.value) return
-    router.go(0)
+    tabStore.refresh(key)
   }
 
   /**
    * 将当前路由解析为标签页结构
    */
   function createCurrentRouteTab() {
-    return createAdminTab(
+    return createAdminTabRecord(
       {
         meta: route.meta as AdminRouteMeta,
         path: route.fullPath,
@@ -94,17 +112,17 @@ export function useAdminTabbar() {
   }
 }
 
-/**
- * 生成 Tabbar 的初始标签页列表
- * @param route 当前路由
- * @param router 当前路由实例
- */
-function createInitialTabs(route: ReturnType<typeof useRoute>, router: ReturnType<typeof useRouter>) {
-  const initialTab = createAdminTab(
+function createTabRecordFromPath(path: string, router: Router) {
+  const resolved = router.resolve(path)
+
+  // 只恢复当前账号重新注册后的权限路由，未知地址会落到 fallback，不能变成旧 Tab
+  if (!resolved.matched.some((record) => record.meta.source === 'access')) return void 0
+
+  return createAdminTabRecord(
     {
-      meta: route.meta as AdminRouteMeta,
-      path: route.fullPath,
-      tabPath: resolveRouteTabPath(route),
+      meta: resolved.meta as AdminRouteMeta,
+      path: resolved.fullPath,
+      tabPath: resolveRouteTabPath(resolved),
     },
     {
       resolveRoute: (path) => {
@@ -118,11 +136,9 @@ function createInitialTabs(route: ReturnType<typeof useRoute>, router: ReturnTyp
       },
     },
   )
-
-  return initialTab ? [initialTab] : []
 }
 
-function resolveRouteTabPath(route: ReturnType<typeof useRoute>) {
+function resolveRouteTabPath(route: Pick<RouteLocationNormalizedLoaded, 'fullPath' | 'meta'>) {
   if (typeof route.meta.tabPath === 'string') {
     return normalizeAdminNavigationPath(route.meta.tabPath)
   }

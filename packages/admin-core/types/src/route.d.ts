@@ -26,6 +26,8 @@ export interface AdminRouteMeta {
   icon?: AdminMenuIcon
   /** 使用 iframe 内嵌展示的页面地址 */
   iframeSrc?: string
+  /** 切换标签页时保留当前页面或 iframe 的运行状态 */
+  keepAlive?: boolean
   /** 声明该路由在应用启动时注册，而不进入动态权限路由构建流程 */
   initial?: boolean
   /** 指定页面使用的布局名称，`false` 表示不使用布局 */

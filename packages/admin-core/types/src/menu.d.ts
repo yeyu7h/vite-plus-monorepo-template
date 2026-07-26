@@ -77,6 +77,8 @@ export interface AdminBackendMenuMeta {
   icon?: AdminMenuIcon
   /** 使用 iframe 内嵌展示的页面地址 */
   iframeSrc?: string
+  /** 切换标签页时保留当前页面或 iframe 的运行状态 */
+  keepAlive?: boolean
   /** 指定该菜单所属分组 */
   menuGroup?: AdminMenuGroupMeta | string
   /** 菜单可见 但权限不命中时访问页面渲染 403 */

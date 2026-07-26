@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { AdminLayout } from '@monorepo-admin-core/layout-effect'
 import { computed } from 'vue'
+import { ADMIN_TAB_STORAGE_KEY } from '@/constants/storage'
 import { useAdminAccessStore } from '@/stores/access'
 import { useAdminUserStore } from '@/stores/user'
 
@@ -10,9 +11,7 @@ const userLabel = computed(() => userStore.userInfo?.real_name ?? userStore.user
 </script>
 
 <template>
-  <AdminLayout :menu-groups="accessStore.menuGroups" :route-records="accessStore.navigationRoutes" scroll-mode="document" :sticky-header="true">
-    <RouterView />
-
+  <AdminLayout :menu-groups="accessStore.menuGroups" :route-records="accessStore.navigationRoutes" scroll-mode="document" :sticky-header="true" :tab-storage-key="ADMIN_TAB_STORAGE_KEY">
     <template #header-right>
       <UDropdownMenu
         :items="[

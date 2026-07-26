@@ -1,6 +1,7 @@
 import type { AdminMenuGroup } from '@monorepo-admin-core/types'
 import type { AdminNavigationRouteRecord } from '@monorepo-admin-core/types'
 import type { RouteRecordRaw } from 'vue-router'
+import { useAdminTabStore } from '@monorepo-admin-core/layout-effect'
 import type { AdminLoginParams } from '@/api/mock'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -8,12 +9,14 @@ import { useRouter } from 'vue-router'
 import { getBackendMenusApi, getUserInfoApi, loginApi } from '@/api/mock'
 import { accessFileRoutes } from '@/router'
 import { createAdminRoutePathMatcher, DEFAULT_ADMIN_HOME_PATH, FORBIDDEN_ROUTE_PATH, normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from '@/router/access'
+import { ADMIN_TAB_STORAGE_KEY } from '../constants/storage'
 import { useAdminUserStore } from './user'
 
 const ACCESS_TOKEN_KEY = 'template-admin:access-token'
 
 export const useAdminAccessStore = defineStore('admin-access', () => {
   const router = useRouter()
+  const tabStore = useAdminTabStore()
   const userStore = useAdminUserStore()
   const accessToken = ref(localStorage.getItem(ACCESS_TOKEN_KEY))
   const accessibleRoutes = ref<RouteRecordRaw[]>([])
@@ -115,6 +118,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     menuGroups.value = []
     navigationRoutes.value = []
     routePaths.value = []
+    tabStore.reset({ storageKey: ADMIN_TAB_STORAGE_KEY })
     userStore.clearUser()
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     resetAdminAccessRoutes()

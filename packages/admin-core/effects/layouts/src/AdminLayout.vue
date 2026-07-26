@@ -3,9 +3,9 @@ import { Layout } from '@monorepo-admin-core/layout-ui'
 import type { AdminScrollMode, LayoutType } from '@monorepo-admin-core/types'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { AdminRouteContent } from './basic/content'
 import { LayoutTabbar } from './basic/tabbar'
 import { LayoutMenu } from './basic/menu'
-import { IFrameRouterView } from './iframe'
 import { buildAdminBreadcrumbPrefix, buildAdminBreadcrumbs } from './navigation/route-breadcrumb'
 import type { AdminCurrentRouteRecord } from './navigation/route-breadcrumb'
 import { buildAdminMenuGroups, markActiveAdminMenuGroups } from './navigation/route-menu'
@@ -18,6 +18,7 @@ const props = withDefaults(
     routeRecords?: AdminNavigationRouteRecord[]
     scrollMode?: AdminScrollMode
     stickyHeader?: boolean
+    tabStorageKey?: string
   }>(),
   {
     scrollMode: 'panel',
@@ -36,10 +37,6 @@ const breadcrumbPrefix = computed(() => buildAdminBreadcrumbPrefix(adminRoute))
 const breadcrumbs = computed(() => buildAdminBreadcrumbs(adminRoute, routeRecords.value))
 const contentMode = computed(() => (route.meta as AdminRouteMeta).contentMode ?? 'default')
 const menuGroups = computed(() => markActiveAdminMenuGroups(props.menuGroups ?? buildAdminMenuGroups(routeRecords.value), activeMenuPath.value))
-const isIframeRoute = computed(() => {
-  const iframeSrc = (route.meta as AdminRouteMeta).iframeSrc
-  return typeof iframeSrc === 'string' && Boolean(iframeSrc.trim())
-})
 </script>
 
 <template>
@@ -52,15 +49,16 @@ const isIframeRoute = computed(() => {
     :sticky-header="props.stickyHeader"
     :tabbar-enable="true"
   >
-    <IFrameRouterView v-if="isIframeRoute" />
-    <slot v-else />
+    <slot>
+      <AdminRouteContent />
+    </slot>
 
     <template #menu="{ collapsed, opened }">
       <LayoutMenu :collapsed="collapsed" :groups="menuGroups" :opened="opened" />
     </template>
 
     <template #tabbar>
-      <LayoutTabbar />
+      <LayoutTabbar :storage-key="tabStorageKey" />
     </template>
 
     <template #header-right>

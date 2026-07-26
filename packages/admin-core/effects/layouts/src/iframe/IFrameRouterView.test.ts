@@ -2,21 +2,8 @@
 
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, expect, test, vi } from 'vite-plus/test'
-import { defineComponent, h, nextTick, reactive } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import IFrameRouterView from './IFrameRouterView.vue'
-
-const mockRoute = vi.hoisted(() => ({
-  current: undefined as unknown as {
-    meta: {
-      iframeSrc?: string
-      title?: string
-    }
-  },
-}))
-
-vi.mock('vue-router', () => ({
-  useRoute: () => mockRoute.current,
-}))
 
 const UButtonStub = defineComponent({
   inheritAttrs: false,
@@ -34,8 +21,13 @@ const UButtonStub = defineComponent({
   },
 })
 
-function mountIframeView() {
+function mountIframeView(props: { src?: string; title?: string } = {}) {
   return mount(IFrameRouterView, {
+    props: {
+      src: 'https://example.com/docs',
+      title: '示例文档',
+      ...props,
+    },
     global: {
       stubs: {
         UButton: UButtonStub,
@@ -47,12 +39,6 @@ function mountIframeView() {
 
 beforeEach(() => {
   vi.useFakeTimers()
-  mockRoute.current = reactive({
-    meta: {
-      iframeSrc: 'https://example.com/docs',
-      title: '示例文档',
-    },
-  })
 })
 
 afterEach(() => {
@@ -61,28 +47,17 @@ afterEach(() => {
 })
 
 test('does not render an iframe without iframeSrc', () => {
-  mockRoute.current.meta.iframeSrc = ''
-
-  const wrapper = mountIframeView()
+  const wrapper = mountIframeView({ src: '' })
 
   expect(wrapper.find('iframe').exists()).toBe(false)
   wrapper.unmount()
 })
 
-test('reacts when vue-router replaces route meta during navigation', async () => {
-  mockRoute.current.meta = {
-    iframeSrc: '',
-    title: '普通页面',
-  }
-  const wrapper = mountIframeView()
-
-  expect(wrapper.find('iframe').exists()).toBe(false)
-
-  mockRoute.current.meta = {
-    iframeSrc: 'https://example.com/after-navigation',
+test('renders the iframe route passed by the cache pool', () => {
+  const wrapper = mountIframeView({
+    src: ' https://example.com/after-navigation ',
     title: '导航后的文档',
-  }
-  await nextTick()
+  })
 
   expect(wrapper.get('iframe').attributes('src')).toBe('https://example.com/after-navigation')
   expect(wrapper.get('iframe').attributes('title')).toBe('导航后的文档')

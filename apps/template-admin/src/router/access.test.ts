@@ -166,6 +166,7 @@ test('creates an accessible iframe route without a matching file page', () => {
         path: '/vben/document',
         meta: {
           iframeSrc: 'https://doc.vben.pro',
+          keepAlive: true,
           menuGroup: { label: '链接', order: 40 },
           title: 'Vben 文档',
         },
@@ -177,6 +178,7 @@ test('creates an accessible iframe route without a matching file page', () => {
   expect([...result.routePathSet]).toEqual(['/vben/document'])
   expect(result.accessibleRoutes[0]?.component).toBeDefined()
   expect(result.accessibleRoutes[0]?.meta?.iframeSrc).toBe('https://doc.vben.pro')
+  expect(result.accessibleRoutes[0]?.meta?.keepAlive).toBe(true)
   expect(result.menuGroups[0]?.children[0]?.path).toBe('/vben/document')
 })
 

@@ -1,15 +1,15 @@
-import type { AdminNavigationRouteRecord, AdminTabItem } from '@monorepo-admin-core/types'
+import type { AdminNavigationRouteRecord, AdminTabItem, AdminTabRecord } from '@monorepo-admin-core/types'
 
 export interface CreateAdminTabOptions {
   /** 用于解析父级 Tab 对应的真实路由 */
   resolveRoute?: (path: string) => AdminNavigationRouteRecord | undefined
 }
 
-export interface CloseAdminTabResult {
+export interface CloseAdminTabResult<T extends AdminTabItem = AdminTabItem> {
   /** 关闭后应该切换到的下一个完整路由地址 */
   nextActiveTarget?: string
   /** 关闭操作后的标签页列表 */
-  tabs: AdminTabItem[]
+  tabs: T[]
 }
 
 /**
@@ -32,6 +32,26 @@ export function createAdminTab(route: AdminNavigationRouteRecord, options: Creat
     showActiveTabBorder: resolvedRoute?.meta.showActiveTabBorder ?? route.meta.showActiveTabBorder,
     title,
     to: tabTarget,
+  }
+}
+
+/**
+ * 从当前路由派生布局运行时需要的完整标签页记录
+ * @param route 当前路由
+ * @param options 解析选项
+ */
+export function createAdminTabRecord(route: AdminNavigationRouteRecord, options: CreateAdminTabOptions = {}): AdminTabRecord | undefined {
+  const tab = createAdminTab(route, options)
+  if (!tab) return void 0
+
+  const iframeSrc = route.meta.iframeSrc?.trim()
+
+  return {
+    ...tab,
+    ...(iframeSrc ? { iframeSrc } : {}),
+    keepAlive: route.meta.keepAlive === true,
+    meta: { ...route.meta },
+    viewPath: route.path,
   }
 }
 
@@ -66,7 +86,7 @@ export function markActiveAdminTabs(tabs: readonly AdminTabItem[], activeKey: st
  * @param key 待关闭标签标识
  * @param activeKey 当前激活标签标识
  */
-export function closeAdminTab(tabs: readonly AdminTabItem[], key: string, activeKey: string): CloseAdminTabResult {
+export function closeAdminTab<T extends AdminTabItem>(tabs: readonly T[], key: string, activeKey: string): CloseAdminTabResult<T> {
   if (tabs.length <= 1) return { tabs: [...tabs] }
 
   const index = tabs.findIndex((tab) => tab.key === key)

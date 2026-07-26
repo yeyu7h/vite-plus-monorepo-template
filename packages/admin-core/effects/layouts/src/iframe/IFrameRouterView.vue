@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import type { AdminRouteMeta } from '@monorepo-admin-core/types'
 
 defineOptions({ name: 'IFrameRouterView' })
 
+const props = defineProps<{
+  src: string
+  title?: string
+}>()
+
 const IFRAME_LOAD_TIMEOUT = 15_000
-const route = useRoute()
 const loading = ref(true)
 const loadTimedOut = ref(false)
 const reloadKey = ref(0)
-const iframeSrc = computed(() => {
-  const source = (route.meta as AdminRouteMeta).iframeSrc
-  return typeof source === 'string' ? source.trim() : ''
-})
-const iframeTitle = computed(() => (route.meta as AdminRouteMeta).title || '内嵌页面')
+const iframeSrc = computed(() => props.src.trim())
+const iframeTitle = computed(() => props.title || '内嵌页面')
 let loadTimeout: ReturnType<typeof setTimeout> | undefined
 
 function clearLoadTimeout() {

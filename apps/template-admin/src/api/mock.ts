@@ -45,6 +45,7 @@ interface AdminBackendMenuMetaDto {
   icon?: AdminBackendMenuIconDto
   iframe_src?: string
   ignore_access?: boolean
+  keep_alive?: boolean
   menu_group?: AdminBackendMenuGroupMetaDto | string
   menu_visible_with_forbidden?: boolean
   order?: number
@@ -97,6 +98,7 @@ const backendMenus: AdminBackendMenuDto[] = [
         path: 'workbench',
         meta: {
           icon: 'i-lucide-monitor',
+          keep_alive: true,
           order: 10,
           title: '工作台',
         },
@@ -156,6 +158,7 @@ const backendMenus: AdminBackendMenuDto[] = [
     path: '/user/',
     meta: {
       icon: 'i-lucide-users',
+      keep_alive: true,
       menu_group: { id: 'workspace', label: '工作台', order: 10 },
       order: 40,
       title: '用户列表',
@@ -274,6 +277,7 @@ const backendMenus: AdminBackendMenuDto[] = [
     meta: {
       iframe_src: 'https://tailwindcss.com/docs',
       icon: 'i-lucide-book-open-text',
+      keep_alive: true,
       menu_group: { id: 'links', label: '链接', order: 40 },
       order: 55,
       title: 'Tailwind CSS 文档',

@@ -71,6 +71,8 @@ export interface AdminBackendMenuMeta {
   ignoreAccess?: boolean
   /** 菜单、面包屑和标签页图标 */
   icon?: AdminMenuIcon
+  /** 使用 iframe 内嵌展示的页面地址 */
+  iframeSrc?: string
   /** 指定该菜单所属分组 */
   menuGroup?: AdminMenuGroupMeta | string
   /** 菜单可见 但权限不命中时访问页面渲染 403 */

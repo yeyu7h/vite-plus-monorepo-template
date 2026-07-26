@@ -55,6 +55,8 @@
     "vue-router": "catalog:vue3"
   },
   "devDependencies": {
+    "@vue/test-utils": "catalog:",
+    "happy-dom": "catalog:",
     "unplugin-vue": "catalog:"
   }
 }

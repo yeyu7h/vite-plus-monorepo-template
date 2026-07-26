@@ -8,6 +8,7 @@ import { resolveAdminAccess } from './resolve'
 
 const component = { template: '<div />' }
 const forbiddenComponent = { template: '<div>403</div>' }
+const iframeComponent = { template: '<div>iframe</div>' }
 
 test('merges backend menu meta onto matching file routes only', () => {
   const routes: RouteRecordRaw[] = [
@@ -58,6 +59,50 @@ test('promotes a deeply nested file page to an absolute top-level backend route'
 
   expect(mergedRoutes[0]?.path).toBe('/docs/vite-plus')
   expect(mergedRoutes[0]?.component).toBe(component)
+})
+
+test('creates iframe routes and their structural parent without matching file pages', () => {
+  const mergedRoutes = mergeBackendMenusWithFileRoutes(
+    [
+      {
+        id: 'embedded',
+        path: '/embedded',
+        meta: { menuGroup: { label: '链接', order: 40 }, title: '内嵌页面' },
+        children: [
+          {
+            id: 'embedded-vben',
+            path: 'vben',
+            meta: { iframeSrc: ' https://doc.vben.pro ', title: 'Vben 文档' },
+          },
+        ],
+      },
+    ],
+    [],
+    { iframeComponent },
+  )
+
+  expect(mergedRoutes).toHaveLength(1)
+  expect(mergedRoutes[0]?.path).toBe('/embedded')
+  expect(mergedRoutes[0]?.component).toBeUndefined()
+  expect(mergedRoutes[0]?.children).toHaveLength(1)
+  expect(mergedRoutes[0]?.children?.[0]?.path).toBe('vben')
+  expect(mergedRoutes[0]?.children?.[0]?.component).toBe(iframeComponent)
+  expect(mergedRoutes[0]?.children?.[0]?.meta?.iframeSrc).toBe('https://doc.vben.pro')
+  expect(mergedRoutes[0]?.children?.[0]?.meta?.menuGroup).toEqual({ label: '链接', order: 40 })
+})
+
+test('applies authority filtering to generated iframe routes', () => {
+  const menus: Parameters<typeof resolveAdminAccess>[1] = [
+    {
+      id: 'embedded-admin',
+      path: '/embedded/admin',
+      meta: { authority: ['admin'], iframeSrc: 'https://doc.vben.pro', title: '管理文档' },
+    },
+  ]
+  const options = { forbiddenComponent, iframeComponent }
+
+  expect(resolveAdminAccess([], menus, ['user'], options).routePathSet.size).toBe(0)
+  expect([...resolveAdminAccess([], menus, ['admin'], options).routePathSet]).toEqual(['/embedded/admin'])
 })
 
 test('filters route trees without flattening and collects canonical paths', () => {

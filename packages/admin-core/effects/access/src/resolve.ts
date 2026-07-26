@@ -1,7 +1,7 @@
 import type { AdminBackendMenu, AdminMenuGroup, AdminNavigationRouteRecord } from '@monorepo-admin-core/types'
 import type { RouteRecordRaw } from 'vue-router'
 import { buildAdminMenuGroups } from '@monorepo-admin-core/layout-effect/navigation'
-import { mergeBackendMenusWithFileRoutes } from './merge'
+import { mergeBackendMenusWithFileRoutes, type MergeBackendMenusOptions } from './merge'
 import { createAdminNavigationRoutes } from './navigation'
 import { type AdminForbiddenComponent, filterRoutesByAuthority } from './permission'
 
@@ -12,7 +12,7 @@ export interface ResolvedAdminAccess {
   routePathSet: Set<string>
 }
 
-export interface ResolveAdminAccessOptions {
+export interface ResolveAdminAccessOptions extends MergeBackendMenusOptions {
   forbiddenComponent: AdminForbiddenComponent
 }
 
@@ -22,7 +22,7 @@ export function resolveAdminAccess(
   roles: readonly string[],
   options: ResolveAdminAccessOptions,
 ): ResolvedAdminAccess {
-  const mergedRoutes = mergeBackendMenusWithFileRoutes(backendMenus, accessFileRoutes)
+  const mergedRoutes = mergeBackendMenusWithFileRoutes(backendMenus, accessFileRoutes, options)
   const accessibleRoutes = filterRoutesByAuthority(mergedRoutes, roles, options.forbiddenComponent)
   const navigationRoutes = createAdminNavigationRoutes(accessibleRoutes)
   const menuGroups = buildAdminMenuGroups(navigationRoutes)

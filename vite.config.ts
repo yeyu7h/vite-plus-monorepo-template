@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite-plus'
+import Vue from 'unplugin-vue/vite'
 
 export default defineConfig({
+  plugins: [Vue()],
   staged: {
     '*': 'vp check --fix',
   },

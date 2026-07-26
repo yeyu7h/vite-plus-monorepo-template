@@ -1,5 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { AdminRouteMeta } from '@monorepo-admin-core/types'
 import { closeAdminTab, createAdminTab, markActiveAdminTabs, upsertAdminTab } from '../../navigation/route-tab'
 import { normalizeAdminNavigationPath } from '../../navigation/shared'
 
@@ -66,7 +67,7 @@ export function useAdminTabbar() {
   function createCurrentRouteTab() {
     return createAdminTab(
       {
-        meta: route.meta,
+        meta: route.meta as AdminRouteMeta,
         path: route.fullPath,
         tabPath: resolveRouteTabPath(route),
       },
@@ -76,7 +77,7 @@ export function useAdminTabbar() {
 
           // 重新包一层统一结构 让 route-tab helper 不直接依赖 vue-router 的具体类型
           return {
-            meta: resolved.meta,
+            meta: resolved.meta as AdminRouteMeta,
             path: resolved.fullPath,
           }
         },
@@ -101,7 +102,7 @@ export function useAdminTabbar() {
 function createInitialTabs(route: ReturnType<typeof useRoute>, router: ReturnType<typeof useRouter>) {
   const initialTab = createAdminTab(
     {
-      meta: route.meta,
+      meta: route.meta as AdminRouteMeta,
       path: route.fullPath,
       tabPath: resolveRouteTabPath(route),
     },
@@ -111,7 +112,7 @@ function createInitialTabs(route: ReturnType<typeof useRoute>, router: ReturnTyp
 
         // 初始 tab 和运行时新增 tab 走同一套解析逻辑 避免首屏与后续行为不一致
         return {
-          meta: resolved.meta,
+          meta: resolved.meta as AdminRouteMeta,
           path: resolved.fullPath,
         }
       },

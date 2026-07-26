@@ -21,6 +21,8 @@ export interface AdminRouteMeta {
   ignoreAccess?: boolean
   /** 定义该路由在菜单、面包屑和标签页中显示的图标 */
   icon?: AdminMenuIcon
+  /** 使用 iframe 内嵌展示的页面地址 */
+  iframeSrc?: string
   /** 声明该路由在应用启动时注册，而不进入动态权限路由构建流程 */
   initial?: boolean
   /** 指定页面使用的布局名称，`false` 表示不使用布局 */

@@ -1,4 +1,5 @@
 export { default as AdminLayout } from './AdminLayout.vue'
+export { IFrameRouterView } from './iframe'
 export { useAdminTabbar } from './basic/tabbar'
 export { buildAdminBreadcrumbPrefix, buildAdminBreadcrumbs } from './navigation/route-breadcrumb'
 export type { AdminCurrentRouteRecord } from './navigation/route-breadcrumb'

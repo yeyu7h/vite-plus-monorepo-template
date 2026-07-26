@@ -19,6 +19,8 @@ catalog:
   tailwind-merge: ^3.6.0
   clsx: ^2.1.1
   npm-run-all2: ^9.0.2
+  '@vue/test-utils': ^2.4.11
+  happy-dom: ^20.11.1
 
 overrides:
   vite: 'catalog:'

@@ -20,7 +20,8 @@ export type { ResolvedAdminAccess } from '@monorepo-admin-core/access-effect'
 export { registerAdminAccessRoutes, resetAdminAccessRoutes } from './register'
 
 const forbiddenComponent = () => import('@/pages/403.vue')
+const iframeComponent = { name: 'IFrameView', render: () => null }
 
 export function resolveAdminAccess(accessFileRoutes: readonly RouteRecordRaw[], backendMenus: readonly AdminBackendMenu[], roles: readonly string[]) {
-  return resolveAdminAccessBase(accessFileRoutes, backendMenus, roles, { forbiddenComponent })
+  return resolveAdminAccessBase(accessFileRoutes, backendMenus, roles, { forbiddenComponent, iframeComponent })
 }

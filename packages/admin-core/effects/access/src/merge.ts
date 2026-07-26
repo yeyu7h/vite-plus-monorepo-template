@@ -2,11 +2,16 @@ import type { AdminBackendMenu, AdminRouteMeta } from '@monorepo-admin-core/type
 import type { RouteRecordRaw } from 'vue-router'
 import { resolveAdminRoutePath } from './path'
 
-export function mergeBackendMenusWithFileRoutes(backendMenus: readonly AdminBackendMenu[], accessFileRoutes: readonly RouteRecordRaw[]): RouteRecordRaw[] {
+export interface MergeBackendMenusOptions {
+  /** 为无需本地文件路由的 iframe 菜单提供占位组件 */
+  iframeComponent?: RouteRecordRaw['component']
+}
+
+export function mergeBackendMenusWithFileRoutes(backendMenus: readonly AdminBackendMenu[], accessFileRoutes: readonly RouteRecordRaw[], options: MergeBackendMenusOptions = {}): RouteRecordRaw[] {
   const fileRouteMap = createRouteMap(accessFileRoutes)
 
   return backendMenus.flatMap((menu) => {
-    const route = mergeBackendMenuWithFileRoute(menu, fileRouteMap)
+    const route = mergeBackendMenuWithFileRoute(menu, fileRouteMap, options)
     return route ? [route] : []
   })
 }
@@ -14,27 +19,32 @@ export function mergeBackendMenusWithFileRoutes(backendMenus: readonly AdminBack
 function mergeBackendMenuWithFileRoute(
   menu: AdminBackendMenu,
   fileRouteMap: Map<string, RouteRecordRaw>,
+  options: MergeBackendMenusOptions,
   parentPath = '',
   inheritedMenuGroup?: AdminRouteMeta['menuGroup'],
 ): RouteRecordRaw | undefined {
   const fullPath = resolveAdminRoutePath(parentPath, menu.path)
   const fileRoute = fileRouteMap.get(fullPath)
+  const menuGroup = menu.meta.menuGroup ?? inheritedMenuGroup
+  const children = menu.children?.flatMap((child) => {
+    const route = mergeBackendMenuWithFileRoute(child, fileRouteMap, options, fullPath, menuGroup)
+    return route ? [route] : []
+  })
+  const iframeSrc = menu.meta.iframeSrc?.trim()
+  const canCreateIframeRoute = Boolean(iframeSrc && options.iframeComponent)
 
-  if (!fileRoute) {
+  // 普通菜单继续要求存在文件路由；仅 iframe 菜单和包含有效子路由的目录可以由后端配置生成
+  if (!fileRoute && !canCreateIframeRoute && !children?.length) {
     return void 0
   }
 
-  const menuGroup = menu.meta.menuGroup ?? inheritedMenuGroup
-  const children = menu.children?.flatMap((child) => {
-    const route = mergeBackendMenuWithFileRoute(child, fileRouteMap, fullPath, menuGroup)
-    return route ? [route] : []
-  })
-
   const nextRoute = {
     ...fileRoute,
+    ...(canCreateIframeRoute && !fileRoute?.component ? { component: options.iframeComponent } : {}),
     meta: {
-      ...fileRoute.meta,
+      ...fileRoute?.meta,
       ...menu.meta,
+      ...(iframeSrc ? { iframeSrc } : {}),
       menuGroup,
       source: 'access',
     },

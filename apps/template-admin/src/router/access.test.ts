@@ -157,6 +157,29 @@ test('keeps hidden authorized child routes accessible without rendering them in 
   expect(JSON.stringify(result.menuGroups)).not.toContain('/system/settings/theme')
 })
 
+test('creates an accessible iframe route without a matching file page', () => {
+  const result = resolveAdminAccess(
+    [],
+    [
+      {
+        id: 'vben-document',
+        path: '/vben/document',
+        meta: {
+          iframeSrc: 'https://doc.vben.pro',
+          menuGroup: { label: '链接', order: 40 },
+          title: 'Vben 文档',
+        },
+      },
+    ],
+    ['admin'],
+  )
+
+  expect([...result.routePathSet]).toEqual(['/vben/document'])
+  expect(result.accessibleRoutes[0]?.component).toBeDefined()
+  expect(result.accessibleRoutes[0]?.meta?.iframeSrc).toBe('https://doc.vben.pro')
+  expect(result.menuGroups[0]?.children[0]?.path).toBe('/vben/document')
+})
+
 test('adds and removes dynamic routes', () => {
   const router = createRouter({
     history: createMemoryHistory(),

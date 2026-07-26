@@ -2,6 +2,7 @@ import { defineConfig } from 'vite-plus'
 import Vue from 'unplugin-vue/rolldown'
 
 export default defineConfig({
+  plugins: [Vue()],
   pack: {
     dts: { tsgo: false, vue: true },
     entry: 'src/index.ts',

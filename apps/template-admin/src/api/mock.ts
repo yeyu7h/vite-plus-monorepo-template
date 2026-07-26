@@ -42,6 +42,7 @@ interface AdminBackendMenuMetaDto {
   hide_in_menu?: boolean
   hide_in_tab?: boolean
   icon?: AdminBackendMenuIconDto
+  iframe_src?: string
   ignore_access?: boolean
   menu_group?: AdminBackendMenuGroupMetaDto | string
   menu_visible_with_forbidden?: boolean
@@ -265,6 +266,18 @@ const backendMenus: AdminBackendMenuDto[] = [
         ],
       },
     ],
+  },
+  {
+    id: 'tailwindcss-document',
+    path: '/tailwindcss/document',
+    meta: {
+      iframe_src: 'https://tailwindcss.com/docs',
+      icon: 'i-lucide-book-open-text',
+      menu_group: { id: 'links', label: '链接', order: 40 },
+      order: 55,
+      title: 'Tailwind CSS 文档',
+      show_active_tab_border: true,
+    },
   },
   {
     id: 'docs-vite-plus',

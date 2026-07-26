@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "npm-run-all2": "catalog:",
+    "unplugin-vue": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {

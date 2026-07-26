@@ -1,3 +1,5 @@
+import type { AdminContentMode } from './content'
+
 export type AdminMenuAuthority = string[]
 
 export interface AdminMenuImageIcon {
@@ -57,6 +59,8 @@ export interface AdminBackendMenuMeta {
   activePath?: string
   /** 声明访问该菜单和路由项所需的权限标识 */
   authority?: AdminMenuAuthority
+  /** 控制页面使用普通内容布局或固定视口全屏布局 */
+  contentMode?: AdminContentMode
   /** 页面或导航项的辅助说明 */
   description?: string
   /** 将菜单跳转目标替换为外部链接地址 */

@@ -18,6 +18,7 @@ definePage({
       order: 20,
     },
     order: 30,
+    contentMode: 'full',
   },
 })
 
@@ -323,28 +324,26 @@ function randomize() {
 </script>
 
 <template>
-  <div class="absolute top-0 left-0 size-full">
-    <div class="flex-1 divide-y divide-accented w-full flex flex-col h-full">
-      <div class="flex items-center gap-2 px-4 py-3.5 overflow-x-auto">
-        <Input
-          :model-value="table?.tableApi?.getColumn('email')?.getFilterValue() as string"
-          class="max-w-sm min-w-[12ch]"
-          placeholder="Filter emails..."
-          @update:model-value="table?.tableApi?.getColumn('email')?.setFilterValue($event)"
-        />
+  <div class="flex-1 divide-y divide-accented w-full flex flex-col h-full">
+    <div class="flex items-center gap-2 px-4 py-3.5 overflow-x-auto">
+      <Input
+        :model-value="table?.tableApi?.getColumn('email')?.getFilterValue() as string"
+        class="max-w-sm min-w-[12ch]"
+        placeholder="Filter emails..."
+        @update:model-value="table?.tableApi?.getColumn('email')?.setFilterValue($event)"
+      />
 
-        <Button color="neutral" label="Randomize" @click="randomize" />
-      </div>
+      <Button color="neutral" label="Randomize" @click="randomize" />
+    </div>
 
-      <Table ref="table" :data="data" :columns="columns" sticky class="flex-1">
-        <template #expanded="{ row }">
-          <pre>{{ row.original }}</pre>
-        </template>
-      </Table>
+    <Table ref="table" :data="data" :columns="columns" sticky class="flex-1">
+      <template #expanded="{ row }">
+        <pre>{{ row.original }}</pre>
+      </template>
+    </Table>
 
-      <div class="px-4 py-3.5 text-sm text-muted">
-        {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0 }} of {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} row(s) selected.
-      </div>
+    <div class="px-4 py-3.5 text-sm text-muted">
+      {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0 }} of {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} row(s) selected.
     </div>
   </div>
 </template>

@@ -1,5 +1,13 @@
+<script setup lang="ts">
+definePage({
+  meta: {
+    contentMode: 'full',
+  },
+})
+</script>
+
 <template>
-  <div class="absolute top-0 left-0 size-full">
+  <div class="min-h-0 flex-1">
     <iframe
       class="size-full border-0"
       loading="lazy"

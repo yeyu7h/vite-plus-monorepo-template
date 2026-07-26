@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Layout } from '@monorepo-admin-core/layout-ui'
-import type { LayoutType } from '@monorepo-admin-core/types'
+import type { AdminScrollMode, LayoutType } from '@monorepo-admin-core/types'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { LayoutTabbar } from './basic/tabbar'
@@ -11,11 +11,19 @@ import type { AdminCurrentRouteRecord } from './navigation/route-breadcrumb'
 import { buildAdminMenuGroups, markActiveAdminMenuGroups } from './navigation/route-menu'
 import type { AdminMenuGroup, AdminNavigationRouteRecord, AdminRouteMeta } from '@monorepo-admin-core/types'
 
-const props = defineProps<{
-  layout?: LayoutType
-  menuGroups?: AdminMenuGroup[]
-  routeRecords?: AdminNavigationRouteRecord[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    layout?: LayoutType
+    menuGroups?: AdminMenuGroup[]
+    routeRecords?: AdminNavigationRouteRecord[]
+    scrollMode?: AdminScrollMode
+    stickyHeader?: boolean
+  }>(),
+  {
+    scrollMode: 'panel',
+    stickyHeader: false,
+  },
+)
 
 const router = useRouter()
 const route = useRoute()
@@ -26,6 +34,7 @@ const routeRecords = computed<AdminNavigationRouteRecord[]>(() => props.routeRec
 const activeMenuPath = computed(() => (route.meta as AdminRouteMeta).activePath ?? route.path)
 const breadcrumbPrefix = computed(() => buildAdminBreadcrumbPrefix(adminRoute))
 const breadcrumbs = computed(() => buildAdminBreadcrumbs(adminRoute, routeRecords.value))
+const contentMode = computed(() => (route.meta as AdminRouteMeta).contentMode ?? 'default')
 const menuGroups = computed(() => markActiveAdminMenuGroups(props.menuGroups ?? buildAdminMenuGroups(routeRecords.value), activeMenuPath.value))
 const isIframeRoute = computed(() => {
   const iframeSrc = (route.meta as AdminRouteMeta).iframeSrc
@@ -34,7 +43,15 @@ const isIframeRoute = computed(() => {
 </script>
 
 <template>
-  <Layout :breadcrumb-prefix="breadcrumbPrefix" :breadcrumbs="breadcrumbs" :layout="layout" :tabbar-enable="true">
+  <Layout
+    :breadcrumb-prefix="breadcrumbPrefix"
+    :breadcrumbs="breadcrumbs"
+    :content-mode="contentMode"
+    :layout="layout"
+    :scroll-mode="props.scrollMode"
+    :sticky-header="props.stickyHeader"
+    :tabbar-enable="true"
+  >
     <IFrameRouterView v-if="isIframeRoute" />
     <slot v-else />
 

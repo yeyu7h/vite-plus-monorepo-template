@@ -10,7 +10,7 @@ const userLabel = computed(() => userStore.userInfo?.real_name ?? userStore.user
 </script>
 
 <template>
-  <AdminLayout :menu-groups="accessStore.menuGroups" :route-records="accessStore.navigationRoutes">
+  <AdminLayout :menu-groups="accessStore.menuGroups" :route-records="accessStore.navigationRoutes" scroll-mode="document" :sticky-header="true">
     <RouterView />
 
     <template #header-right>

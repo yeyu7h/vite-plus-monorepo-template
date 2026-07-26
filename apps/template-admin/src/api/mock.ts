@@ -1,4 +1,4 @@
-import type { AdminBackendMenu } from '@monorepo-admin-core/types'
+import type { AdminBackendMenu, AdminContentMode } from '@monorepo-admin-core/types'
 
 export interface AdminLoginParams {
   password: string
@@ -36,6 +36,7 @@ interface AdminBackendMenuGroupMetaDto {
 interface AdminBackendMenuMetaDto {
   active_path?: string
   authority?: AdminBackendMenuAuthorityDto
+  content_mode?: AdminContentMode
   description?: string
   external_link?: string
   hide_in_breadcrumb?: boolean

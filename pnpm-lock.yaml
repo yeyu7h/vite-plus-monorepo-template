@@ -241,6 +241,12 @@ importers:
         specifier: catalog:vue3
         version: 3.5.39(typescript@6.0.3)
     devDependencies:
+      '@vue/test-utils':
+        specifier: 'catalog:'
+        version: 2.4.11(@vue/compiler-dom@3.5.39)(@vue/server-renderer@3.5.39(vue@3.5.39(typescript@6.0.3)))(vue@3.5.39(typescript@6.0.3))
+      happy-dom:
+        specifier: 'catalog:'
+        version: 20.11.1
       unplugin-vue:
         specifier: 'catalog:'
         version: 7.2.0(@types/node@25.9.4)(esbuild@0.27.7)(jiti@2.7.0)(rolldown@1.1.4)(typescript@6.0.3)(vue@3.5.39(typescript@6.0.3))(yaml@2.9.0)

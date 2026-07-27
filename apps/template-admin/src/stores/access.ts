@@ -9,16 +9,14 @@ import { useRouter } from 'vue-router'
 import { getBackendMenusApi, getUserInfoApi, loginApi } from '@/api/mock'
 import { accessFileRoutes } from '@/router'
 import { createAdminRoutePathMatcher, DEFAULT_ADMIN_HOME_PATH, FORBIDDEN_ROUTE_PATH, normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from '@/router/access'
-import { ADMIN_TAB_STORAGE_KEY } from '../constants/storage'
+import { ADMIN_ACCESS_TOKEN_STORAGE_KEY, ADMIN_TAB_STORAGE_KEY } from '../constants/storage'
 import { useAdminUserStore } from './user'
-
-const ACCESS_TOKEN_KEY = 'template-admin:access-token'
 
 export const useAdminAccessStore = defineStore('admin-access', () => {
   const router = useRouter()
   const tabStore = useAdminTabStore()
   const userStore = useAdminUserStore()
-  const accessToken = ref(localStorage.getItem(ACCESS_TOKEN_KEY))
+  const accessToken = ref(localStorage.getItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY))
   const accessibleRoutes = ref<RouteRecordRaw[]>([])
   const isAccessInitialized = ref(false)
   const menuGroups = ref<AdminMenuGroup[]>([])
@@ -120,7 +118,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     routePaths.value = []
     tabStore.reset({ storageKey: ADMIN_TAB_STORAGE_KEY })
     userStore.clearUser()
-    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    localStorage.removeItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY)
     resetAdminAccessRoutes()
   }
 
@@ -131,7 +129,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     }
 
     accessToken.value = token
-    localStorage.setItem(ACCESS_TOKEN_KEY, token)
+    localStorage.setItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY, token)
   }
 
   return {

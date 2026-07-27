@@ -15,6 +15,7 @@
     "@monorepo-admin-core/layout-effect": "workspace:*",
     "@monorepo-admin-core/layout-ui": "workspace:*",
     "@monorepo-admin-core/types": "workspace:*",
+    "@monorepo/request": "workspace:*",
     "@nuxt/ui": "catalog:vue3",
     "@tailwindcss/vite": "catalog:",
     "pinia": "catalog:vue3",

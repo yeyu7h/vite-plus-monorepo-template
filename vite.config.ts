@@ -82,6 +82,31 @@ export default defineConfig({
           'vitest/valid-title': 'error',
         },
       },
+      {
+        files: ['apps/template-api/**/*.integration.test.ts'],
+        rules: {
+          'typescript/no-explicit-any': 'off',
+          'typescript/unbound-method': 'off',
+          'vitest/expect-expect': 'off',
+          'vitest/no-conditional-expect': 'off',
+          'vitest/no-standalone-expect': 'off',
+          'vitest/require-mock-type-parameters': 'off',
+          'vitest/require-to-throw-message': 'off',
+        },
+      },
+      {
+        files: ['packages/server-core/src/**/*.test.ts', 'packages/server-refine-query/src/**/*.test.ts'],
+        rules: {
+          'typescript/no-explicit-any': 'off',
+          'vitest/no-conditional-expect': 'off',
+        },
+      },
+      {
+        files: ['apps/template-api/migrations/**/*.ts', 'apps/template-api/scripts/**/*.ts'],
+        rules: {
+          'typescript/no-explicit-any': 'off',
+        },
+      },
     ],
     options: { typeAware: true, typeCheck: true },
     jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }],

@@ -1,5 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { expect, test } from 'vite-plus/test'
+import { expect, test, vi } from 'vite-plus/test'
 import { mergeBackendMenusWithFileRoutes } from './merge'
 import { createAdminNavigationRoutes } from './navigation'
 import { collectRawRoutePaths, createAdminRoutePathMatcher, filterRawRouteRecords } from './path'
@@ -125,6 +125,7 @@ test('filters route trees without flattening and collects canonical paths', () =
 })
 
 test('matches dynamic access paths and aliases with the Vue Router matcher', () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   const matchesAccessPath = createAdminRoutePathMatcher([
     {
       alias: '/members/:id',
@@ -137,6 +138,8 @@ test('matches dynamic access paths and aliases with the Vue Router matcher', () 
   expect(matchesAccessPath('/members/42')).toBe(true)
   expect(matchesAccessPath('/users')).toBe(false)
   expect(matchesAccessPath('/unknown/42')).toBe(false)
+  expect(warn).toHaveBeenCalledTimes(2)
+  warn.mockRestore()
 })
 
 test('filters unauthorized routes while keeping visible forbidden menu entries', () => {

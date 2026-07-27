@@ -1,0 +1,21 @@
+import { jwt } from 'hono/jwt'
+
+import env from '@/env'
+import { defineMiddleware } from '@monorepo/server-core'
+import { authorize } from '@/middlewares/authorize'
+import { operationLog } from '@/middlewares/operation-log'
+
+export default defineMiddleware([
+  {
+    handler: jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' }),
+    except: (c) => ['/auth/login', '/auth/refresh', '/auth/challenge', '/auth/redeem'].some((p) => c.req.path.endsWith(p)),
+  },
+  {
+    handler: authorize,
+    except: (c) => c.req.path.includes('/auth'),
+  },
+  {
+    handler: operationLog(),
+    except: (c) => c.req.path.includes('/auth'),
+  },
+])

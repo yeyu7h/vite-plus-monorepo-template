@@ -1,0 +1,38 @@
+import { createRoute } from '@hono/zod-openapi'
+
+import { RefineResultSchema } from '@/lib/core/refine-query'
+import { HttpStatusCodes } from '@monorepo/server-core'
+import { jsonContent } from '@monorepo/server-core'
+import { respErrSchema } from '@/utils'
+
+import { dictCodeParamsSchema, dictItemsResponseSchema, dictListResponseSchema } from './dicts.schema'
+
+const routePrefix = '/dicts'
+const tags = [`${routePrefix}（业务字典查询）`]
+
+/** List all enabled dicts / 获取所有启用字典 */
+export const list = createRoute({
+  tags,
+  summary: '获取所有启用字典',
+  method: 'get',
+  path: routePrefix,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(dictListResponseSchema), '查询成功'),
+  },
+})
+
+/** Get dict items by code / 根据编码查询字典项 */
+export const getByCode = createRoute({
+  tags,
+  summary: '根据编码查询字典项',
+  method: 'get',
+  path: `${routePrefix}/{code}`,
+  request: {
+    params: dictCodeParamsSchema,
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(dictItemsResponseSchema), '查询成功'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, 'Code参数错误'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '字典不存在或已禁用'),
+  },
+})

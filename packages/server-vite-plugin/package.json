@@ -1,0 +1,96 @@
+{
+  "name": "@monorepo/server-vite-plugin",
+  "version": "0.0.0",
+  "description": "Reusable Vite plugins for Hono server applications.",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "production": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./build": {
+      "types": "./src/vite-plugin-build/index.ts",
+      "development": "./src/vite-plugin-build/index.ts",
+      "production": "./src/vite-plugin-build/index.ts",
+      "default": "./src/vite-plugin-build/index.ts"
+    },
+    "./bull-board-static": {
+      "types": "./src/vite-plugin-bull-board-static/index.ts",
+      "development": "./src/vite-plugin-bull-board-static/index.ts",
+      "production": "./src/vite-plugin-bull-board-static/index.ts",
+      "default": "./src/vite-plugin-bull-board-static/index.ts"
+    },
+    "./hmr-notify": {
+      "types": "./src/vite-plugin-hmr-notify/index.ts",
+      "development": "./src/vite-plugin-hmr-notify/index.ts",
+      "production": "./src/vite-plugin-hmr-notify/index.ts",
+      "default": "./src/vite-plugin-hmr-notify/index.ts"
+    },
+    "./resource-monitor": {
+      "types": "./src/vite-plugin-resource-monitor/index.ts",
+      "development": "./src/vite-plugin-resource-monitor/index.ts",
+      "production": "./src/vite-plugin-resource-monitor/index.ts",
+      "default": "./src/vite-plugin-resource-monitor/index.ts"
+    },
+    "./zod-hoist": {
+      "types": "./src/vite-plugin-zod-hoist/index.ts",
+      "development": "./src/vite-plugin-zod-hoist/index.ts",
+      "production": "./src/vite-plugin-zod-hoist/index.ts",
+      "default": "./src/vite-plugin-zod-hoist/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "./build": {
+        "types": "./dist/build.d.ts",
+        "default": "./dist/build.mjs"
+      },
+      "./bull-board-static": {
+        "types": "./dist/bull-board-static.d.ts",
+        "default": "./dist/bull-board-static.mjs"
+      },
+      "./hmr-notify": {
+        "types": "./dist/hmr-notify.d.ts",
+        "default": "./dist/hmr-notify.mjs"
+      },
+      "./resource-monitor": {
+        "types": "./dist/resource-monitor.d.ts",
+        "default": "./dist/resource-monitor.mjs"
+      },
+      "./zod-hoist": {
+        "types": "./dist/zod-hoist.d.ts",
+        "default": "./dist/zod-hoist.mjs"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test --passWithNoTests",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "dependencies": {
+    "magic-string": "catalog:",
+    "oxc-parser": "catalog:"
+  },
+  "devDependencies": {
+    "@oxc-project/types": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

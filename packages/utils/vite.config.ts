@@ -5,7 +5,9 @@ export default defineConfig({
     dts: {
       tsgo: false,
     },
-    exports: true,
+    entry: ['src/index.ts'],
+    format: 'esm',
+    outExtensions: () => ({ dts: '.d.ts', js: '.mjs' }),
   },
   lint: {
     options: {

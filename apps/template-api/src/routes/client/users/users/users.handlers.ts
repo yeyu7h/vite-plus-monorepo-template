@@ -1,0 +1,10 @@
+import type { ClientUsersRouteHandlerType } from './users.types'
+import { HttpStatusCodes } from '@monorepo/server-core'
+
+import { Resp } from '@/utils/zod'
+
+export const getUsersInfo: ClientUsersRouteHandlerType<'getUsersInfo'> = (c) => {
+  // Handler logic to get user information
+  // This is a placeholder; actual implementation will depend on your application's logic
+  return c.json(Resp.ok({ message: 'User information retrieved successfully' }), HttpStatusCodes.OK)
+}

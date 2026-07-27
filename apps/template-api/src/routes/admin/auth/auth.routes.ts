@@ -1,0 +1,163 @@
+import { createRoute, z } from '@hono/zod-openapi'
+import { jwt } from 'hono/jwt'
+
+import env from '@/env'
+import { AUTH_RATE_LIMIT_MAX_REQUESTS, AUTH_RATE_LIMIT_WINDOW_MS } from '@/lib/constants/rate-limit'
+import { createRateLimiter } from '@/lib/core/rate-limit-factory'
+import { RefineResultSchema } from '@/lib/core/refine-query'
+import { HttpStatusCodes } from '@monorepo/server-core'
+import { jsonContent, jsonContentRequired } from '@monorepo/server-core'
+import { respErrSchema } from '@/utils'
+
+import { systemUsersInfoResponseSchema, systemUsersLoginSchema } from '../system/users/users.schema'
+
+const routePrefix = '/auth'
+const tags = [`${routePrefix} (管理端身份认证)`]
+
+// 严格限流：login / refresh / redeem 是密码爆破 & 验证码枚举入口
+const authRateLimit = createRateLimiter({
+  windowMs: AUTH_RATE_LIMIT_WINDOW_MS,
+  limit: AUTH_RATE_LIMIT_MAX_REQUESTS,
+  prefix: 'rl:admin-auth:',
+})
+
+/** Admin login / 管理端登录 */
+export const login = createRoute({
+  path: `${routePrefix}/login`,
+  method: 'post',
+  middleware: [authRateLimit] as const,
+  request: {
+    body: jsonContentRequired(systemUsersLoginSchema, '登录请求'),
+  },
+  tags,
+  summary: '管理端登录',
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      RefineResultSchema(
+        z.object({
+          accessToken: z.string().meta({ description: '访问令牌' }),
+        }),
+      ),
+      '登录成功',
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(respErrSchema, '用户名或密码错误'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '验证码错误'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '用户被禁用'),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: jsonContent(respErrSchema, '登录失败次数过多'),
+  },
+})
+
+/** Refresh token / 刷新 Token */
+export const refreshToken = createRoute({
+  path: `${routePrefix}/refresh`,
+  method: 'post',
+  middleware: [authRateLimit] as const,
+  tags,
+  summary: '管理端刷新访问令牌',
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      RefineResultSchema(
+        z.object({
+          accessToken: z.string().meta({ description: '访问令牌' }),
+        }),
+      ),
+      '刷新成功',
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(respErrSchema, '刷新令牌无效'),
+  },
+})
+
+/** Logout / 退出登录 */
+export const logout = createRoute({
+  path: `${routePrefix}/logout`,
+  method: 'post',
+  tags,
+  middleware: [jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' })],
+  summary: '管理端退出登录',
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(z.object({})), '退出成功'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(respErrSchema, '未授权'),
+  },
+})
+
+/** Get user info / 获取用户信息 */
+export const getIdentity = createRoute({
+  path: `${routePrefix}/userinfo`,
+  method: 'get',
+  tags,
+  middleware: [jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' })],
+  summary: '管理端获取当前用户信息',
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemUsersInfoResponseSchema), '获取成功'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '用户不存在'),
+  },
+})
+
+/** Get user permissions / 获取用户权限 */
+export const getPermissions = createRoute({
+  path: `${routePrefix}/permissions`,
+  method: 'get',
+  tags,
+  middleware: [jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' })],
+  summary: '管理端获取当前用户权限',
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      RefineResultSchema(
+        z.object({
+          permissions: z.array(z.string()).meta({ description: '权限策略列表（p策略）' }),
+          groupings: z.array(z.string()).meta({ description: '角色继承关系列表（g策略）' }),
+        }),
+      ),
+      '获取成功',
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
+  },
+})
+
+/** Generate captcha challenge / 生成验证码挑战 */
+export const createChallenge = createRoute({
+  path: `${routePrefix}/challenge`,
+  method: 'post',
+  tags,
+  summary: '管理端生成验证码挑战',
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        challenge: z.any().meta({ description: '验证码挑战数据' }),
+        token: z.string().optional().meta({ description: '挑战token' }),
+        expires: z.number().meta({ description: '过期时间戳' }),
+      }),
+      '生成成功',
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(respErrSchema, '生成失败'),
+  },
+})
+
+/** Verify user solution and generate verification token / 验证用户解答并生成验证token */
+export const redeemChallenge = createRoute({
+  path: `${routePrefix}/redeem`,
+  method: 'post',
+  middleware: [authRateLimit] as const,
+  request: {
+    body: jsonContentRequired(
+      z.object({
+        token: z.string().meta({ description: '挑战token' }),
+        solutions: z.array(z.number()).meta({ description: '用户解答' }),
+      }),
+      '验证请求',
+    ),
+  },
+  tags,
+  summary: '管理端验证用户解答',
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        success: z.boolean().meta({ description: '验证结果' }),
+        token: z.string().optional().meta({ description: '验证token' }),
+        expires: z.number().optional().meta({ description: '过期时间戳' }),
+      }),
+      '验证成功',
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '验证失败'),
+  },
+})

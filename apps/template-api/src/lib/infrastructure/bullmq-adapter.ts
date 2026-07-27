@@ -1,0 +1,268 @@
+import type { ConnectionOptions, Job, JobsOptions, Queue, QueueOptions, RepeatOptions, Worker, WorkerOptions } from 'bullmq'
+import type Redis from 'ioredis'
+import type { JobDefinitionRegistry, QueueJobsMapping } from './bullmq/job-registry'
+import type { JobNameType, QueueNameType } from '@/lib/enums/bullmq'
+import { Queue as BullQueue, Worker as BullWorker } from 'bullmq'
+
+import { Effect } from 'effect'
+import RedisClient from 'ioredis'
+import { parseURL } from 'ioredis/built/utils/index.js'
+import env from '@/env'
+import { createSingleton } from '@monorepo/server-core'
+
+import logger from '@/lib/services/logger'
+import { JobSchemaRegistry } from './bullmq/job-registry'
+
+/**
+ * 辅助函数：安全地添加任务到 BullMQ 队列
+ * 解决 TypeScript ExtractNameType/ExtractDataType 类型推断问题
+ */
+function addToQueue<T>(queue: Queue<T>, jobName: string, data: T, opts?: JobsOptions) {
+  // 类型断言：jobName 和 data 的类型在运行时是正确的
+  return queue.add(jobName as Parameters<typeof queue.add>[0], data as Parameters<typeof queue.add>[1], opts)
+}
+
+/**
+ * 根据 job name 获取对应的 data 类型
+ */
+type JobDataByName<N extends JobNameType> = N extends keyof JobDefinitionRegistry ? JobDefinitionRegistry[N] : never
+
+class QueueManager {
+  private queues = new Map<string, Queue>()
+  private workers = new Map<string, Worker>()
+  private readonly connection: Redis
+
+  constructor(redis: Redis) {
+    this.connection = redis
+  }
+
+  /**
+   * bullmq 内置 ioredis@5.10.1，本项目直接依赖 5.11.0；两份 ioredis 的 Redis 类型
+   * 因 protected 成员签名不同而不互通，但运行时是同一实例、完全兼容。这里按 bullmq
+   * 期望的连接类型断言一次，避免在每个 new BullQueue/BullWorker 调用点重复 as。
+   */
+  private get bullConnection(): ConnectionOptions {
+    return this.connection as unknown as ConnectionOptions
+  }
+
+  /**
+   * 获取或创建队列（原始方法，用于内部和 Bull Board）
+   */
+  getQueue<T extends ParamsType = ParamsType>(name: string, options?: Partial<QueueOptions>): Queue<T> {
+    if (!this.queues.has(name)) {
+      const queue = new BullQueue<T>(name, {
+        connection: this.bullConnection,
+        prefix: `{bull}`,
+        // 托管 Redis（如阿里云）无法改 maxmemory-policy，跳过 INFO 检查以静默 eviction 警告
+        skipVersionCheck: true,
+        ...options,
+      })
+      this.queues.set(name, queue)
+    }
+    return this.queues.get(name) as Queue<T>
+  }
+
+  /**
+   * 类型安全地添加任务到队列（Effect 封装 + Zod 验证）
+   */
+  addJob = <Q extends QueueNameType, N extends QueueJobsMapping[Q]>(queueName: Q, jobName: N, data: JobDataByName<N>, opts?: JobsOptions) =>
+    Effect.tryPromise({
+      try: async () => {
+        // Runtime validation with Zod
+        const schema = JobSchemaRegistry[jobName]
+        const validatedData = schema.parse(data)
+
+        const queue = this.getQueue<JobDataByName<N>>(queueName)
+        return addToQueue(queue, jobName as string, validatedData as JobDataByName<N>, opts)
+      },
+      catch: (error) => {
+        logger.error({ queueName, jobName, error }, '[BullMQ]: 添加任务失败')
+        return new Error(`Failed to add job: ${String(error)}`)
+      },
+    })
+
+  /**
+   * 类型安全地注册 Worker（Effect 封装 + Zod 验证）
+   */
+  registerWorker = <Q extends QueueNameType, R = void>(queueName: Q, processor: (job: Job<JobDataByName<QueueJobsMapping[Q]>>) => Promise<R>, options?: Partial<WorkerOptions>) =>
+    Effect.sync(() => {
+      if (this.workers.has(queueName)) return this.workers.get(queueName)
+
+      const worker = new BullWorker<JobDataByName<QueueJobsMapping[Q]>>(
+        queueName,
+        async (job) => {
+          // Runtime validation before processing
+          const schema = JobSchemaRegistry[job.name as JobNameType]
+          if (schema) job.data = schema.parse(job.data) as JobDataByName<QueueJobsMapping[Q]>
+          return processor(job)
+        },
+        {
+          connection: this.bullConnection,
+          prefix: `{bull}`,
+          skipVersionCheck: true,
+          ...options,
+        },
+      )
+
+      worker.on('error', (error) => {
+        logger.error({ queueName, error }, '[BullMQ]: Worker 错误')
+      })
+
+      worker.on('failed', (job, error) => {
+        logger.error({ queueName, jobId: job?.id, jobData: job?.data, attemptsMade: job?.attemptsMade, error }, '[BullMQ]: 任务失败')
+      })
+
+      worker.on('stalled', (jobId) => {
+        // 任务被判定卡死（worker 未及时心跳），会被另一 worker 抢占重跑；计分流水线非完全幂等，需 warn 关注
+        logger.warn({ queueName, jobId }, '[BullMQ]: 任务卡死被抢占')
+      })
+
+      this.workers.set(queueName, worker)
+
+      return worker
+    })
+
+  /**
+   * 类型安全地调度定时任务（Effect 封装 + Zod 验证）
+   * 使用 Job Schedulers API (v5.16.0+)
+   */
+  scheduleJob = <Q extends QueueNameType, N extends QueueJobsMapping[Q]>(queueName: Q, jobName: N, data: JobDataByName<N>, repeatOptions: RepeatOptions) =>
+    Effect.tryPromise({
+      try: async () => {
+        // Runtime validation with Zod
+        const schema = JobSchemaRegistry[jobName]
+        const validatedData = schema.parse(data)
+
+        const queue = this.getQueue<JobDataByName<N>>(queueName)
+
+        // 使用 Job Schedulers API (schedulerId = queueName:jobName)
+        const schedulerId = `${queueName}:${jobName}` as Parameters<typeof queue.upsertJobScheduler>[0]
+        const jobTemplate = {
+          name: jobName,
+          data: validatedData,
+        } as unknown as NonNullable<Parameters<typeof queue.upsertJobScheduler>[2]>
+        await queue.upsertJobScheduler(schedulerId, repeatOptions, jobTemplate)
+      },
+      catch: (error) => {
+        logger.error({ queueName, jobName, error }, '[BullMQ]: 调度定时任务失败')
+        return new Error(`Failed to schedule job: ${String(error)}`)
+      },
+    })
+
+  /**
+   * 移除定时任务（Effect 封装）
+   * 使用 Job Schedulers API (v5.16.0+)
+   */
+  unscheduleJob = (queueName: string, jobName: string) =>
+    Effect.tryPromise({
+      try: () => {
+        const queue = this.getQueue(queueName)
+        return queue.removeJobScheduler(`${queueName}:${jobName}`)
+      },
+      catch: (error) => {
+        logger.error({ queueName, jobName, schedulerId: `${queueName}:${jobName}`, error }, '[BullMQ]: 取消定时任务失败')
+        return new Error(`Failed to unschedule job: ${String(error)}`)
+      },
+    })
+
+  /**
+   * 获取所有定时任务（Effect 封装）
+   * 使用 Job Schedulers API (v5.16.0+)
+   */
+  getScheduledJobs = (queueName: string) =>
+    Effect.tryPromise({
+      try: () => this.getQueue(queueName).getJobSchedulers(),
+      catch: (error) => new Error(`Failed to get scheduled jobs: ${String(error)}`),
+    })
+
+  /**
+   * 优雅关闭（Effect 封装，带超时）
+   */
+  close = (timeoutMs: number = 10000) =>
+    Effect.gen({ self: this }, function* () {
+      const closeEffects: Effect.Effect<void, Error>[] = []
+
+      // 关闭所有 Workers
+      for (const [name, worker] of this.workers.entries()) {
+        closeEffects.push(
+          Effect.tryPromise({
+            try: () => worker.close(),
+            catch: (error) => new Error(`Failed to close worker ${name}: ${String(error)}`),
+          }),
+        )
+      }
+
+      // 关闭所有队列
+      for (const [name, queue] of this.queues.entries()) {
+        closeEffects.push(
+          Effect.tryPromise({
+            try: () => queue.close(),
+            catch: (error) => new Error(`Failed to close queue ${name}: ${String(error)}`),
+          }),
+        )
+      }
+
+      // 带超时的并行关闭
+      yield* Effect.all(closeEffects, { concurrency: 'unbounded' }).pipe(Effect.timeout(`${timeoutMs} millis`), Effect.ignore)
+
+      this.workers.clear()
+      this.queues.clear()
+
+      // 关闭 Redis 连接（检查状态避免重复关闭）
+      yield* Effect.tryPromise({
+        try: async () => {
+          if (!['close', 'end'].includes(this.connection.status)) {
+            await this.connection.quit()
+          }
+        },
+        catch: (error) => {
+          logger.debug({ error }, '[BullMQ]: Redis 连接关闭时的预期错误')
+        },
+      })
+    })
+
+  /**
+   * 获取所有队列名称
+   */
+  getQueueNames(): string[] {
+    return Array.from(this.queues.keys())
+  }
+
+  /**
+   * 获取所有 Worker 名称
+   */
+  getWorkerNames(): string[] {
+    return Array.from(this.workers.keys())
+  }
+}
+
+/**
+ * 创建 BullMQ 专用 Redis 连接
+ * BullMQ Worker 需要 maxRetriesPerRequest: null 用于阻塞操作
+ */
+function createBullMQRedis() {
+  const connectionOptions = parseURL(env.REDIS_URL)
+  return new RedisClient({
+    ...connectionOptions,
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  })
+}
+
+/**
+ * QueueManager singleton
+ * 自动在 shutdown 时销毁
+ */
+export const queueManager = createSingleton(
+  'bullmq-queue-manager',
+  () => {
+    const redis = createBullMQRedis()
+    return new QueueManager(redis)
+  },
+  {
+    destroy: async (manager) => {
+      // close() 方法会关闭所有队列、Worker 和 Redis 连接
+      await Effect.runPromise(manager.close(10000))
+    },
+  },
+)

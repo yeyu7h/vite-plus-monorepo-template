@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { CapSolveEvent, CapWidget } from 'cap-widget'
+import 'cap-widget'
+
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminAccessStore } from '@/stores/access'
@@ -21,16 +24,23 @@ const router = useRouter()
 const accessStore = useAdminAccessStore()
 const userStore = useAdminUserStore()
 const username = ref('admin')
-const password = ref('admin123')
+const password = ref('123456')
+const captchaToken = ref('')
+const captcha = ref<CapWidget | null>(null)
 const loading = ref(false)
 const errorMessage = ref('')
 
 async function handleLogin() {
+  if (!captchaToken.value) {
+    errorMessage.value = '请先完成人机验证'
+    return
+  }
+
   loading.value = true
   errorMessage.value = ''
 
   try {
-    await accessStore.login({ password: password.value, username: username.value })
+    await accessStore.login({ captchaToken: captchaToken.value, password: password.value, username: username.value })
     const redirect = resolvePostLoginPath(route.query.redirect, {
       canAccessPath: accessStore.canAccessPath,
       fallbackPath: accessStore.resolveAccessiblePath(userStore.homePath),
@@ -38,14 +48,30 @@ async function handleLogin() {
     await router.replace(redirect)
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '登录失败'
+    resetCaptcha()
   } finally {
     loading.value = false
   }
 }
 
+function handleCaptchaSolve(event: CapSolveEvent) {
+  captchaToken.value = event.detail.token
+  errorMessage.value = ''
+}
+
+function handleCaptchaError() {
+  resetCaptcha()
+  errorMessage.value = '人机验证失败，请重试'
+}
+
+function resetCaptcha() {
+  captchaToken.value = ''
+  captcha.value?.reset()
+}
+
 function useDemoAccount(type: 'admin' | 'user') {
   username.value = type
-  password.value = type === 'admin' ? 'admin123' : 'user123'
+  password.value = '123456'
 }
 </script>
 
@@ -68,9 +94,31 @@ function useDemoAccount(type: 'admin' | 'user') {
           <UInput v-model="password" autocomplete="current-password" type="password" />
         </UFormField>
 
+        <div class="space-y-1">
+          <cap-widget
+            ref="captcha"
+            required
+            aria-label="人机验证"
+            data-cap-api-endpoint="/api/admin/auth/"
+            data-cap-i18n-error-aria-label="人机验证发生错误，请重试"
+            data-cap-i18n-error-label="验证失败，请重试"
+            data-cap-i18n-initial-state="确认你是真人"
+            data-cap-i18n-required-label="请先完成人机验证"
+            data-cap-i18n-solved-label="验证成功"
+            data-cap-i18n-verified-aria-label="已完成人机验证"
+            data-cap-i18n-verifying-aria-label="正在验证，请稍候"
+            data-cap-i18n-verifying-label="正在验证…"
+            data-cap-i18n-verify-aria-label="点击确认你是真人"
+            @error="handleCaptchaError"
+            @reset="captchaToken = ''"
+            @solve="handleCaptchaSolve"
+          />
+          <p class="text-xs text-muted">请先完成人机验证后再登录</p>
+        </div>
+
         <UAlert v-if="errorMessage" color="error" variant="soft" :title="errorMessage" />
 
-        <UButton block :loading="loading" type="submit">登录</UButton>
+        <UButton block :disabled="!captchaToken" :loading="loading" type="submit">登录</UButton>
       </form>
 
       <template #footer>

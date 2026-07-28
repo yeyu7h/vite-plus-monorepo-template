@@ -1,4 +1,4 @@
-import type { AdminUserInfo } from '@/api/mock'
+import type { AdminUserInfo } from '@/api/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { DEFAULT_ADMIN_HOME_PATH, normalizeAdminPath } from '@/router/access'

@@ -37,6 +37,14 @@ test('selects initial and access routes without flattening their trees', () => {
   expect(selectedAccessRoutes[1]?.children?.map((route) => route.path)).toEqual(['workbench'])
 })
 
+test('keeps the global forbidden fallback outside the admin layout', () => {
+  const routes: RouteRecordRaw[] = [{ component, path: '/403', meta: { initial: true, layout: false, source: 'fallback' } }]
+
+  const initialRoutes = selectInitialFileRoutes(routes)
+
+  expect(initialRoutes[0]?.meta?.layout).toBe(false)
+})
+
 const accessFileRoutes: RouteRecordRaw[] = [
   {
     component,

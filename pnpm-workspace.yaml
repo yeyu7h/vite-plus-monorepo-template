@@ -67,6 +67,7 @@ catalog:
   axios-mock-adapter: ^2.1.0
   qs: ^6.15.3
   zod: ^4.4.3
+  cap-widget: ^0.1.56
 
 overrides:
   vite: 'catalog:'

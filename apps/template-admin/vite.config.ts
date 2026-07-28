@@ -11,7 +11,13 @@ import Layouts from 'vite-plugin-vue-layouts-next'
 export default defineConfig({
   plugins: [
     VueRouter(),
-    Vue(),
+    Vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => tag === 'cap-widget',
+        },
+      },
+    }),
     VueJsx(),
     Layouts({
       layoutsDirs: 'src/layouts',
@@ -30,5 +36,13 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
     dedupe: ['vue', 'vue-router'],
+  },
+  server: {
+    proxy: {
+      '/api': {
+        changeOrigin: true,
+        target: 'http://localhost:10000',
+      },
+    },
   },
 })

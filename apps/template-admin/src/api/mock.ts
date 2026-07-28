@@ -1,23 +1,5 @@
 import type { AdminBackendMenu, AdminContentMode } from '@monorepo-admin-core/types'
 
-export interface AdminLoginParams {
-  password: string
-  username: string
-}
-
-export interface AdminLoginResult {
-  access_token: string
-}
-
-export interface AdminUserInfo {
-  avatar?: string
-  home_path: string
-  real_name: string
-  roles: string[]
-  user_id: string
-  username: string
-}
-
 type AdminBackendMenuAuthorityDto = string[]
 
 interface AdminBackendMenuImageIconDto {
@@ -59,27 +41,6 @@ interface AdminBackendMenuDto {
   id: string
   meta: AdminBackendMenuMetaDto
   path: string
-}
-
-const mockUsers: Record<string, AdminUserInfo & { password: string }> = {
-  admin: {
-    avatar: 'https://avatar.vercel.sh/admin',
-    home_path: '/dashboard/workbench',
-    password: 'admin123',
-    real_name: 'Admin User',
-    roles: ['admin'],
-    user_id: '1',
-    username: 'admin',
-  },
-  user: {
-    avatar: 'https://avatar.vercel.sh/user',
-    home_path: '/dashboard/workbench',
-    password: 'user123',
-    real_name: 'Normal User',
-    roles: ['user'],
-    user_id: '2',
-    username: 'user',
-  },
 }
 
 const backendMenus: AdminBackendMenuDto[] = [
@@ -305,28 +266,6 @@ const backendMenus: AdminBackendMenuDto[] = [
     },
   },
 ]
-
-export async function loginApi(params: AdminLoginParams): Promise<AdminLoginResult> {
-  const user = mockUsers[params.username]
-
-  if (!user || user.password !== params.password) {
-    throw new Error('用户名或密码错误')
-  }
-
-  return { access_token: `mock-token:${user.username}` }
-}
-
-export async function getUserInfoApi(accessToken: string): Promise<AdminUserInfo> {
-  const username = accessToken.replace('mock-token:', '')
-  const user = mockUsers[username]
-
-  if (!user) {
-    throw new Error('登录状态无效')
-  }
-
-  const { password: _password, ...userInfo } = user
-  return userInfo
-}
 
 export async function getBackendMenusApi(): Promise<AdminBackendMenu[]> {
   return snakeToCamelDeep<AdminBackendMenu[]>(backendMenus)

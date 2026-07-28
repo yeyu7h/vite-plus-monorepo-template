@@ -18,6 +18,7 @@
     "@monorepo/request": "workspace:*",
     "@nuxt/ui": "catalog:vue3",
     "@tailwindcss/vite": "catalog:",
+    "cap-widget": "catalog:",
     "pinia": "catalog:vue3",
     "tailwindcss": "catalog:",
     "vue": "catalog:vue3",

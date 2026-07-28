@@ -2,11 +2,13 @@ import type { AdminMenuGroup } from '@monorepo-admin-core/types'
 import type { AdminNavigationRouteRecord } from '@monorepo-admin-core/types'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAdminTabStore } from '@monorepo-admin-core/layout-effect'
-import type { AdminLoginParams } from '@/api/mock'
+import type { AdminLoginParams } from '@/api/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getBackendMenusApi, getUserInfoApi, loginApi } from '@/api/mock'
+import { getUserInfoApi, loginApi, logoutApi, refreshTokenApi } from '@/api/auth'
+import { initializeAdminAuthentication, markAdminSessionActive } from '@/api/request'
+import { getBackendMenusApi } from '@/api/mock'
 import { accessFileRoutes } from '@/router'
 import { createAdminRoutePathMatcher, DEFAULT_ADMIN_HOME_PATH, FORBIDDEN_ROUTE_PATH, normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from '@/router/access'
 import { ADMIN_ACCESS_TOKEN_STORAGE_KEY, ADMIN_TAB_STORAGE_KEY } from '../constants/storage'
@@ -24,6 +26,20 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   const routePaths = ref<string[]>([])
   let accessSetupPromise: Promise<boolean> | undefined
   let matchesAccessiblePath: (path: string) => boolean = () => false
+  let sessionRevision = 0
+
+  initializeAdminAuthentication({
+    onSessionExpired: async () => {
+      const redirect = router.currentRoute.value.fullPath
+      clearAccess()
+      await router.replace({ path: '/auth/login', query: { redirect } })
+    },
+    refreshAccessToken: async () => {
+      const result = await refreshTokenApi()
+      setAccessToken(result.accessToken, false)
+      return result.accessToken
+    },
+  })
 
   const isLoggedIn = computed(() => Boolean(accessToken.value))
   const homePath = computed(() => {
@@ -38,7 +54,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
 
   async function login(params: AdminLoginParams) {
     const result = await loginApi(params)
-    setAccessToken(result.access_token)
+    setAccessToken(result.accessToken)
     await setupAccess()
   }
 
@@ -54,16 +70,16 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   }
 
   async function setupAccess() {
-    const setupToken = accessToken.value
-    if (!setupToken) return false
+    if (!accessToken.value) return false
     if (accessSetupPromise) return accessSetupPromise
+    const setupSessionRevision = sessionRevision
 
     const nextSetupPromise = (async () => {
-      const [nextUserInfo, backendMenus] = await Promise.all([getUserInfoApi(setupToken), getBackendMenusApi()])
+      const [nextUserInfo, backendMenus] = await Promise.all([getUserInfoApi(), getBackendMenusApi()])
       const resolvedAccess = resolveAdminAccess(accessFileRoutes, backendMenus, nextUserInfo.roles)
 
-      // 请求期间可能已经退出登录或切换账号，旧结果不能覆盖新会话
-      if (accessToken.value !== setupToken) return false
+      // Access Token 续期仍属于同一会话；只有退出或切换账号时才丢弃旧结果。
+      if (!accessToken.value || sessionRevision !== setupSessionRevision) return false
 
       registerAdminAccessRoutes(router, resolvedAccess.accessibleRoutes)
       matchesAccessiblePath = createAdminRoutePathMatcher(resolvedAccess.accessibleRoutes)
@@ -89,7 +105,13 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   }
 
   async function logout(redirect = true) {
-    clearAccess()
+    try {
+      await logoutApi()
+    } catch {
+      // Local cleanup must not depend on the server being reachable.
+    } finally {
+      clearAccess()
+    }
 
     if (redirect) {
       await router.replace('/auth/login')
@@ -108,6 +130,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   }
 
   function clearAccess() {
+    sessionRevision += 1
     accessToken.value = null
     accessSetupPromise = void 0
     matchesAccessiblePath = () => false
@@ -122,13 +145,15 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     resetAdminAccessRoutes()
   }
 
-  function setAccessToken(token: string) {
-    if (accessToken.value !== token) {
+  function setAccessToken(token: string, sessionChanged = true) {
+    if (sessionChanged) {
+      sessionRevision += 1
       accessSetupPromise = void 0
       isAccessInitialized.value = false
     }
 
     accessToken.value = token
+    markAdminSessionActive()
     localStorage.setItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY, token)
   }
 

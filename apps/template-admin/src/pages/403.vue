@@ -4,6 +4,7 @@ import { useAdminAccessStore } from '@/stores/access'
 definePage({
   meta: {
     initial: true,
+    layout: false,
     source: 'fallback',
     ignoreAccess: true,
     hideInMenu: true,

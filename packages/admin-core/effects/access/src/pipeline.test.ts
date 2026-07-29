@@ -9,6 +9,7 @@ import { resolveAdminAccess } from './resolve'
 const component = { template: '<div />' }
 const forbiddenComponent = { template: '<div>403</div>' }
 const iframeComponent = { template: '<div>iframe</div>' }
+const externalComponent = { template: '<div>external</div>' }
 
 test('merges backend menu meta onto matching file routes only', () => {
   const routes: RouteRecordRaw[] = [
@@ -89,6 +90,25 @@ test('creates iframe routes and their structural parent without matching file pa
   expect(mergedRoutes[0]?.children?.[0]?.component).toBe(iframeComponent)
   expect(mergedRoutes[0]?.children?.[0]?.meta?.iframeSrc).toBe('https://doc.vben.pro')
   expect(mergedRoutes[0]?.children?.[0]?.meta?.menuGroup).toEqual({ label: '链接', order: 40 })
+})
+
+test('creates external link routes without matching file pages', () => {
+  const mergedRoutes = mergeBackendMenusWithFileRoutes(
+    [
+      {
+        id: 'external-docs',
+        path: '/external/docs',
+        meta: { externalLink: ' https://example.com/docs ', title: '外部文档' },
+      },
+    ],
+    [],
+    { externalComponent },
+  )
+
+  expect(mergedRoutes).toHaveLength(1)
+  expect(mergedRoutes[0]?.path).toBe('/external/docs')
+  expect(mergedRoutes[0]?.component).toBe(externalComponent)
+  expect(mergedRoutes[0]?.meta?.externalLink).toBe('https://example.com/docs')
 })
 
 test('applies authority filtering to generated iframe routes', () => {

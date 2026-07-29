@@ -5,9 +5,10 @@ import { eq, inArray } from 'drizzle-orm'
 import { Effect } from 'effect'
 
 import db from '@/db'
-import { systemRoles } from '@/db/schema'
+import { systemMenuRoles, systemMenus, systemRoles } from '@/db/schema'
 
 import { withLock } from '@/lib/infrastructure'
+import { MenuType } from '@/lib/enums'
 import { enforcerPromise } from '@/lib/services/casbin'
 
 /**
@@ -238,9 +239,11 @@ export async function saveRolePermissions(roleId: string, permissions: Array<[st
           } as SavePermissionsError
         }
 
-        // Build new permissions in array format / 构建新权限的数组格式
-        const oldPolicies = directPermissions
-        const newPolicies = permissions.map(([resource, action]) => [roleId.toString(), resource, action])
+        // 菜单节点托管的精确策略只能由菜单授权树修改，通用权限接口必须保留它们。
+        const managedPolicies = await getManagedMenuPolicies(roleId)
+        const managedPolicyKeys = new Set(managedPolicies.map((policy) => `${policy[1]}\u0000${policy[2]}`))
+        const oldPolicies = directPermissions.filter((policy) => !managedPolicyKeys.has(`${policy[1]}\u0000${policy[2]}`))
+        const newPolicies = permissions.filter(([resource, action]) => !managedPolicyKeys.has(`${resource}\u0000${action}`)).map(([resource, action]) => [roleId.toString(), resource, action])
 
         let removedCount = 0
         let addedCount = 0
@@ -279,7 +282,7 @@ export async function saveRolePermissions(roleId: string, permissions: Array<[st
           }
         }
 
-        return { success: true, added: addedCount, removed: removedCount, total: newPolicies.length } as SavePermissionsResult
+        return { success: true, added: addedCount, removed: removedCount, total: newPolicies.length + managedPolicies.length } as SavePermissionsResult
       }),
     ),
   )
@@ -308,4 +311,153 @@ export async function getRolePermissionsAndGroupings(roleId: string) {
   }))
 
   return { permissions, groupings }
+}
+
+export async function getRoleMenuPermissions(roleId: string) {
+  const [rows, links, inheritedRoleIds] = await Promise.all([getMenuRows(), db.select().from(systemMenuRoles), getInheritedRoleIds(roleId)])
+  const directIds = new Set(links.filter((link) => link.roleId === roleId).map((link) => link.menuId))
+  const inheritedIds = new Set(links.filter((link) => inheritedRoleIds.includes(link.roleId)).map((link) => link.menuId))
+  const admin = roleId === 'admin'
+  return { menus: buildRoleMenuTree(rows, admin ? new Set(rows.map((row) => row.id)) : directIds, admin ? new Set<string>() : inheritedIds, admin) }
+}
+
+export function saveRoleMenuPermissions(roleId: string, menuIds: string[]) {
+  return withLock(
+    `role:${roleId}:menu-permissions`,
+    Effect.tryPromise({
+      try: async () => {
+        if (roleId === 'admin') return { success: false as const, error: '内置管理员角色拥有全部权限，不能修改' }
+
+        const [rows, links, enforcer] = await Promise.all([getMenuRows(), db.select().from(systemMenuRoles).where(eq(systemMenuRoles.roleId, roleId)), enforcerPromise])
+        const byId = new Map(rows.map((row) => [row.id, row]))
+        const desiredIds = new Set(menuIds)
+        const unknownIds = [...desiredIds].filter((id) => !byId.has(id))
+        if (unknownIds.length > 0) return { success: false as const, error: '包含不存在的菜单节点' }
+
+        for (const id of desiredIds) {
+          let parentId = byId.get(id)?.parentId
+          while (parentId) {
+            desiredIds.add(parentId)
+            parentId = byId.get(parentId)?.parentId
+          }
+        }
+
+        const existingById = new Map(links.map((link) => [link.menuId, link]))
+        const removed = links.filter((link) => !desiredIds.has(link.menuId))
+        for (const link of removed) {
+          const menu = byId.get(link.menuId)
+          if (link.policyManaged && menu?.type === MenuType.BUTTON && menu.resource && menu.action) await enforcer.removePolicy(roleId, menu.resource, menu.action)
+        }
+        if (removed.length > 0)
+          await db.delete(systemMenuRoles).where(
+            inArray(
+              systemMenuRoles.menuId,
+              removed.map((link) => link.menuId),
+            ),
+          )
+
+        const added = [...desiredIds].filter((id) => !existingById.has(id))
+        const newLinks: Array<typeof systemMenuRoles.$inferInsert> = []
+        for (const id of added) {
+          const menu = byId.get(id)!
+          let policyManaged = false
+          if (menu.type === MenuType.BUTTON && menu.resource && menu.action) {
+            const exists = await enforcer.hasPolicy(roleId, menu.resource, menu.action)
+            if (!exists) {
+              await enforcer.addPolicy(roleId, menu.resource, menu.action)
+              policyManaged = true
+            }
+          }
+          newLinks.push({ menuId: id, roleId, policyManaged })
+        }
+        if (newLinks.length > 0) await db.insert(systemMenuRoles).values(newLinks)
+
+        return { success: true as const, data: await getRoleMenuPermissions(roleId) }
+      },
+      catch: (cause) => (cause instanceof Error ? cause : new Error('保存角色菜单权限失败')),
+    }),
+  )
+}
+
+async function getMenuRows() {
+  return db.select().from(systemMenus).orderBy(systemMenus.order, systemMenus.title)
+}
+
+async function getManagedMenuPolicies(roleId: string) {
+  const links = await db.select().from(systemMenuRoles).where(eq(systemMenuRoles.roleId, roleId))
+  const managedMenuIds = links.filter((link) => link.policyManaged).map((link) => link.menuId)
+  if (managedMenuIds.length === 0) return [] as string[][]
+  const menus = await db.select().from(systemMenus).where(inArray(systemMenus.id, managedMenuIds))
+  return menus
+    .filter((menu): menu is typeof menu & { action: string; resource: string } => menu.type === MenuType.BUTTON && Boolean(menu.resource && menu.action))
+    .map((menu) => [roleId, menu.resource, menu.action])
+}
+
+async function getInheritedRoleIds(roleId: string) {
+  const enforcer = await enforcerPromise
+  const policies = await enforcer.getGroupingPolicy()
+  const parents = new Map<string, string[]>()
+  for (const [child, parent] of policies) parents.set(child, [...(parents.get(child) ?? []), parent])
+  const result = new Set<string>()
+  const queue = [...(parents.get(roleId) ?? [])]
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    if (result.has(current)) continue
+    result.add(current)
+    queue.push(...(parents.get(current) ?? []))
+  }
+  return [...result]
+}
+
+type RoleMenuTreeNode = typeof systemMenus.$inferSelect & { children: RoleMenuTreeNode[] }
+
+type RoleMenuPermissionNode = {
+  action: null | string
+  children: RoleMenuPermissionNode[]
+  code: null | string
+  direct: boolean
+  disabled: boolean
+  granted: boolean
+  id: string
+  inherited: boolean
+  path: null | string
+  resource: null | string
+  title: string
+  type: typeof systemMenus.$inferSelect.type
+}
+
+function buildRoleMenuTree(rows: Awaited<ReturnType<typeof getMenuRows>>, directIds: ReadonlySet<string>, inheritedIds: ReadonlySet<string>, admin: boolean) {
+  type Node = RoleMenuTreeNode
+  const nodes = new Map<string, Node>()
+  for (const row of rows) nodes.set(row.id, { ...row, children: [] })
+  const roots: Node[] = []
+  for (const node of nodes.values()) {
+    const parent = node.parentId ? nodes.get(node.parentId) : undefined
+    if (parent) parent.children.push(node)
+    else roots.push(node)
+  }
+  const sort = (items: Node[]) => {
+    items.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
+    for (const item of items) sort(item.children)
+  }
+  sort(roots)
+  const mapNode = (node: Node): RoleMenuPermissionNode => {
+    const direct = directIds.has(node.id)
+    const inherited = !direct && inheritedIds.has(node.id)
+    return {
+      id: node.id,
+      type: node.type,
+      title: node.title,
+      path: node.path,
+      code: node.permissionCode,
+      resource: node.resource,
+      action: node.action,
+      direct: admin || direct,
+      inherited,
+      granted: admin || direct || inherited,
+      disabled: admin || inherited,
+      children: node.children.map(mapNode),
+    }
+  }
+  return roots.map(mapNode)
 }

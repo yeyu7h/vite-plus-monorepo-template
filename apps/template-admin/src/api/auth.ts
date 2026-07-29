@@ -1,4 +1,5 @@
 import { ADMIN_ACCESS_TOKEN_STORAGE_KEY } from '@/constants/storage'
+import type { AdminAccessPayload } from '@monorepo-admin-core/types'
 import { baseRequestClient, requestClient } from './request'
 
 export interface AdminLoginParams {
@@ -83,4 +84,8 @@ export async function getUserInfoApi(): Promise<AdminUserInfo> {
   } catch (error) {
     throw toError(error)
   }
+}
+
+export async function getAdminAccessApi(): Promise<AdminAccessPayload> {
+  return requestClient.get<AdminAccessPayload>('/admin/auth/access')
 }

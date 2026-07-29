@@ -22,7 +22,8 @@
     "pinia": "catalog:vue3",
     "tailwindcss": "catalog:",
     "vue": "catalog:vue3",
-    "vue-router": "catalog:vue3"
+    "vue-router": "catalog:vue3",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

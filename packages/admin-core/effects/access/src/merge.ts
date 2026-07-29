@@ -3,6 +3,8 @@ import type { RouteRecordRaw } from 'vue-router'
 import { resolveAdminRoutePath } from './path'
 
 export interface MergeBackendMenusOptions {
+  /** 为无需本地文件路由的外链菜单提供占位组件 */
+  externalComponent?: RouteRecordRaw['component']
   /** 为无需本地文件路由的 iframe 菜单提供占位组件 */
   iframeComponent?: RouteRecordRaw['component']
 }
@@ -31,20 +33,24 @@ function mergeBackendMenuWithFileRoute(
     return route ? [route] : []
   })
   const iframeSrc = menu.meta.iframeSrc?.trim()
+  const externalLink = menu.meta.externalLink?.trim()
   const canCreateIframeRoute = Boolean(iframeSrc && options.iframeComponent)
+  const canCreateExternalRoute = Boolean(externalLink && options.externalComponent)
 
-  // 普通菜单继续要求存在文件路由；仅 iframe 菜单和包含有效子路由的目录可以由后端配置生成
-  if (!fileRoute && !canCreateIframeRoute && !children?.length) {
+  // 普通菜单继续要求存在文件路由；iframe、外链和包含有效子路由的目录可以由后端配置生成
+  if (!fileRoute && !canCreateIframeRoute && !canCreateExternalRoute && !children?.length) {
     return void 0
   }
 
   const nextRoute = {
     ...fileRoute,
     ...(canCreateIframeRoute && !fileRoute?.component ? { component: options.iframeComponent } : {}),
+    ...(canCreateExternalRoute && !fileRoute?.component ? { component: options.externalComponent } : {}),
     meta: {
       ...fileRoute?.meta,
       ...menu.meta,
       ...(iframeSrc ? { iframeSrc } : {}),
+      ...(externalLink ? { externalLink } : {}),
       menuGroup,
       source: 'access',
     },

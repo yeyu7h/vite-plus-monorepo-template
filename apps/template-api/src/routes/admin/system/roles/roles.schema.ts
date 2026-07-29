@@ -61,3 +61,32 @@ export const savePermissionsResponseSchema = z.object({
   removed: z.number().int().meta({ description: '删除权限数量' }),
   total: z.number().int().meta({ description: '总权限数量' }),
 })
+
+const permissionCodeSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[a-z][a-z0-9_-]*(?::[a-z0-9_-]+)+$/)
+
+export const roleMenuPermissionItemSchema = z.object({
+  id: z.uuid().meta({ description: '菜单节点 ID' }),
+  type: z.enum(['DIRECTORY', 'PAGE', 'EXTERNAL', 'IFRAME', 'BUTTON']).meta({ description: '节点类型' }),
+  title: z.string().meta({ description: '节点名称' }),
+  path: z.string().nullable().meta({ description: '菜单路径' }),
+  code: permissionCodeSchema.nullable().meta({ description: '按钮权限字符' }),
+  resource: z.string().nullable().meta({ description: 'API 资源' }),
+  action: z.string().nullable().meta({ description: 'HTTP 方法' }),
+  granted: z.boolean().meta({ description: '当前角色是否有效拥有该权限' }),
+  direct: z.boolean().meta({ description: '是否由当前角色直接授权' }),
+  inherited: z.boolean().meta({ description: '是否由父角色继承授权' }),
+  disabled: z.boolean().meta({ description: '是否只读' }),
+  children: z.array(z.any()).meta({ description: '子节点' }),
+})
+
+export const roleMenuPermissionsResponseSchema = z.object({
+  menus: z.array(roleMenuPermissionItemSchema),
+})
+
+export const saveRoleMenuPermissionsSchema = z.object({
+  menuIds: z.array(z.uuid()).max(1000),
+})

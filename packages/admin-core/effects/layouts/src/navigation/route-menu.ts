@@ -108,14 +108,26 @@ export function buildAdminMenuGroups(routes: readonly AdminNavigationRouteRecord
   }
 
   return [...buckets.values()]
-    .map((bucket) => ({
-      children: buildAdminMenus(bucket.routes, { maxDepth }),
-      id: bucket.meta.id,
-      label: bucket.meta.label,
-      order: bucket.meta.order,
-    }))
+    .map((bucket) => {
+      const routePaths = new Set(bucket.routes.map((route) => route.path))
+      const children = removePlaceholderGroupRoots(buildAdminMenus(bucket.routes, { maxDepth }), routePaths)
+      return {
+        children,
+        id: bucket.meta.id,
+        label: bucket.meta.label,
+        order: bucket.meta.order ?? resolveMenuOrder(children),
+      }
+    })
     .filter((group) => group.children.length > 0)
     .sort(compareMenuGroups)
+}
+
+/**
+ * 分组已经承担顶层归类职责，因此不展示仅由 URL 路径片段推导出的虚拟根节点。
+ * 数据库中显式存在的目录路由仍会保留。
+ */
+function removePlaceholderGroupRoots(items: readonly AdminMenuItem[], routePaths: ReadonlySet<string>): AdminMenuItem[] {
+  return items.flatMap((item) => (routePaths.has(item.id) ? [item] : (item.children ?? [])))
 }
 
 /**
@@ -252,6 +264,10 @@ function compareMenuItems(a: AdminMenuItem, b: AdminMenuItem) {
  * @param b 菜单分组 B
  */
 function compareMenuGroups(a: AdminMenuGroup, b: AdminMenuGroup) {
+  const aUngrouped = !a.label
+  const bUngrouped = !b.label
+  if (aUngrouped !== bUngrouped) return aUngrouped ? 1 : -1
+
   return (a.order ?? 0) - (b.order ?? 0) || (a.label ?? '').localeCompare(b.label ?? '') || a.id.localeCompare(b.id)
 }
 

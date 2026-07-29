@@ -4,6 +4,7 @@ import type { systemRolesDetailResponseSchema } from './roles.schema'
 
 import type { SystemRolesRouteHandlerType } from './roles.types'
 import { eq } from 'drizzle-orm'
+import { Effect } from 'effect'
 import db from '@/db'
 import { systemRoles } from '@/db/schema'
 import { executeRefineQuery, RefineQueryParamsSchema } from '@/lib/core/refine-query'
@@ -17,8 +18,10 @@ import {
   enrichRolesWithParents,
   enrichRoleWithParents,
   getRoleById,
+  getRoleMenuPermissions,
   getRolePermissionsAndGroupings,
   roleExists,
+  saveRoleMenuPermissions,
   saveRolePermissions,
   setRoleParents,
   updateRoleParents,
@@ -174,4 +177,22 @@ export const savePermissions: SystemRolesRouteHandlerType<'savePermissions'> = a
   }
 
   return c.json(Resp.ok({ added: permResult.added, removed: permResult.removed, total: permResult.total }), HttpStatusCodes.OK)
+}
+
+export const getMenuPermissions: SystemRolesRouteHandlerType<'getMenuPermissions'> = async (c) => {
+  const { id } = c.req.valid('param')
+  if (!(await roleExists(id))) return c.json(Resp.fail('角色不存在'), HttpStatusCodes.NOT_FOUND)
+
+  return c.json(Resp.ok(await getRoleMenuPermissions(id)), HttpStatusCodes.OK)
+}
+
+export const saveMenuPermissions: SystemRolesRouteHandlerType<'saveMenuPermissions'> = async (c) => {
+  const { id } = c.req.valid('param')
+  const { menuIds } = c.req.valid('json')
+  if (!(await roleExists(id))) return c.json(Resp.fail('角色不存在'), HttpStatusCodes.NOT_FOUND)
+
+  const result = await Effect.runPromise(saveRoleMenuPermissions(id, menuIds))
+  if (!result.success) return c.json(Resp.fail(result.error), HttpStatusCodes.CONFLICT)
+
+  return c.json(Resp.ok(result.data), HttpStatusCodes.OK)
 }

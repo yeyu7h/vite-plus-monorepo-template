@@ -152,6 +152,7 @@ test('builds sorted menu groups from route meta', () => {
   const groups = buildAdminMenuGroups([
     { path: '/system/role', meta: { title: '角色管理', order: 20, menuGroup: { label: '系统管理', order: 20 } } },
     { path: '/dashboard/workbench', meta: { title: '工作台', order: 10, menuGroup: { label: '概览', order: 10 } } },
+    { path: '/system', meta: { title: '系统', menuGroup: { label: '系统管理', order: 20 } } },
     { path: '/system/settings', meta: { title: '系统设置', order: 30, menuGroup: { label: '系统管理', order: 20 } } },
     { path: '/docs/vite-plus', meta: { title: 'Vite+ Docs', menuGroup: { id: 'links', label: '链接', order: 30 } } },
     { path: '/hidden/audit', meta: { title: '审计日志', hideInMenu: true, menuGroup: '隐藏' } },
@@ -165,12 +166,20 @@ test('builds sorted menu groups from route meta', () => {
   })
   expect(groups[1]?.children[0]).toMatchObject({
     id: '/system',
-    title: 'System',
+    title: '系统',
     children: [
       { id: '/system/role', title: '角色管理' },
       { id: '/system/settings', title: '系统设置' },
     ],
   })
+  expect(groups[2]?.children).toMatchObject([
+    {
+      children: undefined,
+      id: '/docs/vite-plus',
+      path: '/docs/vite-plus',
+      title: 'Vite+ Docs',
+    },
+  ])
 })
 
 test('uses an unlabeled default group for routes without menuGroup', () => {
@@ -182,31 +191,31 @@ test('uses an unlabeled default group for routes without menuGroup', () => {
         {
           activePath: undefined,
           authority: undefined,
-          children: [
-            {
-              activePath: undefined,
-              authority: undefined,
-              children: undefined,
-              externalLink: undefined,
-              icon: undefined,
-              id: '/dashboard/workbench',
-              order: 0,
-              path: '/dashboard/workbench',
-              title: '工作台',
-            },
-          ],
+          children: undefined,
           externalLink: undefined,
           icon: undefined,
-          id: '/dashboard',
+          id: '/dashboard/workbench',
           order: 0,
           path: '/dashboard/workbench',
-          title: 'Dashboard',
+          title: '工作台',
         },
       ],
       id: 'default',
       label: undefined,
-      order: undefined,
+      order: 0,
     },
+  ])
+})
+
+test('always places the ungrouped section after named groups', () => {
+  const groups = buildAdminMenuGroups([
+    { path: '/dashboard', meta: { title: '概览', menuGroup: { label: '工作台', order: 10 } } },
+    { path: '/standalone', meta: { title: '独立菜单', order: 1 } },
+  ])
+
+  expect(groups.map((group) => ({ label: group.label, order: group.order }))).toEqual([
+    { label: '工作台', order: 10 },
+    { label: undefined, order: 1 },
   ])
 })
 
@@ -235,7 +244,7 @@ test('promotes grouped deep routes to the second item level by default', () => {
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   const groups = buildAdminMenuGroups([{ path: '/one/two/three', meta: { title: 'Three', menuGroup: 'Deep' } }])
 
-  expect(groups[0]?.children[0]?.children?.[0]).toMatchObject({
+  expect(groups[0]?.children[0]).toMatchObject({
     children: undefined,
     id: '/one/two/three',
     path: '/one/two/three',
@@ -246,6 +255,7 @@ test('promotes grouped deep routes to the second item level by default', () => {
 test('marks current grouped menu items active without mutating group state', () => {
   const groups = markActiveAdminMenuGroups(
     buildAdminMenuGroups([
+      { path: '/system', meta: { title: '系统', menuGroup: '系统管理' } },
       { path: '/system/user', meta: { title: '用户管理', menuGroup: '系统管理' } },
       { path: '/system/role', meta: { title: '角色管理', menuGroup: '系统管理' } },
     ]),

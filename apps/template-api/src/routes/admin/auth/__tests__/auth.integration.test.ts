@@ -319,6 +319,28 @@ describe('auth routes', () => {
     })
   })
 
+  // ===== GET /auth/access =====
+  describe('GET /auth/access', () => {
+    it('should return persisted menus and effective button permission codes', async () => {
+      const { accessToken } = await loginAs(ADMIN_CREDENTIALS)
+      const response = await client.auth.access.$get({}, { headers: { Authorization: `Bearer ${accessToken}` } })
+
+      expect(response.status).toBe(HttpStatusCodes.OK)
+      const json = await response.json()
+      const data = (json as any).data
+
+      expect(Array.isArray(data.menus)).toBe(true)
+      expect(Array.isArray(data.permissionCodes)).toBe(true)
+      expect(JSON.stringify(data.menus)).not.toContain('"type":"BUTTON"')
+      expect(data.permissionCodes).toContain('system:menu:create')
+    })
+
+    it('should return 401 without JWT', async () => {
+      const response = await client.auth.access.$get({})
+      expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED)
+    })
+  })
+
   // ===== GET /auth/permissions =====
   describe('GET /auth/permissions', () => {
     it('should return permissions for admin user', async () => {

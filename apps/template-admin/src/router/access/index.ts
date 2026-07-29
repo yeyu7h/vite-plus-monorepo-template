@@ -21,7 +21,8 @@ export { registerAdminAccessRoutes, resetAdminAccessRoutes } from './register'
 
 const forbiddenComponent = () => import('@/pages/403.vue')
 const iframeComponent = { name: 'IFrameView', render: () => null }
+const externalComponent = { name: 'ExternalLinkView', render: () => null }
 
 export function resolveAdminAccess(accessFileRoutes: readonly RouteRecordRaw[], backendMenus: readonly AdminBackendMenu[], roles: readonly string[]) {
-  return resolveAdminAccessBase(accessFileRoutes, backendMenus, roles, { forbiddenComponent, iframeComponent })
+  return resolveAdminAccessBase(accessFileRoutes, backendMenus, roles, { externalComponent, forbiddenComponent, iframeComponent })
 }

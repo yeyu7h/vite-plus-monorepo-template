@@ -71,6 +71,15 @@ test('maps template-api user fields to the existing admin user model', async () 
   expect(mocks.requestGet).toHaveBeenCalledWith('/admin/auth/userinfo')
 })
 
+test('loads persisted menus and permission codes from the auth access endpoint', async () => {
+  const payload = { menus: [], permissionCodes: ['system:menu:create'] }
+  mocks.requestGet.mockResolvedValue(payload)
+  const { getAdminAccessApi } = await import('./auth')
+
+  await expect(getAdminAccessApi()).resolves.toEqual(payload)
+  expect(mocks.requestGet).toHaveBeenCalledWith('/admin/auth/access')
+})
+
 test('exposes template-api error messages as Errors', async () => {
   mocks.authRequest.mockRejectedValue({ response: { data: { message: '用户名或密码错误' } } })
   const { loginApi } = await import('./auth')

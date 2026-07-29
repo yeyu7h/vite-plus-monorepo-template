@@ -93,6 +93,26 @@ export const getIdentity = createRoute({
   },
 })
 
+/** Get current user's menu access payload / 获取当前用户菜单访问数据 */
+export const getAccess = createRoute({
+  path: `${routePrefix}/access`,
+  method: 'get',
+  tags,
+  middleware: [jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' })],
+  summary: '管理端获取当前用户菜单和按钮权限',
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      RefineResultSchema(
+        z.object({
+          menus: z.array(z.any()).meta({ description: '后端菜单树' }),
+          permissionCodes: z.array(z.string()).meta({ description: '按钮权限码' }),
+        }),
+      ),
+      '获取成功',
+    ),
+  },
+})
+
 /** Get user permissions / 获取用户权限 */
 export const getPermissions = createRoute({
   path: `${routePrefix}/permissions`,

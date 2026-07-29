@@ -1456,4 +1456,64 @@ describe('system role routes', () => {
       }
     })
   })
+
+  describe('button permission codes', () => {
+    it('assigns button permissions without replacing unrelated role policies', async () => {
+      const roleId = `${testRoleId}_button_permissions`
+      await client.system.roles.$post(
+        {
+          json: {
+            ...testRole,
+            id: roleId,
+            name: '按钮权限测试角色',
+          },
+        },
+        { headers: getAuthHeaders(adminToken) },
+      )
+
+      const initialResponse = await client.system.roles[':id']['menu-permissions'].$get({ param: { id: roleId } }, { headers: getAuthHeaders(adminToken) })
+      expect(initialResponse.status).toBe(HttpStatusCodes.OK)
+      if (initialResponse.status !== HttpStatusCodes.OK) return
+
+      const initial = await initialResponse.json()
+      const flattenMenus = (
+        items: Array<{ children: any[]; id: string; code: string | null; path: string | null }>,
+      ): Array<{ children: any[]; id: string; code: string | null; path: string | null }> => items.flatMap((item) => [item, ...flattenMenus(item.children)])
+      const button = flattenMenus(initial.data.menus).find((menu) => menu.code === 'system:menu:create')
+      expect(button).toBeDefined()
+
+      const saveResponse = await client.system.roles[':id']['menu-permissions'].$put(
+        {
+          param: { id: roleId },
+          json: { menuIds: [button!.id] },
+        },
+        { headers: getAuthHeaders(adminToken) },
+      )
+      expect(saveResponse.status).toBe(HttpStatusCodes.OK)
+      if (saveResponse.status !== HttpStatusCodes.OK) return
+
+      const saved = await saveResponse.json()
+      expect(flattenMenus(saved.data.menus).find((menu) => menu.code === 'system:menu:create')).toMatchObject({
+        direct: true,
+        granted: true,
+      })
+      expect(flattenMenus(saved.data.menus).find((menu) => menu.path === '/system/menu')).toMatchObject({
+        direct: true,
+        granted: true,
+      })
+    })
+
+    it('returns the built-in administrator menu tree as read-only full access', async () => {
+      const response = await client.system.roles[':id']['menu-permissions'].$get({ param: { id: 'admin' } }, { headers: getAuthHeaders(adminToken) })
+      expect(response.status).toBe(HttpStatusCodes.OK)
+      if (response.status !== HttpStatusCodes.OK) return
+
+      const data = await response.json()
+      const flattenMenus = (items: Array<{ children: any[]; disabled: boolean; granted: boolean }>): Array<{ children: any[]; disabled: boolean; granted: boolean }> =>
+        items.flatMap((item) => [item, ...flattenMenus(item.children)])
+      const menus = flattenMenus(data.data.menus)
+      expect(menus.length).toBeGreaterThan(0)
+      expect(menus.every((menu) => menu.granted && menu.disabled)).toBe(true)
+    })
+  })
 })

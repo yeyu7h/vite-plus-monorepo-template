@@ -96,3 +96,20 @@ export const ParamValueType = {
 
 /** Parameter value type / 参数值类型 */
 export type ParamValueTypeType = (typeof ParamValueType)[keyof typeof ParamValueType]
+
+/** System menu node type / 系统菜单节点类型 */
+export const MenuType = {
+  /** Directory node / 目录 */
+  DIRECTORY: 'DIRECTORY',
+  /** Local file route / 本地页面 */
+  PAGE: 'PAGE',
+  /** External link / 外链 */
+  EXTERNAL: 'EXTERNAL',
+  /** Embedded iframe page / 内嵌页面 */
+  IFRAME: 'IFRAME',
+  /** Page action permission / 按钮权限 */
+  BUTTON: 'BUTTON',
+} as const
+
+/** System menu node type / 系统菜单节点类型 */
+export type MenuTypeType = (typeof MenuType)[keyof typeof MenuType]

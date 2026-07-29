@@ -2,6 +2,8 @@ import type { AdminContentMode } from './content'
 
 export type AdminMenuAuthority = string[]
 
+export type AdminMenuType = 'DIRECTORY' | 'PAGE' | 'EXTERNAL' | 'IFRAME' | 'BUTTON'
+
 export interface AdminMenuImageIcon {
   /** 暗色主题下展示的图标地址 */
   dark?: string
@@ -102,4 +104,9 @@ export interface AdminBackendMenu {
   meta: AdminBackendMenuMeta
   /** 顶层使用绝对路径 子级可使用相对父级的路径 外链菜单除外 */
   path: string
+}
+
+export interface AdminAccessPayload {
+  menus: AdminBackendMenu[]
+  permissionCodes: string[]
 }

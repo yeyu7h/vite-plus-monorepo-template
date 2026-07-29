@@ -25,6 +25,12 @@ export const authorize = createAdminMiddleware(async (c, next) => {
   // Get user roles from JWT payload (type auto-inferred) / 从 JWT 载荷中获取用户角色（类型自动推断）
   const { roles } = c.get('jwtPayload')
 
+  // 内置管理员固定拥有全部后台权限，与菜单授权树中的超级管理员语义一致。
+  if (roles.includes('admin')) {
+    await next()
+    return
+  }
+
   // Strip API prefix to get the actual request path / 去除 API 前缀，获取实际请求路径
   const path = stripPrefix(c.req.path, c.get('tierBasePath') ?? '')
 

@@ -9,6 +9,8 @@ import {
   savePermissionsParamsSchema,
   savePermissionsResponseSchema,
   savePermissionsSchema,
+  roleMenuPermissionsResponseSchema,
+  saveRoleMenuPermissionsSchema,
   systemRolesCreateSchema,
   systemRolesDetailResponseSchema,
   systemRolesIdParamsSchema,
@@ -130,5 +132,36 @@ export const savePermissions = createRoute({
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '参数错误'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(respErrSchema, '保存权限失败'),
+  },
+})
+
+export const getMenuPermissions = createRoute({
+  tags,
+  summary: '获取角色的菜单权限树',
+  method: 'get',
+  path: `${routePrefix}/{id}/menu-permissions`,
+  request: {
+    params: systemRolesIdParamsSchema,
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(roleMenuPermissionsResponseSchema), '获取成功'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
+  },
+})
+
+export const saveMenuPermissions = createRoute({
+  tags,
+  summary: '保存角色的菜单权限',
+  method: 'put',
+  path: `${routePrefix}/{id}/menu-permissions`,
+  request: {
+    params: systemRolesIdParamsSchema,
+    body: jsonContentRequired(saveRoleMenuPermissionsSchema, '菜单节点 ID'),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(roleMenuPermissionsResponseSchema), '保存成功'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
+    [HttpStatusCodes.CONFLICT]: jsonContent(respErrSchema, '包含不存在的权限字符'),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, '参数验证失败'),
   },
 })

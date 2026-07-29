@@ -1,4 +1,4 @@
-import type { AdminBackendMenu, AdminMenuGroup, AdminNavigationRouteRecord } from '@monorepo-admin-core/types'
+import type { AdminAccessPayload, AdminMenuGroup, AdminNavigationRouteRecord } from '@monorepo-admin-core/types'
 import type { RouteRecordRaw } from 'vue-router'
 import type { AdminLoginParams, AdminUserInfo } from '@/api/auth'
 import { createPinia, setActivePinia } from 'pinia'
@@ -6,7 +6,7 @@ import { beforeEach, expect, test, vi } from 'vite-plus/test'
 import { useAdminAccessStore } from './access'
 
 const mocks = vi.hoisted(() => ({
-  getBackendMenusApi: vi.fn<() => Promise<AdminBackendMenu[]>>(),
+  getAdminAccessApi: vi.fn<() => Promise<AdminAccessPayload>>(),
   getUserInfoApi: vi.fn<(accessToken: string) => Promise<AdminUserInfo>>(),
   loginApi: vi.fn<(params: AdminLoginParams) => Promise<{ accessToken: string }>>(),
   logoutApi: vi.fn<() => Promise<void>>(),
@@ -34,14 +34,11 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock('@/api/auth', () => ({
+  getAdminAccessApi: mocks.getAdminAccessApi,
   getUserInfoApi: mocks.getUserInfoApi,
   loginApi: mocks.loginApi,
   logoutApi: mocks.logoutApi,
   refreshTokenApi: mocks.refreshTokenApi,
-}))
-
-vi.mock('@/api/mock', () => ({
-  getBackendMenusApi: mocks.getBackendMenusApi,
 }))
 
 vi.mock('@/api/request', () => ({
@@ -100,7 +97,7 @@ beforeEach(() => {
   mocks.logoutApi.mockResolvedValue()
   mocks.refreshTokenApi.mockResolvedValue({ accessToken: 'mock-token:refreshed' })
   mocks.getUserInfoApi.mockResolvedValue(userInfo)
-  mocks.getBackendMenusApi.mockResolvedValue([])
+  mocks.getAdminAccessApi.mockResolvedValue({ menus: [], permissionCodes: ['system:menu:create'] })
   mocks.createAdminRoutePathMatcher.mockReturnValue(() => false)
   mocks.resolveAdminAccess.mockReturnValue({
     accessibleRoutes: [],
@@ -117,12 +114,13 @@ test('treats an empty access result as initialized', async () => {
 
   expect(store.isAccessInitialized).toBe(true)
   expect(mocks.getUserInfoApi).toHaveBeenCalledOnce()
-  expect(mocks.getBackendMenusApi).toHaveBeenCalledOnce()
+  expect(mocks.getAdminAccessApi).toHaveBeenCalledOnce()
+  expect(store.hasPermission('system:menu:create')).toBe(true)
   expect(mocks.registerAdminAccessRoutes).toHaveBeenCalledWith(expect.anything(), [])
 
   await expect(store.restoreAccess()).resolves.toBe(false)
   expect(mocks.getUserInfoApi).toHaveBeenCalledOnce()
-  expect(mocks.getBackendMenusApi).toHaveBeenCalledOnce()
+  expect(mocks.getAdminAccessApi).toHaveBeenCalledOnce()
 })
 
 test('reuses an in-flight access setup across concurrent restores', async () => {
@@ -140,7 +138,7 @@ test('reuses an in-flight access setup across concurrent restores', async () => 
   const secondRestore = store.restoreAccess()
 
   expect(mocks.getUserInfoApi).toHaveBeenCalledOnce()
-  expect(mocks.getBackendMenusApi).toHaveBeenCalledOnce()
+  expect(mocks.getAdminAccessApi).toHaveBeenCalledOnce()
 
   resolveUserInfo?.(userInfo)
 
@@ -183,6 +181,7 @@ test('cleans up the local session even when server logout fails', async () => {
   mocks.logoutApi.mockRejectedValue(new Error('network error'))
 
   await expect(store.logout(false)).resolves.toBeUndefined()
+  expect(store.hasPermission('system:menu:create')).toBe(false)
   expect(storage.has('template-admin:access-token')).toBe(false)
   expect(sessionStorageValues.has('template-admin:open-tabs')).toBe(false)
   expect(mocks.resetAdminAccessRoutes).toHaveBeenCalled()

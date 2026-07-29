@@ -13,6 +13,7 @@ import cap from '@/lib/services/cap'
 import { loginLogger } from '@/lib/services/logger'
 import { getIPAddress } from '@/services/ip'
 import { Resp, tryit } from '@/utils'
+import { getAdminAccessData } from '@/routes/admin/system/menus/menus.helpers'
 
 import { generateTokens, getIdentityById, getPermissionsByRoles, logout as logoutUtil, refreshAccessToken, validateCaptcha, validateLogin } from './auth.helpers'
 
@@ -107,6 +108,13 @@ export const getIdentity: AuthRouteHandlerType<'getIdentity'> = async (c) => {
   }
 
   return c.json(Resp.ok(identity), HttpStatusCodes.OK)
+}
+
+/** Get menu and button permissions / 获取菜单与按钮权限 */
+export const getAccess: AuthRouteHandlerType<'getAccess'> = async (c) => {
+  const { roles } = c.get('jwtPayload')
+  const access = await getAdminAccessData(roles ?? [])
+  return c.json(Resp.ok(access), HttpStatusCodes.OK)
 }
 
 /** Get user permissions / 获取用户权限 */

@@ -6,9 +6,8 @@ import type { AdminLoginParams } from '@/api/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getUserInfoApi, loginApi, logoutApi, refreshTokenApi } from '@/api/auth'
+import { getAdminAccessApi, getUserInfoApi, loginApi, logoutApi, refreshTokenApi } from '@/api/auth'
 import { initializeAdminAuthentication, markAdminSessionActive } from '@/api/request'
-import { getBackendMenusApi } from '@/api/mock'
 import { accessFileRoutes } from '@/router'
 import { createAdminRoutePathMatcher, DEFAULT_ADMIN_HOME_PATH, FORBIDDEN_ROUTE_PATH, normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from '@/router/access'
 import { ADMIN_ACCESS_TOKEN_STORAGE_KEY, ADMIN_TAB_STORAGE_KEY } from '../constants/storage'
@@ -23,6 +22,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   const isAccessInitialized = ref(false)
   const menuGroups = ref<AdminMenuGroup[]>([])
   const navigationRoutes = ref<AdminNavigationRouteRecord[]>([])
+  const permissionCodes = ref<string[]>([])
   const routePaths = ref<string[]>([])
   let accessSetupPromise: Promise<boolean> | undefined
   let matchesAccessiblePath: (path: string) => boolean = () => false
@@ -75,8 +75,8 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     const setupSessionRevision = sessionRevision
 
     const nextSetupPromise = (async () => {
-      const [nextUserInfo, backendMenus] = await Promise.all([getUserInfoApi(), getBackendMenusApi()])
-      const resolvedAccess = resolveAdminAccess(accessFileRoutes, backendMenus, nextUserInfo.roles)
+      const [nextUserInfo, access] = await Promise.all([getUserInfoApi(), getAdminAccessApi()])
+      const resolvedAccess = resolveAdminAccess(accessFileRoutes, access.menus, nextUserInfo.roles)
 
       // Access Token 续期仍属于同一会话；只有退出或切换账号时才丢弃旧结果。
       if (!accessToken.value || sessionRevision !== setupSessionRevision) return false
@@ -87,6 +87,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
       accessibleRoutes.value = resolvedAccess.accessibleRoutes
       menuGroups.value = resolvedAccess.menuGroups
       navigationRoutes.value = resolvedAccess.navigationRoutes
+      permissionCodes.value = access.permissionCodes
       routePaths.value = [...resolvedAccess.routePathSet]
       isAccessInitialized.value = true
 
@@ -122,6 +123,10 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     return matchesAccessiblePath(normalizeAdminPath(path))
   }
 
+  function hasPermission(code: string) {
+    return permissionCodes.value.includes(code)
+  }
+
   function resolveAccessiblePath(path: string) {
     if (canAccessPath(path)) return path
     if (canAccessPath(homePath.value)) return homePath.value
@@ -138,6 +143,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     isAccessInitialized.value = false
     menuGroups.value = []
     navigationRoutes.value = []
+    permissionCodes.value = []
     routePaths.value = []
     tabStore.reset({ storageKey: ADMIN_TAB_STORAGE_KEY })
     userStore.clearUser()
@@ -159,6 +165,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
 
   return {
     canAccessPath,
+    hasPermission,
     homePath,
     isAccessInitialized,
     isLoggedIn,
@@ -166,6 +173,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     logout,
     menuGroups,
     navigationRoutes,
+    permissionCodes,
     restoreAccess,
     resolveAccessiblePath,
   }

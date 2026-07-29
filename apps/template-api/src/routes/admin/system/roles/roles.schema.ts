@@ -6,7 +6,9 @@ import { permissionItemSchema } from '@/lib/schemas/common-fields'
 
 /** Patch Schema / 更新 Schema */
 export const systemRolesPatchSchema = insertSystemRolesSchema
+  .omit({ id: true })
   .extend({
+    menuIds: z.array(z.uuid()).max(1000).optional().describe('菜单节点 ID 列表'),
     parentRoleIds: z.array(roleIdField).optional().describe('上级角色ID列表'),
   })
   .partial()
@@ -18,6 +20,7 @@ export const systemRolesDetailResponseSchema = selectSystemRolesSchema.extend({
 
 /** Create Schema (including parent role IDs) / 创建 Schema（包含上级角色ID） */
 export const systemRolesCreateSchema = insertSystemRolesSchema.extend({
+  menuIds: z.array(z.uuid()).max(1000).optional().describe('菜单节点 ID 列表'),
   parentRoleIds: z.array(roleIdField).optional().describe('上级角色ID列表'),
 })
 

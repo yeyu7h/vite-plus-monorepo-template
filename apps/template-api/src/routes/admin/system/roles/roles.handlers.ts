@@ -14,7 +14,7 @@ import { HttpStatusPhrases } from '@monorepo/server-core'
 import { Resp } from '@/utils'
 
 import {
-  cleanRoleInheritance,
+  cleanRolePolicies,
   enrichRolesWithParents,
   enrichRoleWithParents,
   getRoleById,
@@ -25,6 +25,7 @@ import {
   saveRolePermissions,
   setRoleParents,
   updateRoleParents,
+  validateMenuIdsExist,
   validateParentRolesExist,
 } from './roles.helpers'
 
@@ -56,12 +57,18 @@ export const create: SystemRolesRouteHandlerType<'create'> = async (c) => {
   const body = c.req.valid('json')
   const { sub } = c.get('jwtPayload')
 
-  const { parentRoleIds, ...roleData } = body
+  const { menuIds, parentRoleIds, ...roleData } = body
 
   if (parentRoleIds && parentRoleIds.length > 0) {
     const invalidIds = await validateParentRolesExist(parentRoleIds)
     if (invalidIds) {
       return c.json(Resp.fail(`上级角色不存在: ${invalidIds.join(', ')}`), HttpStatusCodes.BAD_REQUEST)
+    }
+  }
+  if (menuIds !== undefined) {
+    const invalidIds = await validateMenuIdsExist(menuIds)
+    if (invalidIds) {
+      return c.json(Resp.fail('包含不存在的菜单节点'), HttpStatusCodes.CONFLICT)
     }
   }
 
@@ -75,6 +82,20 @@ export const create: SystemRolesRouteHandlerType<'create'> = async (c) => {
 
   if (parentRoleIds && parentRoleIds.length > 0) {
     await setRoleParents(role.id, parentRoleIds)
+  }
+  if (menuIds !== undefined) {
+    try {
+      const result = await Effect.runPromise(saveRoleMenuPermissions(role.id, menuIds))
+      if (!result.success) {
+        await cleanRolePolicies(role.id)
+        await db.delete(systemRoles).where(eq(systemRoles.id, role.id))
+        return c.json(Resp.fail(result.error), HttpStatusCodes.CONFLICT)
+      }
+    } catch (error) {
+      await cleanRolePolicies(role.id)
+      await db.delete(systemRoles).where(eq(systemRoles.id, role.id))
+      throw error
+    }
   }
 
   const roleWithParents = await enrichRoleWithParents(role)
@@ -101,7 +122,21 @@ export const update: SystemRolesRouteHandlerType<'update'> = async (c) => {
   const body = c.req.valid('json')
   const { sub } = c.get('jwtPayload')
 
-  const { parentRoleIds, ...roleData } = body
+  if (!(await roleExists(id))) {
+    return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
+  }
+
+  const { menuIds, parentRoleIds, ...roleData } = body
+
+  if (menuIds !== undefined) {
+    if (id === 'admin') {
+      return c.json(Resp.fail('内置管理员角色拥有全部权限，不能修改'), HttpStatusCodes.BAD_REQUEST)
+    }
+    const invalidIds = await validateMenuIdsExist(menuIds)
+    if (invalidIds) {
+      return c.json(Resp.fail('包含不存在的菜单节点'), HttpStatusCodes.CONFLICT)
+    }
+  }
 
   if (parentRoleIds !== undefined) {
     const result = await updateRoleParents(id, parentRoleIds)
@@ -127,6 +162,12 @@ export const update: SystemRolesRouteHandlerType<'update'> = async (c) => {
   if (!updated) {
     return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
   }
+  if (menuIds !== undefined) {
+    const result = await Effect.runPromise(saveRoleMenuPermissions(id, menuIds))
+    if (!result.success) {
+      return c.json(Resp.fail(result.error), HttpStatusCodes.CONFLICT)
+    }
+  }
 
   const roleWithParents = await enrichRoleWithParents(updated)
 
@@ -136,7 +177,15 @@ export const update: SystemRolesRouteHandlerType<'update'> = async (c) => {
 export const remove: SystemRolesRouteHandlerType<'remove'> = async (c) => {
   const { id } = c.req.valid('param')
 
-  await cleanRoleInheritance(id)
+  if (!(await roleExists(id))) {
+    return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
+  }
+
+  if (id === 'admin') {
+    return c.json(Resp.fail('内置管理员角色不可删除'), HttpStatusCodes.BAD_REQUEST)
+  }
+
+  await cleanRolePolicies(id)
 
   const [deleted] = await db.delete(systemRoles).where(eq(systemRoles.id, id)).returning({ id: systemRoles.id })
 

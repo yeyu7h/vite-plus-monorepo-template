@@ -4,10 +4,11 @@ import { testClient } from 'hono/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test'
 
 import db from '@/db'
-import { casbinRule, systemRoles, systemUserRoles } from '@/db/schema'
+import { casbinRule, systemMenuRoles, systemMenus, systemRoles, systemUserRoles, systemUsers } from '@/db/schema'
 import env from '@/env'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { Status } from '@/lib/enums'
+import { enforcerPromise } from '@/lib/services/casbin'
 import { authorize } from '@/middlewares/authorize'
 import systemRolesRouter from '@/routes/admin/system/roles/roles.index'
 import { getAdminToken, getAuthHeaders, getUserToken } from '~/tests/auth-utils'
@@ -403,6 +404,46 @@ describe('system role routes', () => {
       }
     })
 
+    it('should create a role and its menu permissions in one request', async () => {
+      const newRoleId = `${testRoleId}_create_menus`
+      const [menu] = await db.select({ id: systemMenus.id }).from(systemMenus).limit(1)
+      expect(menu).toBeDefined()
+      if (!menu) throw new Error('a system menu should exist')
+
+      const response = await client.system.roles.$post(
+        {
+          json: {
+            ...testRole,
+            id: newRoleId,
+            menuIds: [menu.id],
+          },
+        },
+        { headers: getAuthHeaders(adminToken) },
+      )
+
+      expect(response.status).toBe(HttpStatusCodes.CREATED)
+      const links = await db.select().from(systemMenuRoles).where(eq(systemMenuRoles.roleId, newRoleId))
+      expect(links.some((link) => link.menuId === menu.id)).toBe(true)
+    })
+
+    it('should reject unknown menu ids before creating the role', async () => {
+      const newRoleId = `${testRoleId}_invalid_menus`
+      const response = await client.system.roles.$post(
+        {
+          json: {
+            ...testRole,
+            id: newRoleId,
+            menuIds: ['00000000-0000-0000-0000-000000000000'],
+          },
+        },
+        { headers: getAuthHeaders(adminToken) },
+      )
+
+      expect(response.status).toBe(HttpStatusCodes.CONFLICT)
+      const [role] = await db.select().from(systemRoles).where(eq(systemRoles.id, newRoleId))
+      expect(role).toBeUndefined()
+    })
+
     it('should create a new role with parent roles', async () => {
       // Create parent roles first / 先创建父角色
       const parentRole1Id = `${testRoleId}_parent1`
@@ -673,12 +714,17 @@ describe('system role routes', () => {
     })
 
     it('should update role fields', async () => {
+      const [menu] = await db.select({ id: systemMenus.id }).from(systemMenus).limit(1)
+      expect(menu).toBeDefined()
+      if (!menu) throw new Error('a system menu should exist')
+
       const response = await client.system.roles[':id'].$patch(
         {
           param: { id: roleId },
           json: {
             name: '更新后的角色名称',
             description: '更新后的角色描述',
+            menuIds: [menu.id],
             status: Status.DISABLED,
           },
         },
@@ -694,6 +740,9 @@ describe('system role routes', () => {
         expect(json.data.description).toBe('更新后的角色描述')
         expect(json.data.status).toBe(Status.DISABLED)
       }
+
+      const links = await db.select().from(systemMenuRoles).where(eq(systemMenuRoles.roleId, roleId))
+      expect(links.some((link) => link.menuId === menu.id)).toBe(true)
     })
 
     it('should only update allowed fields', async () => {
@@ -717,6 +766,25 @@ describe('system role routes', () => {
         expect(json.data.name).toBe('测试名称')
         expect(json.data.description).toBe('测试描述')
       }
+    })
+
+    it('should ignore attempts to update the immutable role id', async () => {
+      const nextRoleId = `${roleId}_renamed`
+      const response = await client.system.roles[':id'].$patch(
+        {
+          param: { id: roleId },
+          json: { id: nextRoleId },
+        } as never,
+        { headers: getAuthHeaders(adminToken) },
+      )
+
+      expect(response.status).toBe(HttpStatusCodes.OK)
+
+      const originalResponse = await client.system.roles[':id'].$get({ param: { id: roleId } }, { headers: getAuthHeaders(adminToken) })
+      const renamedResponse = await client.system.roles[':id'].$get({ param: { id: nextRoleId } }, { headers: getAuthHeaders(adminToken) })
+
+      expect(originalResponse.status).toBe(HttpStatusCodes.OK)
+      expect(renamedResponse.status).toBe(HttpStatusCodes.NOT_FOUND)
     })
 
     it('should return 404 for non-existent role', async () => {
@@ -945,9 +1013,20 @@ describe('system role routes', () => {
       expect(response.status).toBe(HttpStatusCodes.NOT_FOUND)
     })
 
-    it('should delete role successfully', async () => {
+    it('should reject deletion of the built-in admin role', async () => {
+      const response = await client.system.roles[':id'].$delete({ param: { id: builtInRoleId } }, { headers: getAuthHeaders(adminToken) })
+
+      expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST)
+      if (response.status === HttpStatusCodes.BAD_REQUEST) {
+        const json = await response.json()
+        expect(json.message).toContain('内置管理员角色不可删除')
+      }
+    })
+
+    it('should delete a role and clean its assignments and Casbin policies', async () => {
       // Create a role first for testing delete functionality / 先创建一个角色用于测试删除功能
       const deleteTestRoleId = `${testRoleId}_delete`
+      const childRoleId = `${testRoleId}_delete_child`
       const createResponse = await client.system.roles.$post(
         {
           json: {
@@ -959,6 +1038,27 @@ describe('system role routes', () => {
       )
 
       expect(createResponse.status).toBe(HttpStatusCodes.CREATED)
+
+      const childCreateResponse = await client.system.roles.$post(
+        {
+          json: {
+            ...testRole,
+            id: childRoleId,
+            parentRoleIds: [deleteTestRoleId],
+          },
+        },
+        { headers: getAuthHeaders(adminToken) },
+      )
+      expect(childCreateResponse.status).toBe(HttpStatusCodes.CREATED)
+
+      const [user] = await db.select({ id: systemUsers.id }).from(systemUsers).limit(1)
+      expect(user).toBeDefined()
+      if (!user) throw new Error('a system user should exist')
+      await db.insert(systemUserRoles).values({ userId: user.id, roleId: deleteTestRoleId })
+
+      const enforcer = await enforcerPromise
+      await enforcer.addPolicy(deleteTestRoleId, '/test/deleted-role', 'GET')
+      await enforcer.addGroupingPolicy(deleteTestRoleId, 'admin')
 
       // Test delete functionality / 测试删除功能
       const deleteResponse = await client.system.roles[':id'].$delete({ param: { id: deleteTestRoleId } }, { headers: getAuthHeaders(adminToken) })
@@ -975,6 +1075,15 @@ describe('system role routes', () => {
       const verifyResponse = await client.system.roles[':id'].$get({ param: { id: deleteTestRoleId } }, { headers: getAuthHeaders(adminToken) })
 
       expect(verifyResponse.status).toBe(HttpStatusCodes.NOT_FOUND)
+
+      const remainingAssignments = await db.select().from(systemUserRoles).where(eq(systemUserRoles.roleId, deleteTestRoleId))
+      const remainingPolicies = await db
+        .select()
+        .from(casbinRule)
+        .where(or(and(eq(casbinRule.ptype, 'p'), eq(casbinRule.v0, deleteTestRoleId)), and(eq(casbinRule.ptype, 'g'), or(eq(casbinRule.v0, deleteTestRoleId), eq(casbinRule.v1, deleteTestRoleId)))))
+
+      expect(remainingAssignments).toHaveLength(0)
+      expect(remainingPolicies).toHaveLength(0)
     })
   })
 

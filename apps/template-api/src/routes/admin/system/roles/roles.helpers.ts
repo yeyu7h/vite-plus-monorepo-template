@@ -134,12 +134,15 @@ export async function enrichRolesWithParents(roles: Role[]): Promise<RoleWithPar
 }
 
 /**
- * Clean up all inheritance relationships for a role (used when deleting a role)
+ * Clean up all permission and inheritance policies for a role (used when deleting a role)
  * @param roleId Role ID / 角色ID
- * 清理角色的所有继承关系（删除角色时使用）
+ * 清理角色的所有权限和继承策略（删除角色时使用）
  */
-export async function cleanRoleInheritance(roleId: string): Promise<void> {
+export async function cleanRolePolicies(roleId: string): Promise<void> {
   const enforcer = await enforcerPromise
+
+  // Delete direct permission policies owned by this role / 删除该角色直接拥有的权限策略
+  await enforcer.removeFilteredPolicy(0, roleId)
 
   // Delete relationships as child role (roleId inherits from other roles) / 删除作为子角色的关系（roleId继承自其他角色）
   await enforcer.removeFilteredGroupingPolicy(0, roleId)
@@ -162,6 +165,15 @@ export async function validateParentRolesExist(parentRoleIds: string[]): Promise
 
   const existingIds = new Set(existingParents.map((r) => r.id))
   return parentRoleIds.filter((pid) => !existingIds.has(pid))
+}
+
+export async function validateMenuIdsExist(menuIds: string[]): Promise<string[] | null> {
+  if (menuIds.length === 0) return null
+
+  const rows = await getMenuRows()
+  const existingIds = new Set(rows.map((row) => row.id))
+  const invalidIds = [...new Set(menuIds)].filter((id) => !existingIds.has(id))
+  return invalidIds.length > 0 ? invalidIds : null
 }
 
 /**

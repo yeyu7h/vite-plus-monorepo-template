@@ -49,6 +49,7 @@ export const create = createRoute({
   responses: {
     [HttpStatusCodes.CREATED]: jsonContent(RefineResultSchema(systemRolesDetailResponseSchema), '创建成功'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '上级角色不存在'),
+    [HttpStatusCodes.CONFLICT]: jsonContent(respErrSchema, '菜单权限参数错误'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, '参数验证失败'),
   },
 })
@@ -82,6 +83,7 @@ export const update = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemRolesDetailResponseSchema), '更新成功'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '请求参数错误'),
+    [HttpStatusCodes.CONFLICT]: jsonContent(respErrSchema, '菜单权限参数错误'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
   },
 })

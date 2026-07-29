@@ -429,15 +429,44 @@ async function seedMenus(roles: any) {
     if (rolePageId) {
       await db
         .insert(systemMenus)
-        .values({
-          type: MenuType.BUTTON,
-          title: '配置角色按钮权限',
-          parentId: rolePageId,
-          permissionCode: 'system:role:permission-update',
-          resource: '/system/roles/{id}/menu-permissions',
-          action: 'PUT',
-          order: 10,
-        })
+        .values([
+          {
+            type: MenuType.BUTTON,
+            title: '新增角色',
+            parentId: rolePageId,
+            permissionCode: 'system:role:create',
+            resource: '/system/roles',
+            action: 'POST',
+            order: 10,
+          },
+          {
+            type: MenuType.BUTTON,
+            title: '编辑角色',
+            parentId: rolePageId,
+            permissionCode: 'system:role:update',
+            resource: '/system/roles/{id}',
+            action: 'PATCH',
+            order: 20,
+          },
+          {
+            type: MenuType.BUTTON,
+            title: '删除角色',
+            parentId: rolePageId,
+            permissionCode: 'system:role:delete',
+            resource: '/system/roles/{id}',
+            action: 'DELETE',
+            order: 30,
+          },
+          {
+            type: MenuType.BUTTON,
+            title: '配置角色按钮权限',
+            parentId: rolePageId,
+            permissionCode: 'system:role:permission-update',
+            resource: '/system/roles/{id}/menu-permissions',
+            action: 'PUT',
+            order: 40,
+          },
+        ])
         .onConflictDoNothing()
     }
 

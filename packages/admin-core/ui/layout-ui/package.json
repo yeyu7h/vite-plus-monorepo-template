@@ -43,8 +43,8 @@
     "vue": "catalog:vue3"
   },
   "devDependencies": {
-    "@vue/test-utils": "catalog:",
-    "happy-dom": "catalog:",
+    "@vue/test-utils": "catalog:testing",
+    "happy-dom": "catalog:testing",
     "unplugin-vue": "catalog:"
   }
 }

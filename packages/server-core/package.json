@@ -34,10 +34,10 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
-    "@hono/zod-openapi": "catalog:",
+    "@hono/zod-openapi": "catalog:hono",
     "@scalar/hono-api-reference": "catalog:",
-    "hono": "catalog:",
-    "hono-pino": "catalog:",
+    "hono": "catalog:hono",
+    "hono-pino": "catalog:hono",
     "openapi3-ts": "catalog:",
     "zod": "catalog:"
   },

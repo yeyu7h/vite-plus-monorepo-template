@@ -17,11 +17,6 @@ catalog:
   '@cap.js/server': ^4.0.5
   '@casbin/redis-watcher': ^1.2.0
   '@dotenvx/dotenvx': ^1.75.1
-  '@hono/node-server': ^1.19.11
-  '@hono/node-ws': ^1.3.1
-  '@hono/sentry': ^1.2.2
-  '@hono/vite-dev-server': ^0.26.0
-  '@hono/zod-openapi': ^1.4.0
   '@node-rs/argon2': ^2.0.2
   '@oxc-project/types': ^0.137.0
   '@scalar/hono-api-reference': ^0.11.6
@@ -29,19 +24,13 @@ catalog:
   '@typescript/native-preview': latest
   '@types/node': ^24
   '@vitest/coverage-v8': ^4.1.9
+  axios: ^1.18.1
   bullmq: ^5.79.2
   casbin: ^5.51.1
   clsx: ^2.1.1
-  date-fns: ^4.4.0
-  drizzle-kit: 1.0.0-rc.4
-  drizzle-orm: 1.0.0-rc.4
   effect: 4.0.0-beta.83
   excelize-wasm: ^0.1.2
   glob: ^13.0.6
-  happy-dom: ^20.11.1
-  hono: ^4.12.27
-  hono-pino: ^0.10.3
-  hono-rate-limiter: ^0.5.3
   iconv-lite: ^0.7.2
   ioredis: 5.11.1
   magic-string: ^0.30.21
@@ -50,7 +39,6 @@ catalog:
   oxc-parser: ^0.137.0
   pino: ^10.3.1
   pino-pretty: ^13.1.3
-  postgres: ^3.4.9
   rate-limit-redis: ^5.0.0
   redlock-universal: ^0.8.4
   typescript: ~6
@@ -61,7 +49,6 @@ catalog:
   vite-plus: latest
   unplugin-vue: ^7.2.0
   tailwind-merge: ^3.6.0
-  '@vue/test-utils': ^2.4.11
   zod: ^4.4.3
 
 overrides:
@@ -84,6 +71,25 @@ catalogs:
     vite-plugin-vue-devtools: ^8.1.1
     vite-plugin-vue-layouts-next: ^2.1.0
     vue-tsc: latest
+  testing:
+    '@vue/test-utils': ^2.4.11
+    happy-dom: ^20.11.1
+  database:
+    drizzle-kit: 1.0.0-rc.4
+    drizzle-orm: 1.0.0-rc.4
+    postgres: ^3.4.9
+  hono:
+    '@hono/node-server': ^1.19.11
+    '@hono/node-ws': ^1.3.1
+    '@hono/sentry': ^1.2.2
+    '@hono/vite-dev-server': ^0.26.0
+    '@hono/zod-openapi': ^1.4.0
+    hono: ^4.12.27
+    hono-pino: ^0.10.3
+    hono-rate-limiter: ^0.5.3
+  utils:
+    date-fns: ^4.4.0
+    defu: ^6.1.7
 
 minimumReleaseAge: 1440
 

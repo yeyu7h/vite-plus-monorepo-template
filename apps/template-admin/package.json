@@ -8,6 +8,9 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vp preview",
     "build-only": "vp build",
+    "typegen:openapi:admin": "openapi-typescript http://localhost:9999/api/admin/doc -o src/types/openapi/admin.ts",
+    "typegen:openapi:public": "openapi-typescript http://localhost:9999/api/doc -o src/types/openapi/public.ts",
+    "typegen:openapi": "run-p typegen:openapi:admin typegen:openapi:public",
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
@@ -15,6 +18,7 @@
     "@monorepo-admin-core/layout-effect": "workspace:*",
     "@monorepo-admin-core/layout-ui": "workspace:*",
     "@monorepo-admin-core/types": "workspace:*",
+    "@monorepo/request": "workspace:*",
     "@nuxt/ui": "catalog:vue3",
     "@tailwindcss/vite": "catalog:",
     "pinia": "catalog:vue3",
@@ -26,6 +30,7 @@
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:vue3",
     "@vitejs/plugin-vue-jsx": "catalog:vue3",
+    "openapi-typescript": "catalog:openapi",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-vue-devtools": "catalog:vue3",

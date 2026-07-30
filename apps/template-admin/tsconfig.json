@@ -5,6 +5,7 @@
     "types": ["vite-plugin-vue-layouts-next/client", "@monorepo-admin-core/types/global"],
     "paths": {
       "@/*": ["./src/*"],
+      "#/*": ["./src/types/*"],
       "#build/ui/*": ["./node_modules/.nuxt-ui/ui/*"]
     },
     // `vue-tsc --build` produces a .tsbuildinfo file for incremental type-checking.

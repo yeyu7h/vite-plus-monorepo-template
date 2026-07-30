@@ -3,6 +3,7 @@ import App from './App.vue'
 import { router } from './router'
 import NuxtUI from '@nuxt/ui/vue-plugin'
 import { createPinia } from 'pinia'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 
 import './styles/main.css'
 
@@ -11,10 +12,9 @@ async function bootstrap(namespace: string) {
   const app = createApp(App)
 
   app.use(createPinia())
-
   app.use(router)
-
   app.use(NuxtUI)
+  app.use(VueQueryPlugin)
 
   app.mount('#app')
 }

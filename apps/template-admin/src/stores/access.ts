@@ -2,23 +2,34 @@ import type { AdminMenuGroup } from '@monorepo-admin-core/types'
 import type { AdminNavigationRouteRecord } from '@monorepo-admin-core/types'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAdminTabStore } from '@monorepo-admin-core/layout-effect'
-import type { AdminLoginParams } from '@/api/mock'
+import type { CoreAuthApi } from '@/api/core/auth'
+import type { AdminUserInfo } from '@/api/mock'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getBackendMenusApi, getUserInfoApi, loginApi } from '@/api/mock'
+import { coreAuthApi } from '@/api/core/auth'
+import { getBackendMenusApi } from '@/api/mock'
 import { accessFileRoutes } from '@/router'
 import { createAdminRoutePathMatcher, DEFAULT_ADMIN_HOME_PATH, FORBIDDEN_ROUTE_PATH, normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from '@/router/access'
-import { ADMIN_TAB_STORAGE_KEY } from '../constants/storage'
+import { ADMIN_ACCESS_TOKEN_STORAGE_KEY, ADMIN_TAB_STORAGE_KEY } from '../constants/storage'
 import { useAdminUserStore } from './user'
 
-const ACCESS_TOKEN_KEY = 'template-admin:access-token'
+function toAdminUserInfo(identity: CoreAuthApi.IdentityResult): AdminUserInfo {
+  return {
+    avatar: identity.avatar ?? undefined,
+    home_path: DEFAULT_ADMIN_HOME_PATH,
+    real_name: identity.nickName,
+    roles: identity.roles,
+    user_id: identity.id,
+    username: identity.username,
+  }
+}
 
 export const useAdminAccessStore = defineStore('admin-access', () => {
   const router = useRouter()
   const tabStore = useAdminTabStore()
   const userStore = useAdminUserStore()
-  const accessToken = ref(localStorage.getItem(ACCESS_TOKEN_KEY))
+  const accessToken = ref(localStorage.getItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY))
   const accessibleRoutes = ref<RouteRecordRaw[]>([])
   const isAccessInitialized = ref(false)
   const menuGroups = ref<AdminMenuGroup[]>([])
@@ -38,10 +49,16 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     return routePaths.value[0] ?? DEFAULT_ADMIN_HOME_PATH
   })
 
-  async function login(params: AdminLoginParams) {
-    const result = await loginApi(params)
-    setAccessToken(result.access_token)
-    await setupAccess()
+  async function login(params: CoreAuthApi.LoginBody) {
+    const result = await coreAuthApi.login(params)
+    setAccessToken(result.accessToken)
+
+    try {
+      await setupAccess()
+    } catch (error) {
+      clearAccess()
+      throw error
+    }
   }
 
   async function restoreAccess() {
@@ -61,7 +78,8 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     if (accessSetupPromise) return accessSetupPromise
 
     const nextSetupPromise = (async () => {
-      const [nextUserInfo, backendMenus] = await Promise.all([getUserInfoApi(setupToken), getBackendMenusApi()])
+      const [identity, backendMenus] = await Promise.all([coreAuthApi.getIdentity(), getBackendMenusApi()])
+      const nextUserInfo = toAdminUserInfo(identity)
       const resolvedAccess = resolveAdminAccess(accessFileRoutes, backendMenus, nextUserInfo.roles)
 
       // 请求期间可能已经退出登录或切换账号，旧结果不能覆盖新会话
@@ -120,7 +138,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     routePaths.value = []
     tabStore.reset({ storageKey: ADMIN_TAB_STORAGE_KEY })
     userStore.clearUser()
-    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    localStorage.removeItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY)
     resetAdminAccessRoutes()
   }
 
@@ -131,7 +149,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     }
 
     accessToken.value = token
-    localStorage.setItem(ACCESS_TOKEN_KEY, token)
+    localStorage.setItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY, token)
   }
 
   return {

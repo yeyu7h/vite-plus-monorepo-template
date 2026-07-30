@@ -55,7 +55,7 @@
     "postgres": "catalog:database",
     "rate-limit-redis": "catalog:",
     "redlock-universal": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:utils"
   },
   "devDependencies": {
     "@bull-board/api": "catalog:",

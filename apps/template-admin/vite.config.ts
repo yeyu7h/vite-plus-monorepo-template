@@ -19,8 +19,15 @@ export default defineConfig({
     }),
     Tailwindcss(),
     NuxtUI({
-      ui: { colors: { neutral: 'neutral' } },
-      autoImport: false,
+      ui: {
+        colors: { neutral: 'neutral' },
+        formField: {
+          slots: {
+            container: 'pb-4',
+            error: 'absolute mt-0.5 text-xs text-end',
+          },
+        },
+      },
       scanPackages: ['@monorepo-admin-core/layout-ui', '@monorepo-admin-core/tabs-ui', '@monorepo-admin-core/layout-effect'],
     }),
     VueDevTools(),
@@ -31,5 +38,10 @@ export default defineConfig({
       '#': fileURLToPath(new URL('./src/types', import.meta.url)),
     },
     dedupe: ['vue', 'vue-router'],
+  },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:9999',
+    },
   },
 })

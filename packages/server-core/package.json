@@ -39,7 +39,7 @@
     "hono": "catalog:hono",
     "hono-pino": "catalog:hono",
     "openapi3-ts": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:utils"
   },
   "devDependencies": {
     "@types/node": "catalog:",

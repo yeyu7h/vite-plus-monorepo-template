@@ -50,7 +50,7 @@ catalog:
   vite-plus: latest
   unplugin-vue: ^7.2.0
   tailwind-merge: ^3.6.0
-  zod: ^4.4.3
+  cap-widget: ^0.1.56
 
 overrides:
   vite: 'catalog:'
@@ -92,8 +92,11 @@ catalogs:
   utils:
     date-fns: ^4.4.0
     defu: ^6.1.7
+    zod: ^4.4.3
   openapi:
     openapi-typescript: ^7.13.0
+  tanstack:
+    '@tanstack/vue-query': ^5.101.4
 
 minimumReleaseAge: 1440
 

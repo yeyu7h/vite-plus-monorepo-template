@@ -21,10 +21,13 @@
     "@monorepo/request": "workspace:*",
     "@nuxt/ui": "catalog:vue3",
     "@tailwindcss/vite": "catalog:",
+    "@tanstack/vue-query": "catalog:tanstack",
+    "cap-widget": "catalog:",
     "pinia": "catalog:vue3",
     "tailwindcss": "catalog:",
     "vue": "catalog:vue3",
-    "vue-router": "catalog:vue3"
+    "vue-router": "catalog:vue3",
+    "zod": "catalog:utils"
   },
   "devDependencies": {
     "@types/node": "catalog:",

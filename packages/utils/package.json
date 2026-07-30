@@ -33,7 +33,7 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
-    "zod": "catalog:"
+    "zod": "catalog:utils"
   },
   "devDependencies": {
     "@types/node": "catalog:",

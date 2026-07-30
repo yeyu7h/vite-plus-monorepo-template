@@ -10,16 +10,17 @@
 
 ### 列名自动转换
 
-新版 Drizzle 不需要显式指定列名，TS camelCase 自动转换为数据库 snake_case：
+新版 Drizzle 将 casing 配置放在 Schema 声明层。表必须使用 `snakeCase.table(...)`
+声明，TS camelCase 属性才会自动转换为数据库 snake_case：
 
 ```typescript
 // 正确写法（新版）
-export const users = pgTable("users", {
+export const users = snakeCase.table("users", {
   createdAt: timestamp({ mode: "string" }),  // → created_at
   updatedBy: varchar({ length: 64 }),        // → updated_by
 });
 
-// 旧版写法（已废弃，不要使用）
+// 旧版显式列名写法（已废弃，不要使用）
 createdAt: timestamp("created_at", { mode: "string" }),
 ```
 
@@ -30,7 +31,7 @@ createdAt: timestamp("created_at", { mode: "string" }),
 ```typescript
 // 情况1：使用 baseColumns 的自动 UUID（默认）
 // 适用于：id 无业务含义，如 dicts、users、orders
-export const systemDicts = pgTable("system_dicts", {
+export const systemDicts = snakeCase.table("system_dicts", {
   ...baseColumns,  // 包含 id: uuid().primaryKey()
   code: varchar({ length: 64 }).notNull().unique(),
 });
@@ -38,7 +39,7 @@ export const systemDicts = pgTable("system_dicts", {
 // 情况2：覆盖 id 为有意义的 code
 // 适用于：id 有业务含义，如 roles、permissions
 // 这种情况下不允许修改 id，只能删除后重建
-export const systemRoles = pgTable("system_roles", {
+export const systemRoles = snakeCase.table("system_roles", {
   ...baseColumns,
   id: varchar({ length: 64 }).notNull().primaryKey(),  // 覆盖 uuid
   name: varchar({ length: 64 }).notNull(),
@@ -51,14 +52,14 @@ export const systemRoles = pgTable("system_roles", {
 
 ```typescript
 // 情况1：业务表 - 使用完整 baseColumns（需要审计字段）
-export const orders = pgTable("orders", {
+export const orders = snakeCase.table("orders", {
   ...baseColumns,  // id, createdAt, createdBy, updatedAt, updatedBy
   // ...
 });
 
 // 情况2：基础设施表 - 只需要部分字段（无需审计）
 // 如：队列任务、系统日志等
-export const queueJobs = pgTable("queue_jobs", {
+export const queueJobs = snakeCase.table("queue_jobs", {
   id: baseColumns.id,           // 只要 id
   createdAt: baseColumns.createdAt,  // 只要创建时间
   // 不需要 createdBy, updatedAt, updatedBy
@@ -66,7 +67,7 @@ export const queueJobs = pgTable("queue_jobs", {
 });
 
 // 情况3：关联表 - 无需 baseColumns
-export const userRoles = pgTable("user_roles", {
+export const userRoles = snakeCase.table("user_roles", {
   userId: uuid().notNull(),
   roleId: varchar({ length: 64 }).notNull(),
 }, (table) => [
@@ -84,7 +85,7 @@ export const userRoles = pgTable("user_roles", {
 ```typescript
 // src/db/schema/{tier}/{category}/{feature}.ts
 import { relations } from "drizzle-orm";
-import { index, pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { index, snakeCase, text, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 import { baseColumns } from "@/db/schema/_shard/base-columns";
@@ -95,7 +96,7 @@ import { StatusDescriptions } from "@/lib/schemas";
 /**
  * {Feature} 表
  */
-export const {feature}s = pgTable("{tier}_{feature}s", {
+export const {feature}s = snakeCase.table("{tier}_{feature}s", {
   ...baseColumns,
   /** 名称 */
   name: varchar({ length: 128 }).notNull(),
@@ -172,7 +173,7 @@ uuid().notNull()  // 应用层维护引用完整性
 新版 Drizzle 使用数组形式，必须显式指定 snake_case name：
 
 ```typescript
-export const users = pgTable("users", {
+export const users = snakeCase.table("users", {
   id: uuid().primaryKey(),
   email: text(),
   name: text(),
@@ -265,7 +266,7 @@ export const categoryRelations = (r: RelationsBuilder<Schema>) => ({
 
 ```typescript
 // Schema: 关联表定义不变
-export const userRoles = pgTable("user_roles", {
+export const userRoles = snakeCase.table("user_roles", {
   userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
   roleId: varchar({ length: 64 }).notNull().references(() => roles.id, { onDelete: "cascade" }),
 }, (table) => [

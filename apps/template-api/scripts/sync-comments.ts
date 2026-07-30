@@ -15,6 +15,8 @@ import { getTableConfig } from 'drizzle-orm/pg-core'
 import { globSync } from 'glob'
 import { parseSync } from 'oxc-parser'
 
+import { findMissingTableDeclarations, isTableDeclarationCall } from './sync-comments.helpers'
+
 // ─── Types ──────────────────────────────────────────────────────────
 
 type AstComment = {
@@ -197,7 +199,7 @@ function extractFileComments(filePath: string): TableAstInfo[] {
       if (!declarator.init || declarator.init.type !== 'CallExpression') continue
 
       const callee = declarator.init.callee
-      if (callee.type !== 'Identifier' || callee.name !== 'pgTable') continue
+      if (!isTableDeclarationCall(callee)) continue
 
       const variableName: string | undefined = declarator.id?.name
       if (!variableName) continue
@@ -346,6 +348,11 @@ async function main() {
 
   // Step 2: Get runtime metadata from Drizzle
   const runtimeMeta = await getRuntimeMetadata()
+
+  const missingTableDeclarations = findMissingTableDeclarations(astComments.keys(), runtimeMeta.keys())
+  if (missingTableDeclarations.length > 0) {
+    throw new Error(`Missing source declarations for runtime tables: ${missingTableDeclarations.join(', ')}. ` + 'Refusing to generate SQL that would clear their comments.')
+  }
 
   // Step 3: Generate SQL
   const sql = generateSQL(astComments, runtimeMeta)

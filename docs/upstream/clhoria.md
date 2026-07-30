@@ -4,10 +4,20 @@
 
 - 上游仓库：[zhe-qi/clhoria-template](https://github.com/zhe-qi/clhoria-template)
 - 上游本机快照：`/Users/zzz/Desktop/clhoria-template-main`
-- 对比日期：2026-07-27
-- 上游提交：`c38862618fa5d306e1795b0b4ee8a48a9d63ea74`（上游 `HEAD`；根据本机快照为最新版本的确认记录）
+- 对比日期：2026-07-30
+- 上游提交：`589f13ef6b294b3ed74646e3595ade644a6dcb47`（上游 `main`）
 
-本机快照不含 `.git`，因此无法自行追溯 commit SHA；后续同步应从此提交开始比较，并在完成后更新本文件的基线 SHA。
+本机快照不含 `.git`，后续同步应以此处记录的 SHA 从上游远端比较，并在完成后更新本文件的基线 SHA。
+
+## 最近同步记录
+
+2026-07-30 从 `c38862618fa5d306e1795b0b4ee8a48a9d63ea74` 同步至当前基线：
+
+- 同步 `sync-comments` 对 `snakeCase.table(...)` 的识别、缺失声明保护和单元测试。
+- 同步 CRUD/数据库 Schema 技能中的 `snakeCase.table(...)` 示例。
+- 同步 `createErrorSchema` 的 OpenAPI example metadata 测试，并兼容当前依赖的错误文案。
+- 暂不同步上游依赖、包管理器和 lockfile 更新；这些内容需要通过 workspace catalog 单独升级和验证。
+- 暂不同步 `tasks/` 忽略规则和 Stoker 索引注释；当前 monorepo 没有对应目录结构或功能需求。
 
 ## 目录映射
 

@@ -20,7 +20,7 @@ src/db/schema/admin/system/
 
 ```typescript
 // src/db/schema/admin/system/dicts.ts
-import { index, jsonb, pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { index, jsonb, snakeCase, text, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 import { baseColumns } from "@/db/schema/_shard/base-columns";
@@ -36,7 +36,7 @@ export type DictItem = {
   color?: string;
 };
 
-export const systemDicts = pgTable("system_dicts", {
+export const systemDicts = snakeCase.table("system_dicts", {
   ...baseColumns,
   code: varchar({ length: 64 }).notNull().unique(),
   name: varchar({ length: 128 }).notNull(),

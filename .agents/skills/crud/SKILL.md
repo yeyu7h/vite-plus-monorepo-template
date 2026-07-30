@@ -1,7 +1,6 @@
 ---
 name: crud
 description: 创建或修改 CRUD 模块。当需要创建新的增删改查 API、修改现有路由模块、添加新字段、新增接口、或用户请求"创建/修改 XX 管理"时使用
-argument-hint: "[tier/feature-name]"
 ---
 
 # CRUD 模块生成/修改指南
@@ -35,7 +34,7 @@ src/routes/{tier}/{category}/{feature}/
 
 ```typescript
 // src/db/schema/{tier}/{category}/{feature}.ts
-export const {feature}s = pgTable("{tier}_{feature}s", {
+export const {feature}s = snakeCase.table("{tier}_{feature}s", {
   ...baseColumns,
   // 字段定义...
 });

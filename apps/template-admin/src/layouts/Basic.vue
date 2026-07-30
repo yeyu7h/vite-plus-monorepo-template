@@ -3,9 +3,11 @@ import { AdminLayout } from '@monorepo-admin-core/layout-effect'
 import { computed } from 'vue'
 import { ADMIN_TAB_STORAGE_KEY } from '@/constants/storage'
 import { useAdminAccessStore } from '@/stores/access'
+import { useAdminAuthStore } from '@/stores/auth'
 import { useAdminUserStore } from '@/stores/user'
 
 const accessStore = useAdminAccessStore()
+const authStore = useAdminAuthStore()
 const userStore = useAdminUserStore()
 const userLabel = computed(() => userStore.userInfo?.real_name ?? userStore.userInfo?.username ?? 'User')
 </script>
@@ -29,7 +31,7 @@ const userLabel = computed(() => userStore.userInfo?.real_name ?? userStore.user
             {
               label: '退出登录',
               icon: 'i-lucide-log-out',
-              onSelect: () => accessStore.logout(),
+              onSelect: () => authStore.logout(),
             },
           ],
         ]"

@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminAccessStore } from '@/stores/access'
+import { useAdminAuthStore } from '@/stores/auth'
 import { useAdminUserStore } from '@/stores/user'
 import { resolvePostLoginPath } from '@/router/access'
 
@@ -24,8 +25,8 @@ definePage({
 const route = useRoute()
 const router = useRouter()
 const accessStore = useAdminAccessStore()
+const authStore = useAdminAuthStore()
 const userStore = useAdminUserStore()
-const loading = ref(false)
 const errorMessage = ref('')
 const captchaError = ref('')
 const captchaProgress = ref(0)
@@ -64,23 +65,24 @@ async function handleLogin(event: FormSubmitEvent<Credentials>) {
   }
 
   errorMessage.value = ''
-  loading.value = true
 
   try {
-    await accessStore.login({
-      ...event.data,
-      captchaToken: captchaToken.value,
-    })
-    const redirect = resolvePostLoginPath(route.query.redirect, {
-      canAccessPath: accessStore.canAccessPath,
-      fallbackPath: accessStore.resolveAccessiblePath(userStore.homePath),
-    })
-    await router.replace(redirect)
+    await authStore.authLogin(
+      {
+        ...event.data,
+        captchaToken: captchaToken.value,
+      },
+      async () => {
+        const redirect = resolvePostLoginPath(route.query.redirect, {
+          canAccessPath: accessStore.canAccessPath,
+          fallbackPath: accessStore.resolveAccessiblePath(userStore.homePath),
+        })
+        await router.replace(redirect)
+      },
+    )
   } catch (error) {
     errorMessage.value = getErrorMessage(error)
     resetCaptcha()
-  } finally {
-    loading.value = false
   }
 }
 
@@ -195,7 +197,7 @@ function useDemoAccount(type: 'admin' | 'user') {
 
         <UAlert v-if="errorMessage" color="error" variant="soft" :title="errorMessage" />
 
-        <UButton block :disabled="captchaStatus !== 'verified'" :loading="loading" type="submit">登录</UButton>
+        <UButton block :disabled="captchaStatus !== 'verified'" :loading="authStore.loginLoading" type="submit">登录</UButton>
       </UForm>
 
       <template #footer>

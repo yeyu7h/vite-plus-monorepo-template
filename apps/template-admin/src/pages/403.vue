@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAdminAccessStore } from '@/stores/access'
+import { useAdminAuthStore } from '@/stores/auth'
 
 definePage({
   meta: {
@@ -11,7 +11,7 @@ definePage({
   },
 })
 
-const accessStore = useAdminAccessStore()
+const authStore = useAdminAuthStore()
 </script>
 
 <template>
@@ -22,7 +22,7 @@ const accessStore = useAdminAccessStore()
       <p class="mt-2 text-sm text-muted">当前账号没有访问该页面的权限。</p>
       <div class="mt-6 flex justify-center gap-3">
         <UButton to="/dashboard/workbench">返回首页</UButton>
-        <UButton color="neutral" variant="ghost" @click="accessStore.logout()">退出登录</UButton>
+        <UButton color="neutral" variant="ghost" @click="authStore.logout()">退出登录</UButton>
       </div>
     </UCard>
   </main>

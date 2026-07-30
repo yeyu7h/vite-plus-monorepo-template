@@ -18,14 +18,22 @@ export interface AdminAccessGuardOptions {
   resolveRoute: (fullPath: string) => RouteLocationRaw
 }
 
+/**
+ * 解析单次导航的权限结果
+ *
+ * 该函数不直接注册 Vue Router 守卫，而是通过注入的访问状态和路由能力
+ * 返回 `true` 放行导航，或返回一个新的路由位置执行重定向
+ */
 export async function resolveAdminAccessGuard(to: RouteLocationNormalized, accessState: AdminAccessGuardState, options: AdminAccessGuardOptions): Promise<RouteLocationRaw | true> {
   const normalizedPath = normalizeAdminPath(to.path)
 
+  // 根路径不是实际页面，根据当前登录状态进入首页或登录页
   if (normalizedPath === '/') {
     return accessState.isLoggedIn ? accessState.homePath : LOGIN_ROUTE_PATH
   }
 
   if (isPublicRoutePath(normalizedPath)) {
+    // 已登录用户访问登录页时先恢复权限路由；会话失效时允许停留在登录页
     if (normalizedPath === LOGIN_ROUTE_PATH && accessState.isLoggedIn) {
       try {
         await accessState.restoreAccess()
@@ -38,6 +46,8 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
     return true
   }
 
+  // 文件路由的兜底页面也声明了 ignoreAccess，若目标实际属于权限路由
+  // 必须继续执行权限恢复，不能被首次匹配到的兜底页面提前放行
   const shouldResolveFallbackRoute = to.meta?.source === 'fallback' && (accessState.isLoggedIn || isKnownAccessRoutePath(normalizedPath, options.matchesAccessPath))
   if (to.meta?.ignoreAccess && !shouldResolveFallbackRoute) {
     return true
@@ -53,6 +63,7 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
     }
   }
 
+  // restoreAccess 返回 true 表示本次导航刚注册了动态路由
   let accessGenerated = false
   try {
     accessGenerated = await accessState.restoreAccess()
@@ -67,6 +78,7 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
   }
 
   if (!isAccessibleRoutePath(normalizedPath, accessState.canAccessPath)) {
+    // 已知权限路由但当前用户不可访问时进入 403；未知路径继续放行给 404 兜底
     if (isKnownAccessRoutePath(normalizedPath, options.matchesAccessPath)) {
       return {
         path: FORBIDDEN_ROUTE_PATH,
@@ -77,6 +89,8 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
     return true
   }
 
+  // 动态路由注册后重新解析原始地址，确保首次导航命中新加入的路由记录
+  // 同时保留原有 query 和 hash
   if (accessGenerated) {
     return {
       ...asRouteLocationObject(options.resolveRoute(to.fullPath)),

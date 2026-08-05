@@ -54,7 +54,7 @@ const captchaIcon = computed(() => {
 const captchaLabel = computed(() => {
   if (captchaStatus.value === 'verified') return '安全验证已完成'
   if (captchaStatus.value === 'error') return '安全验证失败'
-  if (captchaStatus.value === 'verifying') return `正在进行安全验证 ${Math.round(captchaProgress.value)}%`
+  if (captchaStatus.value === 'verifying') return '正在进行安全验证'
   return '点击按钮完成安全验证'
 })
 
@@ -190,8 +190,6 @@ function useDemoAccount(type: 'admin' | 'user') {
                 @click="verifyCaptcha"
               />
             </div>
-
-            <UProgress v-if="captchaStatus === 'verifying'" v-model="captchaProgress" class="mt-3" :max="100" size="xs" />
           </div>
         </UFormField>
 

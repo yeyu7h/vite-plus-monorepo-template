@@ -8,6 +8,7 @@ import DropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import Button from '@nuxt/ui/components/Button.vue'
 import Input from '@nuxt/ui/components/Input.vue'
 import Table from '@nuxt/ui/components/Table.vue'
+import { platform } from '@monorepo/shared/utils'
 
 definePage({
   meta: {
@@ -18,7 +19,7 @@ definePage({
       order: 20,
     },
     order: 30,
-    contentMode: 'full',
+    contentMode: !platform.is.mobile ? 'full' : 'default',
   },
 })
 
@@ -336,7 +337,7 @@ function randomize() {
       <Button color="neutral" label="Randomize" @click="randomize" />
     </div>
 
-    <Table ref="table" :data="data" :columns="columns" sticky class="flex-1">
+    <Table ref="table" :data="data" :columns="columns" sticky="header" :ui="platform.is.mobile ? { root: 'overflow-visible overflow-x-auto' } : void 0" class="flex-1">
       <template #expanded="{ row }">
         <pre>{{ row.original }}</pre>
       </template>

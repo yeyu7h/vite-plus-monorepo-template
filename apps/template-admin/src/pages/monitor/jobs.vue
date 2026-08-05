@@ -24,8 +24,8 @@ const jobs = [
       <p class="mt-1 text-sm text-muted">Job monitor without menu group</p>
     </div>
 
-    <div class="divide-y divide-default rounded-md border border-default bg-default">
-      <div v-for="job in jobs" :key="job.name" class="flex items-center justify-between px-4 py-3">
+    <div v-for="n of 20" class="divide-y divide-default rounded-md border border-default bg-default">
+      <div v-for="job in jobs" :key="job.name" class="flex items-center justify-between px-4 py-3" :class="{ 'bg-emerald-800': n % 2 === 0 }">
         <span class="text-sm font-medium text-default">{{ job.name }}</span>
         <span class="text-xs text-muted">{{ job.status }}</span>
       </div>

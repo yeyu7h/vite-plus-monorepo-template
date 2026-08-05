@@ -21,6 +21,11 @@ export default defineConfig({
     NuxtUI({
       ui: {
         colors: { neutral: 'neutral' },
+        dropdownMenu: {
+          slots: {
+            content: 'z-20',
+          },
+        },
         formField: {
           slots: {
             container: 'pb-4',
@@ -40,6 +45,7 @@ export default defineConfig({
     dedupe: ['vue', 'vue-router'],
   },
   server: {
+    host: '0.0.0.0',
     proxy: {
       '/api': 'http://localhost:9999',
     },

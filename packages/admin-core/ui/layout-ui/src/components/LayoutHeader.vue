@@ -2,6 +2,7 @@
 import type { AdminMenuImageIcon, LayoutBreadcrumbItem } from '@monorepo-admin-core/types'
 import type { BreadcrumbItem } from '@nuxt/ui'
 import { computed } from 'vue'
+import { cn, platform } from '@monorepo/shared/utils'
 
 interface LayoutBreadcrumbNavigationItem extends BreadcrumbItem {
   menuIcon?: LayoutBreadcrumbItem['icon']
@@ -32,9 +33,9 @@ function isBreadcrumbImageIcon(icon: unknown): icon is AdminMenuImageIcon {
 </script>
 
 <template>
-  <UDashboardNavbar :ui="{ root: 'bg-muted/50 dark:bg-muted/20' }">
+  <UDashboardNavbar :ui="{ root: cn('bg-[#FCFCFC] dark:bg-[#1A1A1A]', { 'sticky top-0 z-10 w-full': platform.is.mobile }) }">
     <template #left>
-      <UBreadcrumb v-if="items.length" :items="items">
+      <UBreadcrumb v-if="items.length" class="hidden sm:block" :items="items">
         <template #item-leading="{ active, item }">
           <UIcon v-if="typeof item.menuIcon === 'string' && item.menuIcon.startsWith('i-')" :class="{ 'text-default': active }" :name="item.menuIcon" size="18" />
           <picture v-else-if="isBreadcrumbImageIcon(item.menuIcon)" class="flex size-4.5 shrink-0 items-center justify-center">

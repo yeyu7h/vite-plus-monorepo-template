@@ -6,7 +6,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, h, nextTick, onActivated, onDeactivated, onUnmounted, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { beforeEach, expect, test } from 'vite-plus/test'
-import { useAdminTabStore } from '../../stores'
+import { useAdminTabStore } from '../../stores/index.ts'
 import AdminRouteContent from './AdminRouteContent.vue'
 
 const lifecycle = {

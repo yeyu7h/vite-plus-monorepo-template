@@ -1,4 +1,5 @@
 import type { AdminNavigationRouteRecord, AdminTabItem, AdminTabRecord } from '@monorepo-admin-core/types'
+import { platform } from '@monorepo/shared/utils'
 
 export interface CreateAdminTabOptions {
   /** 用于解析父级 Tab 对应的真实路由 */
@@ -49,7 +50,7 @@ export function createAdminTabRecord(route: AdminNavigationRouteRecord, options:
   return {
     ...tab,
     ...(iframeSrc ? { iframeSrc } : {}),
-    keepAlive: route.meta.keepAlive === true,
+    keepAlive: !platform.is.mobile && route.meta.keepAlive === true,
     meta: { ...route.meta },
     viewPath: route.path,
   }

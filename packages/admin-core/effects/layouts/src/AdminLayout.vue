@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Layout } from '@monorepo-admin-core/layout-ui'
-import type { AdminScrollMode, LayoutType } from '@monorepo-admin-core/types'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AdminRouteContent } from './basic/content'
@@ -11,20 +10,11 @@ import type { AdminCurrentRouteRecord } from './navigation/route-breadcrumb'
 import { buildAdminMenuGroups, markActiveAdminMenuGroups } from './navigation/route-menu'
 import type { AdminMenuGroup, AdminNavigationRouteRecord, AdminRouteMeta } from '@monorepo-admin-core/types'
 
-const props = withDefaults(
-  defineProps<{
-    layout?: LayoutType
-    menuGroups?: AdminMenuGroup[]
-    routeRecords?: AdminNavigationRouteRecord[]
-    scrollMode?: AdminScrollMode
-    stickyHeader?: boolean
-    tabStorageKey?: string
-  }>(),
-  {
-    scrollMode: 'panel',
-    stickyHeader: false,
-  },
-)
+const props = defineProps<{
+  menuGroups?: AdminMenuGroup[]
+  routeRecords?: AdminNavigationRouteRecord[]
+  tabStorageKey?: string
+}>()
 
 const router = useRouter()
 const route = useRoute()
@@ -40,15 +30,7 @@ const menuGroups = computed(() => markActiveAdminMenuGroups(props.menuGroups ?? 
 </script>
 
 <template>
-  <Layout
-    :breadcrumb-prefix="breadcrumbPrefix"
-    :breadcrumbs="breadcrumbs"
-    :content-mode="contentMode"
-    :layout="layout"
-    :scroll-mode="props.scrollMode"
-    :sticky-header="props.stickyHeader"
-    :tabbar-enable="true"
-  >
+  <Layout :breadcrumb-prefix="breadcrumbPrefix" :breadcrumbs="breadcrumbs" :content-mode="contentMode" :tabbar-enable="true">
     <slot>
       <AdminRouteContent />
     </slot>

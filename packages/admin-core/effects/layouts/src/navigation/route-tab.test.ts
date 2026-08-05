@@ -1,4 +1,5 @@
 import { expect, test } from 'vite-plus/test'
+import { platform } from '@monorepo/shared/utils'
 import { closeAdminTab, createAdminTab, createAdminTabRecord, markActiveAdminTabs, upsertAdminTab } from './route-tab'
 
 test('creates a route tab from the current route', () => {
@@ -43,6 +44,25 @@ test('creates a runtime tab record with an independent view path and keep-alive 
     to: '/docs',
     viewPath: '/docs/detail?section=api#request',
   })
+})
+
+test('disables keep-alive for runtime tab records on mobile', () => {
+  const originalMobile = platform.is.mobile
+  platform.is.mobile = true
+
+  try {
+    const tab = createAdminTabRecord({
+      meta: {
+        keepAlive: true,
+        title: '移动端页面',
+      },
+      path: '/mobile-page',
+    })
+
+    expect(tab?.keepAlive).toBe(false)
+  } finally {
+    platform.is.mobile = originalMobile
+  }
 })
 
 test('skips tab creation when hideInTab is set', () => {

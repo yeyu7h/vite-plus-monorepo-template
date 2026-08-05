@@ -13,7 +13,7 @@ const userLabel = computed(() => userStore.userInfo?.real_name ?? userStore.user
 </script>
 
 <template>
-  <AdminLayout :menu-groups="accessStore.menuGroups" :route-records="accessStore.navigationRoutes" scroll-mode="document" :sticky-header="true" :tab-storage-key="ADMIN_TAB_STORAGE_KEY">
+  <AdminLayout :menu-groups="accessStore.menuGroups" :route-records="accessStore.navigationRoutes" :tab-storage-key="ADMIN_TAB_STORAGE_KEY">
     <template #header-right>
       <UDropdownMenu
         :items="[

@@ -5,6 +5,6 @@ export { buildAdminBreadcrumbPrefix, buildAdminBreadcrumbs } from './navigation/
 export type { AdminCurrentRouteRecord } from './navigation/route-breadcrumb'
 export { closeAdminTab, createAdminTab, createAdminTabRecord, markActiveAdminTabs, upsertAdminTab } from './navigation/route-tab'
 export { buildAdminMenuGroups, buildAdminMenus, markActiveAdminMenuGroups, markActiveAdminMenus } from './navigation/route-menu'
-export { DEFAULT_ADMIN_TAB_STORAGE_KEY, useAdminTabStore } from './stores'
+export { DEFAULT_ADMIN_TAB_STORAGE_KEY, useAdminTabStore } from './stores/index.ts'
 export type { AdminNavigationRouteRecord as AdminBreadcrumbRouteRecord, AdminNavigationRouteRecord as AdminRouteRecord } from '@monorepo-admin-core/types'
 export type { BuildAdminMenuGroupsOptions, BuildAdminMenusOptions } from './navigation/route-menu'

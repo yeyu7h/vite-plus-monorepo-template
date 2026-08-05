@@ -314,20 +314,24 @@ onBeforeUnmount(() => {
   bufferedScrollPositions.clear()
   scrollElements.clear()
 })
+
+function asNormalizedRoute(route: unknown) {
+  return route as RouteLocationNormalizedLoaded
+}
 </script>
 
 <template>
   <span ref="contentMarker" aria-hidden="true" class="hidden" />
 
   <template v-for="item in resolvedKeepAliveTabs" :key="item.record.key">
-    <RouterView :route="item.route as RouteLocationNormalizedLoaded" v-slot="{ Component }">
+    <RouterView :route="asNormalizedRoute(item.route)" v-slot="{ Component }">
       <KeepAlive :key="renderKey(item.record)">
         <component :is="Component" v-if="isActive(item.record)" :key="item.record.key" />
       </KeepAlive>
     </RouterView>
   </template>
 
-  <RouterView v-if="!activeIframeSrc && !isActiveKeepAlivePage" :route="activeResolvedRoute as RouteLocationNormalizedLoaded" v-slot="{ Component }">
+  <RouterView v-if="!activeIframeSrc && !isActiveKeepAlivePage" :route="asNormalizedRoute(activeResolvedRoute)" v-slot="{ Component }">
     <component :is="Component" :key="tabStore.getRenderKey(activeKey)" />
   </RouterView>
 

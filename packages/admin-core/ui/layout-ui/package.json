@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@monorepo-admin-core/types": "workspace:*",
+    "@monorepo/shared": "workspace:*",
     "@nuxt/ui": "catalog:vue3",
     "vite": "catalog:",
     "vite-plus": "catalog:",

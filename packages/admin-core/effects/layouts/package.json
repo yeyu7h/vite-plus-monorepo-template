@@ -48,6 +48,7 @@
     "@monorepo-admin-core/layout-ui": "workspace:*",
     "@monorepo-admin-core/tabs-ui": "workspace:*",
     "@monorepo-admin-core/types": "workspace:*",
+    "@monorepo/shared": "workspace:*",
     "@nuxt/ui": "catalog:vue3",
     "pinia": "catalog:vue3",
     "vite": "catalog:",

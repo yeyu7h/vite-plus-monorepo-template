@@ -18,12 +18,17 @@
     "bumpp",
     "casbin",
     "clsx",
+    "crios",
+    "cros",
     "dedupe",
     "defu",
     "demi",
     "dotenvx",
+    "edga",
+    "edgios",
     "esbuild",
     "excelize",
+    "fxios",
     "hono",
     "ioredis",
     "lucide",
@@ -35,7 +40,8 @@
     "tsgo",
     "vite",
     "vitejs",
-    "vitest"
+    "vitest",
+    "wxjs"
   ],
   "oxc.fmt.configPath": "./vite.config.ts",
   "files.associations": {

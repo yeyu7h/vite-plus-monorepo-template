@@ -10,6 +10,7 @@ import { jsonContent, jsonContentRequired } from '@monorepo/server-core'
 import { respErrSchema } from '@/utils'
 
 import { systemUsersInfoResponseSchema, systemUsersLoginSchema } from '../system/users/users.schema'
+import { adminAccessPayloadSchema } from './auth.schema'
 
 const routePrefix = '/auth'
 const tags = [`${routePrefix} (管理端身份认证)`]
@@ -90,6 +91,19 @@ export const getIdentity = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemUsersInfoResponseSchema), '获取成功'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '用户不存在'),
+  },
+})
+
+/** Get current admin menu access / 获取当前管理端菜单和权限码 */
+export const getAccess = createRoute({
+  path: `${routePrefix}/access`,
+  method: 'get',
+  middleware: [jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' })],
+  tags,
+  summary: '获取当前用户菜单和权限码',
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(adminAccessPayloadSchema), '获取成功'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(respErrSchema, '未授权'),
   },
 })
 

@@ -1,12 +1,11 @@
 import type { CoreAuthApi } from '@/api/core/auth'
-import type { AdminUserInfo } from '@/api/mock'
+import type { AdminUserInfo } from '@/api/core/auth'
 import { useAdminTabStore } from '@monorepo-admin-core/layout-effect'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { coreAuthApi } from '@/api/core/auth'
-import { getBackendMenusApi } from '@/api/mock'
-import { DEFAULT_ADMIN_HOME_PATH } from '@/router/access'
+import { DEFAULT_ADMIN_HOME_PATH, LOGIN_ROUTE_PATH, resolveLoginRedirect } from '@/router/access'
 import { ADMIN_TAB_STORAGE_KEY } from '../constants/storage'
 import { useAdminAccessStore } from './access'
 import { useAdminUserStore } from './user'
@@ -81,26 +80,43 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
   }
 
   async function logout(redirect = true) {
-    resetSession()
+    try {
+      if (accessStore.accessToken) await coreAuthApi.logout()
+    } catch {
+      // Local session cleanup must complete even when the remote logout endpoint is unavailable.
+    } finally {
+      resetSession()
+    }
 
     if (redirect) {
-      await router.replace('/auth/login')
+      await router.replace(LOGIN_ROUTE_PATH)
     }
+  }
+
+  async function handleSessionExpired() {
+    const redirect = resolveLoginRedirect(router.currentRoute.value.fullPath)
+    resetSession()
+
+    await router.replace({
+      path: LOGIN_ROUTE_PATH,
+      query: redirect ? { redirect } : {},
+    })
   }
 
   async function setupAccess() {
     const setupToken = accessStore.accessToken
+    const setupSessionVersion = accessStore.sessionVersion
     if (!setupToken) return false
     if (accessSetupPromise) return accessSetupPromise
 
     const nextSetupPromise = (async () => {
-      const [nextUserInfo, backendMenus] = await Promise.all([requestUserInfo(), getBackendMenusApi()])
+      const [nextUserInfo, accessPayload] = await Promise.all([requestUserInfo(), coreAuthApi.getAccess()])
 
       // 请求期间可能已经退出登录或切换账号，旧结果不能覆盖新会话
-      if (accessStore.accessToken !== setupToken) return false
+      if (accessStore.sessionVersion !== setupSessionVersion) return false
 
       userStore.setUserInfo(nextUserInfo)
-      accessStore.initializeAccess(backendMenus, nextUserInfo.roles)
+      accessStore.initializeAccess(accessPayload, nextUserInfo.roles)
 
       return true
     })()
@@ -133,6 +149,7 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     fetchUserInfo,
     homePath,
     isLoggedIn,
+    handleSessionExpired,
     loginLoading,
     logout,
     restoreAccess,

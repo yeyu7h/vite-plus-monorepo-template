@@ -1,4 +1,3 @@
-import type { AdminBackendMenu } from '@monorepo-admin-core/types'
 import type { CoreAuthApi } from '@/api/core/auth'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, expect, test, vi } from 'vite-plus/test'
@@ -9,19 +8,22 @@ const mocks = vi.hoisted(() => {
   const accessStore = {
     accessToken: null as null | string,
     canAccessPath: vi.fn<(path: string) => boolean>(),
-    initializeAccess: vi.fn<(backendMenus: readonly AdminBackendMenu[], roles: readonly string[]) => void>(),
+    initializeAccess: vi.fn<(accessPayload: CoreAuthApi.AccessResult, roles: readonly string[]) => void>(),
     isAccessInitialized: false,
     isLoggedIn: false,
+    sessionVersion: 0,
     resetAccess: vi.fn<() => void>(),
     resolveHomePath: vi.fn<(path: string) => string>(),
     setAccessToken: vi.fn<(token: null | string) => void>(),
+    updateAccessToken: vi.fn<(token: null | string) => void>(),
   }
 
   return {
     accessStore,
-    getBackendMenusApi: vi.fn<() => Promise<AdminBackendMenu[]>>(),
+    getAccess: vi.fn<() => Promise<CoreAuthApi.AccessResult>>(),
     getIdentity: vi.fn<() => Promise<CoreAuthApi.IdentityResult>>(),
     login: vi.fn<(params: CoreAuthApi.LoginBody) => Promise<CoreAuthApi.LoginResult>>(),
+    logout: vi.fn<() => Promise<CoreAuthApi.LogoutResult>>(),
     routerReplace: vi.fn<(path: string) => Promise<void>>(),
     tabReset: vi.fn<(options: { storageKey: string }) => void>(),
   }
@@ -29,6 +31,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({
+    currentRoute: { value: { fullPath: '/system/role' } },
     replace: mocks.routerReplace,
   }),
 }))
@@ -39,20 +42,20 @@ vi.mock('@monorepo-admin-core/layout-effect', () => ({
   }),
 }))
 
-vi.mock('@/api/mock', () => ({
-  getBackendMenusApi: mocks.getBackendMenusApi,
-}))
-
 vi.mock('@/api/core/auth', () => ({
   coreAuthApi: {
+    getAccess: mocks.getAccess,
     getIdentity: mocks.getIdentity,
     login: mocks.login,
+    logout: mocks.logout,
   },
 }))
 
 vi.mock('@/router/access', () => ({
   DEFAULT_ADMIN_HOME_PATH: '/dashboard/workbench',
+  LOGIN_ROUTE_PATH: '/auth/login',
   normalizeAdminPath: (path: string) => path,
+  resolveLoginRedirect: (path: string) => (path === '/auth/login' ? undefined : encodeURIComponent(path)),
 }))
 
 vi.mock('./access', () => ({
@@ -74,9 +77,11 @@ beforeEach(() => {
   mocks.accessStore.accessToken = null
   mocks.accessStore.isAccessInitialized = false
   mocks.accessStore.isLoggedIn = false
+  mocks.accessStore.sessionVersion = 0
   mocks.accessStore.canAccessPath.mockReturnValue(false)
   mocks.accessStore.resolveHomePath.mockImplementation((path) => path)
   mocks.accessStore.setAccessToken.mockImplementation((token) => {
+    if (mocks.accessStore.accessToken !== token) mocks.accessStore.sessionVersion += 1
     mocks.accessStore.accessToken = token
     mocks.accessStore.isLoggedIn = Boolean(token)
     mocks.accessStore.isAccessInitialized = false
@@ -85,6 +90,7 @@ beforeEach(() => {
     mocks.accessStore.isAccessInitialized = true
   })
   mocks.accessStore.resetAccess.mockImplementation(() => {
+    mocks.accessStore.sessionVersion += 1
     mocks.accessStore.accessToken = null
     mocks.accessStore.isLoggedIn = false
     mocks.accessStore.isAccessInitialized = false
@@ -92,7 +98,8 @@ beforeEach(() => {
 
   mocks.login.mockResolvedValue({ accessToken: 'access-token:empty' })
   mocks.getIdentity.mockResolvedValue(identity)
-  mocks.getBackendMenusApi.mockResolvedValue([])
+  mocks.getAccess.mockResolvedValue({ menus: [], permissionCodes: [] })
+  mocks.logout.mockResolvedValue({})
   mocks.routerReplace.mockResolvedValue()
 })
 
@@ -115,8 +122,8 @@ test('logs in, initializes access, and runs the success callback', async () => {
   expect(mocks.login).toHaveBeenCalledExactlyOnceWith({ captchaToken: 'captcha-token', password: 'password', username: 'empty' })
   expect(mocks.accessStore.setAccessToken).toHaveBeenCalledExactlyOnceWith('access-token:empty')
   expect(mocks.getIdentity).toHaveBeenCalledOnce()
-  expect(mocks.getBackendMenusApi).toHaveBeenCalledOnce()
-  expect(mocks.accessStore.initializeAccess).toHaveBeenCalledExactlyOnceWith([], [])
+  expect(mocks.getAccess).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.initializeAccess).toHaveBeenCalledExactlyOnceWith({ menus: [], permissionCodes: [] }, [])
   expect(onSuccess).toHaveBeenCalledOnce()
 })
 
@@ -147,7 +154,7 @@ test('reuses an in-flight access setup across concurrent restores', async () => 
   const secondRestore = store.restoreAccess()
 
   expect(mocks.getIdentity).toHaveBeenCalledOnce()
-  expect(mocks.getBackendMenusApi).toHaveBeenCalledOnce()
+  expect(mocks.getAccess).toHaveBeenCalledOnce()
 
   resolveIdentity?.(identity)
 
@@ -168,6 +175,7 @@ test('clears application state when restoring an invalid session', async () => {
 
 test('does not apply an access result from a stale session', async () => {
   mocks.accessStore.accessToken = 'access-token:old'
+  mocks.accessStore.sessionVersion = 1
 
   let resolveIdentity: ((value: typeof identity) => void) | undefined
   mocks.getIdentity.mockReturnValue(
@@ -179,6 +187,7 @@ test('does not apply an access result from a stale session', async () => {
   const store = useAdminAuthStore()
   const restore = store.restoreAccess()
   mocks.accessStore.accessToken = 'access-token:new'
+  mocks.accessStore.sessionVersion = 2
   resolveIdentity?.(identity)
 
   await expect(restore).resolves.toBe(false)
@@ -188,6 +197,7 @@ test('does not apply an access result from a stale session', async () => {
 
 test('starts a fresh access setup when logging in during an older session restore', async () => {
   mocks.accessStore.accessToken = 'access-token:old'
+  mocks.accessStore.sessionVersion = 1
 
   let resolveOldIdentity: ((value: typeof identity) => void) | undefined
   mocks.getIdentity
@@ -242,8 +252,36 @@ test('logs out by resetting session state and redirecting to login', async () =>
 
   await store.logout()
 
+  expect(mocks.logout).toHaveBeenCalledOnce()
   expect(mocks.accessStore.resetAccess).toHaveBeenCalledOnce()
   expect(mocks.tabReset).toHaveBeenCalledExactlyOnceWith({ storageKey: 'template-admin:open-tabs' })
   expect(userStore.userInfo).toBeNull()
   expect(mocks.routerReplace).toHaveBeenCalledExactlyOnceWith('/auth/login')
+})
+
+test('cleans up locally and redirects even when remote logout fails', async () => {
+  mocks.accessStore.accessToken = 'access-token:active'
+  mocks.logout.mockRejectedValue(new Error('remote logout unavailable'))
+  const store = useAdminAuthStore()
+
+  await expect(store.logout()).resolves.toBeUndefined()
+
+  expect(mocks.logout).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.resetAccess).toHaveBeenCalledOnce()
+  expect(mocks.tabReset).toHaveBeenCalledExactlyOnceWith({ storageKey: 'template-admin:open-tabs' })
+  expect(mocks.routerReplace).toHaveBeenCalledExactlyOnceWith('/auth/login')
+})
+
+test('clears the session and preserves the current path when the access token expires', async () => {
+  mocks.accessStore.accessToken = 'access-token:expired'
+  const store = useAdminAuthStore()
+
+  await store.handleSessionExpired()
+
+  expect(mocks.accessStore.resetAccess).toHaveBeenCalledOnce()
+  expect(mocks.tabReset).toHaveBeenCalledExactlyOnceWith({ storageKey: 'template-admin:open-tabs' })
+  expect(mocks.routerReplace).toHaveBeenCalledExactlyOnceWith({
+    path: '/auth/login',
+    query: { redirect: encodeURIComponent('/system/role') },
+  })
 })

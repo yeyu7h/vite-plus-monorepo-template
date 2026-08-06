@@ -5,6 +5,8 @@ import { resolveAdminRoutePath } from './path'
 export interface MergeBackendMenusOptions {
   /** 为无需本地文件路由的 iframe 菜单提供占位组件 */
   iframeComponent?: RouteRecordRaw['component']
+  /** 为无需本地文件路由的外链菜单提供占位组件 */
+  externalLinkComponent?: RouteRecordRaw['component']
 }
 
 export function mergeBackendMenusWithFileRoutes(backendMenus: readonly AdminBackendMenu[], accessFileRoutes: readonly RouteRecordRaw[], options: MergeBackendMenusOptions = {}): RouteRecordRaw[] {
@@ -23,6 +25,8 @@ function mergeBackendMenuWithFileRoute(
   parentPath = '',
   inheritedMenuGroup?: AdminRouteMeta['menuGroup'],
 ): RouteRecordRaw | undefined {
+  if (menu.type === 'button') return void 0
+
   const fullPath = resolveAdminRoutePath(parentPath, menu.path)
   const fileRoute = fileRouteMap.get(fullPath)
   const menuGroup = menu.meta.menuGroup ?? inheritedMenuGroup
@@ -31,20 +35,24 @@ function mergeBackendMenuWithFileRoute(
     return route ? [route] : []
   })
   const iframeSrc = menu.meta.iframeSrc?.trim()
+  const externalLink = menu.meta.externalLink?.trim()
   const canCreateIframeRoute = Boolean(iframeSrc && options.iframeComponent)
+  const canCreateExternalLinkRoute = Boolean(externalLink && options.externalLinkComponent)
 
-  // 普通菜单继续要求存在文件路由；仅 iframe 菜单和包含有效子路由的目录可以由后端配置生成
-  if (!fileRoute && !canCreateIframeRoute && !children?.length) {
+  // 普通菜单继续要求存在文件路由；iframe、外链和包含有效子路由的目录可以由后端配置生成
+  if (!fileRoute && !canCreateIframeRoute && !canCreateExternalLinkRoute && !children?.length) {
     return void 0
   }
 
   const nextRoute = {
     ...fileRoute,
     ...(canCreateIframeRoute && !fileRoute?.component ? { component: options.iframeComponent } : {}),
+    ...(canCreateExternalLinkRoute && !fileRoute?.component ? { component: options.externalLinkComponent } : {}),
     meta: {
       ...fileRoute?.meta,
       ...menu.meta,
       ...(iframeSrc ? { iframeSrc } : {}),
+      ...(externalLink ? { externalLink } : {}),
       menuGroup,
       source: 'access',
     },

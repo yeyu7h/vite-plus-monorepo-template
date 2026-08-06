@@ -1,11 +1,186 @@
 import { hash } from '@node-rs/argon2'
+import type { InferInsertModel } from 'drizzle-orm'
+
 import { eq } from 'drizzle-orm'
 import db from '@/db'
-import { systemUsers, systemRoles, casbinRule, systemUserRoles } from '@/db/schema'
+import { systemMenuGroups, systemMenuRoles, systemMenus, systemUsers, systemRoles, casbinRule, systemUserRoles } from '@/db/schema'
+import type { AdminMenuIcon, AdminMenuType } from '@/db/schema'
 import { Status } from '@/lib/enums/common'
 
 // Use logger, avoid console.log. This is only for seed scripts, console is allowed when necessary / 使用 logger，避免 console.log。这里只为 seed 脚本，允许必要时用 console，但建议更换 logger
 const logPrefix = '[数据种子]'
+
+type MenuSeed = {
+  activePath?: string
+  children?: MenuSeed[]
+  contentMode?: 'default' | 'full'
+  description?: string
+  externalLink?: string
+  groupId?: string
+  hideInBreadcrumb?: boolean
+  hideInMenu?: boolean
+  hideInTab?: boolean
+  icon?: AdminMenuIcon
+  iframeSrc?: string
+  id: string
+  ignoreAccess?: boolean
+  keepAlive?: boolean
+  menuVisibleWithForbidden?: boolean
+  order: number
+  parentId?: string
+  path: string
+  permissionCode?: string
+  showActiveTabBorder?: boolean
+  tabPath?: string
+  title: string
+  type: AdminMenuType
+}
+
+const menuGroupsSeed = [
+  { id: 'workspace', label: '工作台', order: 10 },
+  { id: 'ops', label: '运维', order: 20 },
+  { id: 'system', label: '系统管理', order: 30 },
+  { id: 'links', label: '链接', order: 40 },
+]
+
+const menuTreeSeed: MenuSeed[] = [
+  {
+    id: 'dashboard',
+    path: '/dashboard',
+    groupId: 'workspace',
+    icon: 'i-lucide-layout-dashboard',
+    order: 10,
+    title: 'Dashboard',
+    type: 'directory',
+    children: [{ id: 'dashboard-workbench', path: 'workbench', icon: 'i-lucide-monitor', keepAlive: true, order: 10, title: '工作台', type: 'menu' }],
+  },
+  {
+    id: 'reports',
+    path: '/reports',
+    groupId: 'workspace',
+    icon: 'i-lucide-chart-column',
+    order: 20,
+    title: '报表',
+    type: 'directory',
+    children: [{ id: 'reports-sales', path: 'sales', icon: 'i-lucide-chart-no-axes-combined', order: 10, title: '销售报表', type: 'menu' }],
+  },
+  {
+    id: 'monitor',
+    path: '/monitor',
+    groupId: 'ops',
+    icon: {
+      dark: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/Apple.png',
+      light: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/Apple.png',
+    },
+    order: 30,
+    title: '监控',
+    type: 'directory',
+    children: [
+      {
+        id: 'monitor-jobs',
+        path: 'jobs',
+        icon: {
+          dark: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/App_Store.png',
+          light: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/App_Store.png',
+        },
+        order: 10,
+        title: '任务监控',
+        type: 'menu',
+      },
+    ],
+  },
+  { id: 'user', path: '/user/', groupId: 'workspace', icon: 'i-lucide-users', keepAlive: true, order: 40, title: '用户列表', type: 'menu' },
+  { id: 'map', path: '/map', groupId: 'ops', icon: 'i-lucide-map', order: 35, showActiveTabBorder: true, title: '地图', type: 'menu', contentMode: 'full' },
+  {
+    id: 'access',
+    path: '/access',
+    groupId: 'workspace',
+    icon: 'i-lucide-key-round',
+    order: 45,
+    title: '权限演示',
+    type: 'directory',
+    children: [
+      {
+        id: 'access-menu-visible-403',
+        path: 'menu-visible-403',
+        icon: 'i-lucide-eye-off',
+        menuVisibleWithForbidden: true,
+        order: 10,
+        title: '可见但无权限',
+        type: 'menu',
+      },
+    ],
+  },
+  {
+    id: 'system',
+    path: '/system',
+    groupId: 'system',
+    icon: 'i-lucide-settings',
+    order: 50,
+    title: '系统',
+    type: 'directory',
+    children: [
+      {
+        id: 'system-role',
+        path: 'role',
+        icon: 'i-lucide-shield',
+        order: 10,
+        title: '角色管理',
+        type: 'menu',
+        children: [{ id: 'system-role-create', path: 'create', order: 10, permissionCode: 'system:role:create', title: '创建角色', type: 'button' }],
+      },
+      {
+        id: 'system-settings',
+        path: 'settings',
+        icon: 'i-lucide-sliders-horizontal',
+        order: 20,
+        title: '设置中心',
+        type: 'directory',
+        children: [
+          { id: 'system-settings-theme', path: 'theme', activePath: '/system/settings', hideInMenu: true, order: 30, tabPath: '/system/settings', title: '主题设置', type: 'menu' },
+          {
+            id: 'system-settings-notification',
+            path: 'notification',
+            activePath: '/system/settings',
+            description: '邮件、站内信和安全提醒',
+            hideInMenu: true,
+            order: 40,
+            tabPath: '/system/settings',
+            title: '通知设置',
+            type: 'menu',
+          },
+          { id: 'system-settings-account', path: 'account', description: '修改密码、绑定邮箱和手机号', order: 41, title: '账户设置', type: 'menu' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'tailwindcss-document',
+    path: '/tailwindcss/document',
+    groupId: 'links',
+    iframeSrc: 'https://tailwindcss.com/docs',
+    icon: 'i-lucide-book-open-text',
+    keepAlive: true,
+    order: 55,
+    showActiveTabBorder: true,
+    title: 'Tailwind CSS 文档',
+    type: 'menu',
+  },
+  { id: 'docs-vite-plus', path: '/docs/vite-plus', groupId: 'links', externalLink: 'https://viteplus.dev/guide/', icon: 'i-lucide-book-open', order: 60, title: 'Vite+ 文档', type: 'menu' },
+  { id: 'invalid-route-demo', path: '/not-exists', icon: 'i-lucide-circle-alert', order: 999, title: '无效菜单示例', type: 'menu' },
+]
+
+function flattenMenuTree(nodes: readonly MenuSeed[], parentId?: string): Array<InferInsertModel<typeof systemMenus>> {
+  return nodes.flatMap((node) => {
+    const { children, ...menu } = node
+    const row: InferInsertModel<typeof systemMenus> = {
+      ...menu,
+      parentId,
+    }
+
+    return [row, ...flattenMenuTree(children ?? [], node.id)]
+  })
+}
 
 async function seedUsers() {
   try {
@@ -99,6 +274,58 @@ async function seedRoles() {
   }
 }
 
+async function seedMenuGroups() {
+  try {
+    console.info(`${logPrefix} 开始写入菜单分组...`)
+    await db.insert(systemMenuGroups).values(menuGroupsSeed).onConflictDoNothing()
+    console.info(`${logPrefix} 已创建 ${menuGroupsSeed.length} 个菜单分组`)
+  } catch (error) {
+    console.error(`${logPrefix} 写入菜单分组失败:`, error)
+    throw error
+  }
+}
+
+async function seedMenus() {
+  try {
+    console.info(`${logPrefix} 开始写入菜单...`)
+    const menuRows = flattenMenuTree(menuTreeSeed)
+    await db.insert(systemMenus).values(menuRows).onConflictDoNothing()
+    console.info(`${logPrefix} 已创建 ${menuRows.length} 个菜单节点`)
+    return menuRows
+  } catch (error) {
+    console.error(`${logPrefix} 写入菜单失败:`, error)
+    throw error
+  }
+}
+
+async function seedMenuRoles(menuRows: readonly InferInsertModel<typeof systemMenus>[], roles: { adminRole?: { id: string } | null }) {
+  try {
+    console.info(`${logPrefix} 开始写入菜单-角色关联...`)
+    if (!roles.adminRole) {
+      console.warn(`${logPrefix} 跳过菜单-角色关联：未找到 admin 角色`)
+      return
+    }
+
+    const adminOnlyMenuIds = new Set([
+      'access-menu-visible-403',
+      'system',
+      'system-role',
+      'system-role-create',
+      'system-settings',
+      'system-settings-theme',
+      'system-settings-notification',
+      'system-settings-account',
+    ])
+    const menuRoleRows = menuRows.filter(({ id }) => adminOnlyMenuIds.has(id)).map(({ id }) => ({ menuId: id, roleId: roles.adminRole!.id }))
+
+    await db.insert(systemMenuRoles).values(menuRoleRows).onConflictDoNothing()
+    console.info(`${logPrefix} 已创建 ${menuRoleRows.length} 条菜单-角色关联`)
+  } catch (error) {
+    console.error(`${logPrefix} 写入菜单-角色关联失败:`, error)
+    throw error
+  }
+}
+
 async function seedUserRoles(users: any, roles: any) {
   try {
     console.info(`${logPrefix} 开始写入用户-角色关联...`)
@@ -189,6 +416,7 @@ async function main() {
   // Each seed has its own try-catch, any failure does not affect the next / 每个 seed 单独 try-catch，任何失败不影响下一个
   let users: any = {}
   let roles: any = {}
+  let menuRows: InferInsertModel<typeof systemMenus>[] = []
   try {
     users = await seedUsers()
   } catch {
@@ -200,7 +428,18 @@ async function main() {
     hasError = true
   }
   try {
+    await seedMenuGroups()
+    menuRows = await seedMenus()
+  } catch {
+    hasError = true
+  }
+  try {
     await seedUserRoles(users, roles)
+  } catch {
+    hasError = true
+  }
+  try {
+    await seedMenuRoles(menuRows, roles)
   } catch {
     hasError = true
   }

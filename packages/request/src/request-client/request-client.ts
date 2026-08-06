@@ -45,7 +45,7 @@ export class RequestClient {
   public upload: FileUploader['upload']
 
   public isRefreshing = false
-  public refreshTokenQueue: Array<(token: string) => void> = []
+  public refreshTokenQueue: Array<(token: string, error?: unknown) => void> = []
 
   private readonly instance: AxiosInstance
 

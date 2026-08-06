@@ -15,6 +15,8 @@ export interface ExtendOptions<T = unknown> {
   responseReturn?: 'body' | 'data' | 'raw'
   /** Internal retry marker used by the authentication interceptor. */
   __isRetryRequest?: boolean
+  /** Internal marker for the refresh request itself; it must not start another refresh cycle. */
+  __skipAuthRefresh?: boolean
 }
 
 export type RequestClientConfig<T = unknown> = ExtendOptions<T> & Omit<AxiosRequestConfig<T>, 'paramsSerializer'>

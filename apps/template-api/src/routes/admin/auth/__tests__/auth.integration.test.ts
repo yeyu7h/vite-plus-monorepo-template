@@ -1,16 +1,18 @@
 import { hash } from '@node-rs/argon2'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { testClient } from 'hono/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test'
 
 import db from '@/db'
-import { systemUsers } from '@/db/schema'
+import { systemMenuRoles, systemMenus, systemRoles, systemUsers } from '@/db/schema'
 import env from '@/env'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { Status } from '@/lib/enums'
-import { logout as cleanupRefreshTokens } from '@/routes/admin/auth/auth.helpers'
+import { generateAccessToken, logout as cleanupRefreshTokens } from '@/routes/admin/auth/auth.helpers'
+import { setRoleParents } from '@/routes/admin/system/roles/roles.helpers'
 import authRouter from '@/routes/admin/auth/auth.index'
 import { createTestApp } from '~/tests/utils/test-app'
+import { reloadCasbinPolicy } from '~/tests/utils/casbin'
 
 if (env.NODE_ENV !== 'test') {
   throw new Error("NODE_ENV must be 'test'")
@@ -50,7 +52,7 @@ async function loginAs(credentials: { username: string; password: string }) {
 // ===== Test constants / 测试常量 =====
 const ADMIN_CREDENTIALS = { username: 'admin', password: '123456' }
 const USER_CREDENTIALS = { username: 'user', password: '123456' }
-const DISABLED_USERNAME = 'test_disabled_auth'
+const DISABLED_USERNAME = 'disabled_auth_check'
 
 // ===== Test body / 测试主体 =====
 describe('auth routes', () => {
@@ -319,6 +321,103 @@ describe('auth routes', () => {
     })
   })
 
+  // ===== GET /auth/access =====
+  describe('GET /auth/access', () => {
+    it('should return the full menu tree and button permission codes for admin', async () => {
+      const { accessToken } = await loginAs(ADMIN_CREDENTIALS)
+
+      const response = await client.auth.access.$get({}, { headers: { Authorization: `Bearer ${accessToken}` } })
+
+      expect(response.status).toBe(HttpStatusCodes.OK)
+
+      if (response.status === HttpStatusCodes.OK) {
+        const json = await response.json()
+        const data = (json as any).data
+        const menuIds = collectMenuIds(data.menus)
+
+        expect(menuIds).toContain('system')
+        expect(menuIds).toContain('docs-vite-plus')
+        expect(menuIds).not.toContain('system-role-create')
+        expect(data.permissionCodes).toContain('system:role:create')
+      }
+    })
+
+    it('should return public menus and the visible forbidden menu for a regular user', async () => {
+      const { accessToken } = await loginAs(USER_CREDENTIALS)
+
+      const response = await client.auth.access.$get({}, { headers: { Authorization: `Bearer ${accessToken}` } })
+
+      expect(response.status).toBe(HttpStatusCodes.OK)
+
+      if (response.status === HttpStatusCodes.OK) {
+        const json = await response.json()
+        const data = (json as any).data
+        const menuIds = collectMenuIds(data.menus)
+
+        expect(menuIds).toContain('access-menu-visible-403')
+        expect(menuIds).not.toContain('system')
+        expect(menuIds).not.toContain('system-role')
+        expect(data.permissionCodes).not.toContain('system:role:create')
+      }
+    })
+
+    it('should require authentication', async () => {
+      const response = await client.auth.access.$get({})
+
+      expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED)
+    })
+
+    it('should include menus and permissions inherited through Casbin roles', async () => {
+      const suffix = `${Date.now()}`
+      const parentRoleId = `access_parent_${suffix}`
+      const childRoleId = `access_child_${suffix}`
+      const rootMenuId = `access_root_${suffix}`
+      const pageMenuId = `access_page_${suffix}`
+      const buttonMenuId = `access_button_${suffix}`
+      const menuIds = [rootMenuId, pageMenuId, buttonMenuId]
+      const roleIds = [parentRoleId, childRoleId]
+
+      const adminUser = await db.query.systemUsers.findFirst({ where: { username: 'admin' }, columns: { id: true } })
+      expect(adminUser).toBeDefined()
+
+      await db.insert(systemRoles).values([
+        { id: parentRoleId, name: 'Access Parent', status: Status.ENABLED },
+        { id: childRoleId, name: 'Access Child', status: Status.ENABLED },
+      ])
+      await db.insert(systemMenus).values([
+        { id: rootMenuId, path: `/access-inherited/${suffix}`, title: '继承目录', type: 'directory', status: Status.ENABLED },
+        { id: pageMenuId, parentId: rootMenuId, path: 'page', title: '继承页面', type: 'menu', status: Status.ENABLED },
+        { id: buttonMenuId, parentId: pageMenuId, path: 'create', title: '继承按钮', type: 'button', permissionCode: `access:${suffix}:create`, status: Status.ENABLED },
+      ])
+      await db.insert(systemMenuRoles).values(menuIds.map((menuId) => ({ menuId, roleId: parentRoleId })))
+      await setRoleParents(childRoleId, [parentRoleId])
+
+      try {
+        const accessToken = await generateAccessToken({ id: adminUser!.id, roles: [childRoleId] })
+        const response = await client.auth.access.$get({}, { headers: { Authorization: `Bearer ${accessToken}` } })
+
+        expect(response.status).toBe(HttpStatusCodes.OK)
+
+        if (response.status === HttpStatusCodes.OK) {
+          const json = await response.json()
+          const data = (json as any).data
+          const menuIdsFromResponse = collectMenuIds(data.menus)
+
+          expect(menuIdsFromResponse).toContain(rootMenuId)
+          expect(menuIdsFromResponse).toContain(pageMenuId)
+          expect(menuIdsFromResponse).not.toContain(buttonMenuId)
+          expect(data.permissionCodes).toContain(`access:${suffix}:create`)
+        }
+      } finally {
+        await setRoleParents(childRoleId, [])
+        await db.delete(systemMenuRoles).where(inArray(systemMenuRoles.menuId, menuIds))
+        await db.delete(systemMenus).where(inArray(systemMenus.id, menuIds))
+        await db.delete(systemRoles).where(inArray(systemRoles.id, roleIds))
+        await reloadCasbinPolicy()
+      }
+    })
+  })
+
   // ===== GET /auth/permissions =====
   describe('GET /auth/permissions', () => {
     it('should return permissions for admin user', async () => {
@@ -360,3 +459,13 @@ describe('auth routes', () => {
     })
   })
 })
+
+function collectMenuIds(menus: unknown): string[] {
+  if (!Array.isArray(menus)) return []
+
+  return menus.flatMap((menu) => {
+    if (typeof menu !== 'object' || menu === null) return []
+    const record = menu as { children?: unknown; id?: unknown }
+    return [...(typeof record.id === 'string' ? [record.id] : []), ...collectMenuIds(record.children)]
+  })
+}

@@ -1,7 +1,7 @@
 import type { RequestClient } from './request-client'
 import type { ExtendOptions, MakeErrorMessageFn, ResponseInterceptorConfig } from './types'
 
-import axios from 'axios'
+import axios, { AxiosHeaders } from 'axios'
 
 type ResponseRecord = Record<PropertyKey, unknown>
 
@@ -68,16 +68,24 @@ export const authenticateResponseInterceptor = ({ client, doReAuthenticate, doRe
 
     const retryConfig = config as typeof config & ExtendOptions
 
+    if (retryConfig.__skipAuthRefresh) throw error
+
     if (!enableRefreshToken || retryConfig.__isRetryRequest) {
       await doReAuthenticate()
       throw error
     }
 
     if (client.isRefreshing) {
-      return new Promise((resolve) => {
-        client.refreshTokenQueue.push((newToken: string) => {
-          config.headers.Authorization = formatToken(newToken)
-          resolve(client.request(config.url ?? '', { ...config }))
+      return new Promise((resolve, reject) => {
+        const queuedConfig = { ...config, __isRetryRequest: true, headers: new AxiosHeaders(config.headers) } as typeof config & ExtendOptions
+        client.refreshTokenQueue.push((newToken, refreshError) => {
+          if (refreshError) {
+            reject(refreshError)
+            return
+          }
+
+          queuedConfig.headers.Authorization = formatToken(newToken)
+          resolve(client.request(queuedConfig.url ?? '', queuedConfig))
         })
       })
     }
@@ -87,16 +95,24 @@ export const authenticateResponseInterceptor = ({ client, doReAuthenticate, doRe
 
     try {
       const newToken = await doRefreshToken()
-      client.refreshTokenQueue.forEach((callback) => callback(newToken))
-      client.refreshTokenQueue = []
+      if (!newToken) throw new Error('Refresh token response did not contain an access token')
 
-      config.headers.Authorization = formatToken(newToken)
-      return client.request(config.url ?? '', { ...config })
+      const queuedRequests = client.refreshTokenQueue.splice(0)
+      queuedRequests.forEach((callback) => callback(newToken))
+
+      retryConfig.headers = retryConfig.headers ?? new AxiosHeaders()
+      retryConfig.headers.Authorization = formatToken(newToken)
+      return client.request(config.url ?? '', { ...retryConfig, __isRetryRequest: true })
     } catch (refreshError: unknown) {
-      client.refreshTokenQueue.forEach((callback) => callback(''))
-      client.refreshTokenQueue = []
-      console.error('Refresh token failed, please login again.')
-      await doReAuthenticate()
+      const queuedRequests = client.refreshTokenQueue.splice(0)
+      queuedRequests.forEach((callback) => callback('', refreshError))
+
+      try {
+        await doReAuthenticate()
+      } catch {
+        // Keep the refresh error as the rejection reason; re-authentication is best effort cleanup.
+      }
+
       throw refreshError
     } finally {
       client.isRefreshing = false

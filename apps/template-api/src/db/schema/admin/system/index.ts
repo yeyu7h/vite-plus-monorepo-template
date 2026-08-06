@@ -1,4 +1,7 @@
 export * from './dicts'
+export * from './menu-groups'
+export * from './menu-roles'
+export * from './menus'
 export * from './params'
 export * from './roles'
 export * from './user-roles'

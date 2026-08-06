@@ -8,15 +8,24 @@ function formatToken(token: string | null): string | null {
 }
 
 async function doReAuthenticate(): Promise<void> {
-  return
+  const { useAdminAuthStore } = await import('@/stores/auth')
+  await useAdminAuthStore().handleSessionExpired()
 }
 
 async function doRefreshToken(): Promise<string> {
-  return ''
+  const result = await client.post<{ accessToken: string }>('/admin/auth/refresh', undefined, { __skipAuthRefresh: true })
+  if (!result.accessToken) throw new Error('刷新令牌响应缺少访问令牌')
+
+  localStorage.setItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY, result.accessToken)
+
+  const { useAdminAccessStore } = await import('@/stores/access')
+  useAdminAccessStore().updateAccessToken(result.accessToken)
+
+  return result.accessToken
 }
 
 function createRequestClient(baseURL: string, options?: RequestClientOptions) {
-  const client = new RequestClient({ ...options, baseURL })
+  const client = new RequestClient({ ...options, baseURL, withCredentials: true })
 
   client.addRequestInterceptor({
     fulfilled: (config) => {
@@ -31,18 +40,14 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   client.addResponseInterceptor(
     authenticateResponseInterceptor({
       client,
-      enableRefreshToken: false,
+      enableRefreshToken: true,
       doReAuthenticate,
       doRefreshToken,
       formatToken,
     }),
   )
 
-  client.addResponseInterceptor(
-    errorMessageResponseInterceptor((message, error) => {
-      console.log('[message, error]-42', message, error)
-    }),
-  )
+  client.addResponseInterceptor(errorMessageResponseInterceptor())
 
   return client
 }

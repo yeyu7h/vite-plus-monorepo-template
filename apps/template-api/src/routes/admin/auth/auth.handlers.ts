@@ -14,6 +14,7 @@ import { loginLogger } from '@/lib/services/logger'
 import { getIPAddress } from '@/services/ip'
 import { Resp, tryit } from '@/utils'
 
+import { getAdminAccessByRoles } from './access.helpers'
 import { generateTokens, getIdentityById, getPermissionsByRoles, logout as logoutUtil, refreshAccessToken, validateCaptcha, validateLogin } from './auth.helpers'
 
 /** Admin login / 管理端登录 */
@@ -107,6 +108,14 @@ export const getIdentity: AuthRouteHandlerType<'getIdentity'> = async (c) => {
   }
 
   return c.json(Resp.ok(identity), HttpStatusCodes.OK)
+}
+
+/** Get current admin menu access / 获取当前用户菜单和权限码 */
+export const getAccess: AuthRouteHandlerType<'getAccess'> = async (c) => {
+  const { roles } = c.get('jwtPayload')
+  const access = await getAdminAccessByRoles(roles ?? [])
+
+  return c.json(Resp.ok(access), HttpStatusCodes.OK)
 }
 
 /** Get user permissions / 获取用户权限 */

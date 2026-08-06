@@ -15,6 +15,8 @@ import { enforcerPromise } from '@/lib/services/casbin'
 import redisClient from '@/lib/services/redis'
 import { toColumns } from '@/utils'
 
+import { resolveEffectiveAdminRoles } from './access.helpers'
+
 // ===== Configuration / 配置 =====
 const ACCESS_TOKEN_SECRET = env.ADMIN_JWT_SECRET
 const ACCESS_TOKEN_DURATION = { minutes: ACCESS_TOKEN_EXPIRES_MINUTES }
@@ -206,8 +208,9 @@ export async function getIdentityById(userId: string) {
   if (!user) return null
 
   const { enabledRoles, ...userWithoutRoles } = user
+  const roles = await resolveEffectiveAdminRoles(enabledRoles.map(({ id }) => id))
 
-  return { ...userWithoutRoles, roles: enabledRoles.map(({ id }) => id) }
+  return { ...userWithoutRoles, roles }
 }
 
 /**

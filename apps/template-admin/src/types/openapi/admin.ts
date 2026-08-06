@@ -398,6 +398,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/auth/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取当前用户菜单和权限码 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 获取成功 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                menus: components["schemas"]["AdminAccessMenu"][];
+                                permissionCodes: string[];
+                            };
+                        };
+                    };
+                };
+                /** @description 未授权 */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description 错误信息 */
+                            message?: string;
+                            /** @description 错误堆栈 */
+                            stack?: string;
+                            /** @description 错误对象 */
+                            error?: {
+                                /** @description 错误名称 */
+                                name: string;
+                                /** @description 错误详情 */
+                                issues?: {
+                                    /** @description 错误码 */
+                                    code: string;
+                                    /** @description 错误路径 */
+                                    path: (string | number)[];
+                                    /** @description 错误信息 */
+                                    message: string;
+                                }[];
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/auth/permissions": {
         parameters: {
             query?: never;
@@ -3631,7 +3702,43 @@ export interface paths {
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
+    schemas: {
+        AdminAccessMenu: {
+            children?: components["schemas"]["AdminAccessMenu"][];
+            id: string;
+            meta: {
+                activePath?: string;
+                authority?: string[];
+                /** @enum {string} */
+                contentMode?: "default" | "full";
+                description?: string;
+                externalLink?: string;
+                hideInBreadcrumb?: boolean;
+                hideInMenu?: boolean;
+                hideInTab?: boolean;
+                icon?: string | {
+                    dark?: string;
+                    light: string;
+                };
+                iframeSrc?: string;
+                ignoreAccess?: boolean;
+                keepAlive?: boolean;
+                menuGroup?: {
+                    id: string;
+                    label: string;
+                    order: number;
+                } | string;
+                menuVisibleWithForbidden?: boolean;
+                order?: number;
+                showActiveTabBorder?: boolean;
+                tabPath?: string;
+                title: string;
+            };
+            path: string;
+            /** @enum {string} */
+            type: "directory" | "menu";
+        };
+    };
     responses: never;
     parameters: never;
     requestBodies: never;

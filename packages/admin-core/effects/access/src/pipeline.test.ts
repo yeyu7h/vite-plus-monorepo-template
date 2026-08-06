@@ -9,6 +9,7 @@ import { resolveAdminAccess } from './resolve'
 const component = { template: '<div />' }
 const forbiddenComponent = { template: '<div>403</div>' }
 const iframeComponent = { template: '<div>iframe</div>' }
+const externalLinkComponent = { template: '<div>external link</div>' }
 
 test('merges backend menu meta onto matching file routes only', () => {
   const routes: RouteRecordRaw[] = [
@@ -89,6 +90,34 @@ test('creates iframe routes and their structural parent without matching file pa
   expect(mergedRoutes[0]?.children?.[0]?.component).toBe(iframeComponent)
   expect(mergedRoutes[0]?.children?.[0]?.meta?.iframeSrc).toBe('https://doc.vben.pro')
   expect(mergedRoutes[0]?.children?.[0]?.meta?.menuGroup).toEqual({ label: '链接', order: 40 })
+})
+
+test('creates external-link routes without matching file pages', () => {
+  const mergedRoutes = mergeBackendMenusWithFileRoutes(
+    [
+      {
+        id: 'docs-vite-plus',
+        path: '/docs/vite-plus',
+        meta: { externalLink: ' https://viteplus.dev/guide/ ', title: 'Vite+ 文档' },
+      },
+    ],
+    [],
+    { externalLinkComponent },
+  )
+
+  expect(mergedRoutes).toHaveLength(1)
+  expect(mergedRoutes[0]?.path).toBe('/docs/vite-plus')
+  expect(mergedRoutes[0]?.component).toBe(externalLinkComponent)
+  expect(mergedRoutes[0]?.meta?.externalLink).toBe('https://viteplus.dev/guide/')
+})
+
+test('does not create routes for button menu nodes', () => {
+  const mergedRoutes = mergeBackendMenusWithFileRoutes(
+    [{ id: 'system-role-create', path: '/system/role/create', type: 'button', meta: { title: '创建角色' } }],
+    [{ component, path: '/system/role/create' }],
+  )
+
+  expect(mergedRoutes).toEqual([])
 })
 
 test('applies authority filtering to generated iframe routes', () => {

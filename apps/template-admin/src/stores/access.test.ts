@@ -94,6 +94,26 @@ test('resolves accessible and fallback paths from initialized routes', () => {
   expect(store.resolveAccessiblePath('/system/role')).toBe('/dashboard/workbench')
 })
 
+test('stores backend permission codes and exposes permission checks', () => {
+  const store = useAdminAccessStore()
+  const accessPayload = {
+    menus: [],
+    permissionCodes: ['system:role:create'],
+  }
+
+  store.initializeAccess(accessPayload, ['admin'])
+
+  expect(store.permissionCodes).toEqual(['system:role:create'])
+  expect(store.hasPermission('system:role:create')).toBe(true)
+  expect(store.hasPermission('system:role:delete')).toBe(false)
+  expect(mocks.resolveAdminAccess).toHaveBeenCalledExactlyOnceWith([], [], ['admin'])
+
+  store.resetAccess()
+
+  expect(store.permissionCodes).toEqual([])
+  expect(store.hasPermission('system:role:create')).toBe(false)
+})
+
 test('resets generated access when the token changes', () => {
   storage.set('template-admin:access-token', 'access-token:old')
   const store = useAdminAccessStore()

@@ -2,6 +2,9 @@ import type { AdminContentMode } from './content'
 
 export type AdminMenuAuthority = string[]
 
+/** 后端菜单节点类型；按钮节点只用于权限码，不会生成前端路由。 */
+export type AdminMenuType = 'directory' | 'menu' | 'button'
+
 export interface AdminMenuImageIcon {
   /** 暗色主题下展示的图标地址 */
   dark?: string
@@ -96,10 +99,18 @@ export interface AdminBackendMenuMeta {
 export interface AdminBackendMenu {
   /** 后端菜单稳定标识 */
   id: string
+  /** 后端菜单节点类型 */
+  type?: AdminMenuType
   /** 子级菜单 */
   children?: AdminBackendMenu[]
   /** 菜单元数据 */
   meta: AdminBackendMenuMeta
   /** 顶层使用绝对路径 子级可使用相对父级的路径 外链菜单除外 */
   path: string
+}
+
+/** 管理端初始化权限所需的后端数据。 */
+export interface AdminAccessPayload {
+  menus: AdminBackendMenu[]
+  permissionCodes: string[]
 }

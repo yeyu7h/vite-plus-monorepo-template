@@ -4,22 +4,27 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { accessFileRoutes } from '@/router'
+import type { CoreAuthApi } from '@/api/core/auth'
 import { createAdminRoutePathMatcher, DEFAULT_ADMIN_HOME_PATH, FORBIDDEN_ROUTE_PATH, normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from '@/router/access'
 import { ADMIN_ACCESS_TOKEN_STORAGE_KEY } from '../constants/storage'
 
 export const useAdminAccessStore = defineStore('admin-access', () => {
   const router = useRouter()
   const accessToken = ref<string | null>(localStorage.getItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY))
+  const sessionVersion = ref(0)
   const accessibleRoutes = ref<RouteRecordRaw[]>([])
   const isAccessInitialized = ref(false)
   const menuGroups = ref<AdminMenuGroup[]>([])
   const navigationRoutes = ref<AdminNavigationRouteRecord[]>([])
+  const permissionCodes = ref<string[]>([])
   const routePaths = ref<string[]>([])
   let matchesAccessiblePath: (path: string) => boolean = () => false
 
   const isLoggedIn = computed(() => Boolean(accessToken.value))
 
-  function initializeAccess(backendMenus: readonly AdminBackendMenu[], roles: readonly string[]) {
+  function initializeAccess(accessPayload: CoreAuthApi.AccessResult | readonly AdminBackendMenu[], roles: readonly string[], legacyPermissionCodes: readonly string[] = []) {
+    const backendMenus = 'menus' in accessPayload ? accessPayload.menus : accessPayload
+    const nextPermissionCodes = 'permissionCodes' in accessPayload ? accessPayload.permissionCodes : legacyPermissionCodes
     const resolvedAccess = resolveAdminAccess(accessFileRoutes, backendMenus, roles)
 
     registerAdminAccessRoutes(router, resolvedAccess.accessibleRoutes)
@@ -27,12 +32,17 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     accessibleRoutes.value = resolvedAccess.accessibleRoutes
     menuGroups.value = resolvedAccess.menuGroups
     navigationRoutes.value = resolvedAccess.navigationRoutes
+    permissionCodes.value = [...nextPermissionCodes]
     routePaths.value = [...resolvedAccess.routePathSet]
     isAccessInitialized.value = true
   }
 
   function canAccessPath(path: string) {
     return matchesAccessiblePath(normalizeAdminPath(path))
+  }
+
+  function hasPermission(code: string) {
+    return permissionCodes.value.includes(code)
   }
 
   function resolveHomePath(path: string) {
@@ -52,6 +62,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   }
 
   function resetAccess() {
+    sessionVersion.value += 1
     accessToken.value = null
     localStorage.removeItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY)
     resetAccessState()
@@ -59,16 +70,18 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
 
   function setAccessToken(token: string | null) {
     if (accessToken.value !== token) {
+      sessionVersion.value += 1
       resetAccessState()
     }
 
+    updateAccessToken(token)
+  }
+
+  function updateAccessToken(token: string | null) {
     accessToken.value = token
 
-    if (token) {
-      localStorage.setItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY, token)
-    } else {
-      localStorage.removeItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY)
-    }
+    if (token) localStorage.setItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY, token)
+    else localStorage.removeItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY)
   }
 
   function resetAccessState() {
@@ -77,6 +90,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     isAccessInitialized.value = false
     menuGroups.value = []
     navigationRoutes.value = []
+    permissionCodes.value = []
     routePaths.value = []
     resetAdminAccessRoutes()
   }
@@ -84,14 +98,18 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   return {
     accessToken,
     canAccessPath,
+    hasPermission,
     initializeAccess,
     isAccessInitialized,
     isLoggedIn,
     menuGroups,
     navigationRoutes,
+    permissionCodes,
     resetAccess,
     resolveAccessiblePath,
     resolveHomePath,
+    sessionVersion,
     setAccessToken,
+    updateAccessToken,
   }
 })

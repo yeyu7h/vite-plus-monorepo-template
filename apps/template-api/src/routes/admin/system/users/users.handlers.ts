@@ -3,13 +3,13 @@ import type { SystemUsersRouteHandlerType } from './users.types'
 import { eq } from 'drizzle-orm'
 
 import db from '@/db'
-import { systemUsers } from '@/db/schema'
+import { systemUserRoles, systemUsers } from '@/db/schema'
 import { RefineQueryParamsSchema } from '@/lib/core/refine-query'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { HttpStatusPhrases } from '@monorepo/server-core'
 import { omit, Resp } from '@/utils'
 
-import { createUser, listUsers, saveUserRoles, validateRolesExist } from './users.helpers'
+import { createUser, getAssignableRoles, listUsers, saveUserRoles, UserRoleValidationError } from './users.helpers'
 
 export const list: SystemUsersRouteHandlerType<'list'> = async (c) => {
   const query = c.req.query()
@@ -34,7 +34,16 @@ export const create: SystemUsersRouteHandlerType<'create'> = async (c) => {
   const body = c.req.valid('json')
   const { sub } = c.get('jwtPayload')
 
-  const created = await createUser(body, sub)
+  let created
+  try {
+    created = await createUser(body, sub)
+  } catch (error) {
+    if (error instanceof UserRoleValidationError) {
+      const status = error.reason === 'not_found' ? HttpStatusCodes.NOT_FOUND : HttpStatusCodes.BAD_REQUEST
+      return c.json(Resp.fail(error.message), status)
+    }
+    throw error
+  }
   const userWithoutPassword = omit(created, ['password'])
 
   return c.json(Resp.ok(userWithoutPassword), HttpStatusCodes.CREATED)
@@ -68,40 +77,58 @@ export const update: SystemUsersRouteHandlerType<'update'> = async (c) => {
   const { sub } = c.get('jwtPayload')
 
   // Check if built-in user / 检查是否为内置用户
-  const [user] = await db.select({ builtIn: systemUsers.builtIn }).from(systemUsers).where(eq(systemUsers.id, id))
+  const user = await db.query.systemUsers.findFirst({ where: { id }, with: { roles: { columns: { id: true, name: true } } } })
 
   if (!user) {
     return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
   }
 
   // Built-in users cannot have their status modified / 内置用户不允许修改状态
-  if (user.builtIn && body.status !== undefined) {
-    return c.json(Resp.fail('内置用户不允许修改状态'), HttpStatusCodes.FORBIDDEN)
+  if (user.builtIn && body.status === 'DISABLED') {
+    return c.json(Resp.fail('内置用户不允许禁用'), HttpStatusCodes.FORBIDDEN)
+  }
+  if (user.builtIn && body.username !== undefined && body.username !== user.username) return c.json(Resp.fail('内置用户不允许修改用户名'), HttpStatusCodes.FORBIDDEN)
+  if (user.builtIn && body.roleIds !== undefined) return c.json(Resp.fail('内置用户不允许修改角色'), HttpStatusCodes.FORBIDDEN)
+
+  const { roleIds, ...updateData } = body
+  let roles = user.roles
+  try {
+    if (roleIds !== undefined) roles = (await getAssignableRoles(roleIds)).map(({ id: roleId, name }) => ({ id: roleId, name }))
+  } catch (error) {
+    if (error instanceof UserRoleValidationError) {
+      const status = error.reason === 'not_found' ? HttpStatusCodes.NOT_FOUND : HttpStatusCodes.BAD_REQUEST
+      return c.json(Resp.fail(error.message), status)
+    }
+    throw error
   }
 
-  // Direct password update not allowed / 不允许直接更新密码
-  const updateData = omit(body, ['password'])
-
-  const [updated] = await db
-    .update(systemUsers)
-    .set({
-      ...updateData,
-      updatedBy: sub,
-    })
-    .where(eq(systemUsers.id, id))
-    .returning()
+  const updated = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(systemUsers)
+      .set({ ...updateData, updatedBy: sub })
+      .where(eq(systemUsers.id, id))
+      .returning()
+    if (roleIds !== undefined) {
+      await tx.delete(systemUserRoles).where(eq(systemUserRoles.userId, id))
+      if (roleIds.length > 0) await tx.insert(systemUserRoles).values([...new Set(roleIds)].map((roleId) => ({ userId: id, roleId })))
+    }
+    return row
+  })
 
   if (!updated) {
     return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
   }
 
-  const userWithoutPassword = omit(updated, ['password'])
+  const userWithoutPassword = { ...omit(updated, ['password']), roles }
 
   return c.json(Resp.ok(userWithoutPassword), HttpStatusCodes.OK)
 }
 
 export const remove: SystemUsersRouteHandlerType<'remove'> = async (c) => {
   const { id } = c.req.valid('param')
+  const { sub } = c.get('jwtPayload')
+
+  if (id === sub) return c.json(Resp.fail('不能删除当前登录用户'), HttpStatusCodes.FORBIDDEN)
 
   // Check if built-in user / 检查是否为内置用户
   const [user] = await db.select({ builtIn: systemUsers.builtIn }).from(systemUsers).where(eq(systemUsers.id, id))
@@ -130,7 +157,7 @@ export const saveRoles: SystemUsersRouteHandlerType<'saveRoles'> = async (c) => 
   // Get user and their current roles / 获取用户及其当前角色
   const userWithRoles = await db.query.systemUsers.findFirst({
     where: { id: userId },
-    columns: { id: true },
+    columns: { id: true, builtIn: true },
     with: {
       roles: {
         columns: { id: true },
@@ -142,10 +169,17 @@ export const saveRoles: SystemUsersRouteHandlerType<'saveRoles'> = async (c) => 
     return c.json(Resp.fail('用户不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
+  if (userWithRoles.builtIn) return c.json(Resp.fail('内置用户不允许修改角色'), HttpStatusCodes.FORBIDDEN)
+
   // Validate role existence / 验证角色存在性
-  const invalidRoleIds = await validateRolesExist(roleIds)
-  if (invalidRoleIds) {
-    return c.json(Resp.fail(`角色不存在: ${invalidRoleIds.join(', ')}`), HttpStatusCodes.NOT_FOUND)
+  try {
+    await getAssignableRoles(roleIds)
+  } catch (error) {
+    if (error instanceof UserRoleValidationError) {
+      const status = error.reason === 'not_found' ? HttpStatusCodes.NOT_FOUND : HttpStatusCodes.BAD_REQUEST
+      return c.json(Resp.fail(error.message), status)
+    }
+    throw error
   }
 
   // Save user roles / 保存用户角色

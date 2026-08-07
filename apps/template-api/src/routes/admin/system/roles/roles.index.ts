@@ -11,5 +11,7 @@ const systemRolesRouter = createAdminRouter()
   .openapi(routes.remove, handlers.remove)
   .openapi(routes.getPermissions, handlers.getPermissions)
   .openapi(routes.savePermissions, handlers.savePermissions)
+  .openapi(routes.getMenus, handlers.getMenus)
+  .openapi(routes.saveMenus, handlers.saveMenus)
 
 export default systemRolesRouter

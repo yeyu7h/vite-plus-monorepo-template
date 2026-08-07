@@ -14,6 +14,9 @@ import {
   systemRolesIdParamsSchema,
   systemRolesListResponseSchema,
   systemRolesPatchSchema,
+  roleMenuAuthorizationResponseSchema,
+  saveRoleMenusResponseSchema,
+  saveRoleMenusSchema,
 } from './roles.schema'
 
 const routePrefix = '/system/roles'
@@ -80,6 +83,7 @@ export const update = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemRolesDetailResponseSchema), '更新成功'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '请求参数错误'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, 'admin 角色不允许禁用或修改授权'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
   },
 })
@@ -96,6 +100,8 @@ export const remove = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemRolesIdParamsSchema), '删除成功'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, 'ID参数错误'),
+    [HttpStatusCodes.CONFLICT]: jsonContent(respErrSchema, '角色仍被用户或子角色引用'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, 'admin 角色不允许删除'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
   },
 })
@@ -128,7 +134,37 @@ export const savePermissions = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(savePermissionsResponseSchema), '保存权限成功'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '参数错误'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, 'admin 角色授权不允许修改'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(respErrSchema, '保存权限失败'),
+  },
+})
+
+export const getMenus = createRoute({
+  tags,
+  summary: '获取角色菜单授权树',
+  method: 'get',
+  path: `${routePrefix}/{id}/menus`,
+  request: { params: systemRolesIdParamsSchema },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(roleMenuAuthorizationResponseSchema), '获取成功'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
+  },
+})
+
+export const saveMenus = createRoute({
+  tags,
+  summary: '保存角色菜单授权（全量更新）',
+  method: 'put',
+  path: `${routePrefix}/{id}/menus`,
+  request: {
+    params: systemRolesIdParamsSchema,
+    body: jsonContentRequired(saveRoleMenusSchema, '菜单授权参数'),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(saveRoleMenusResponseSchema), '保存成功'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '菜单授权参数错误'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, 'admin 角色授权不允许修改'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色或菜单不存在'),
   },
 })

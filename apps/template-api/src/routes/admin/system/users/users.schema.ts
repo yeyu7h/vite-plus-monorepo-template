@@ -2,9 +2,21 @@ import { z } from 'zod'
 
 import { insertSystemUsersSchema, selectSystemUsersSchema } from '@/db/schema'
 import { roleBriefSchema } from '@/lib/schemas'
+import { Status } from '@/lib/enums'
+
+const roleIdsField = z.array(z.string().min(1).max(64)).default([]).meta({ description: '角色 ID 列表' })
+const optionalRoleIdsField = z.array(z.string().min(1).max(64)).optional().meta({ description: '角色 ID 列表' })
+
+export const systemUsersCreateSchema = insertSystemUsersSchema.extend({
+  roleIds: roleIdsField,
+})
 
 /** Patch Schema / 更新 Schema */
-export const systemUsersPatchSchema = insertSystemUsersSchema.partial().refine((data) => Object.keys(data).length > 0, { message: '至少需要提供一个字段进行更新' })
+export const systemUsersPatchSchema = insertSystemUsersSchema
+  .omit({ password: true })
+  .extend({ roleIds: optionalRoleIdsField })
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, { message: '至少需要提供一个字段进行更新' })
 
 /** Login Schema / 登录 Schema */
 export const systemUsersLoginSchema = insertSystemUsersSchema
@@ -47,6 +59,12 @@ export const systemUsersInfoResponseSchema = selectSystemUsersSchema
 /** Save user roles Schema / 保存用户角色 Schema */
 export const saveRolesSchema = z.object({
   roleIds: z.array(z.string().min(1).max(64).meta({ example: 'admin', description: '角色编码' })).meta({ description: '角色列表（全量）' }),
+})
+
+export const assignableRoleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.enum([Status.ENABLED, Status.DISABLED]),
 })
 
 /** Save user roles params Schema / 保存用户角色参数 Schema */

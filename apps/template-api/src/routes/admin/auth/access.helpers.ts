@@ -44,7 +44,7 @@ export interface AdminAccessMenuRecord {
   contentMode?: 'default' | 'full' | null
   description?: string | null
   externalLink?: string | null
-  group?: { id: string; label: string; order: number } | null
+  group?: { id: string; label: string; order: number; status?: string } | null
   groupId?: string | null
   hideInBreadcrumb?: boolean
   hideInMenu?: boolean
@@ -74,7 +74,23 @@ export interface AdminAccessMenuRecord {
  * `menuVisibleWithForbidden` 允许菜单在无权限时仍进入返回树，前端会替换为 403 页面。
  */
 export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], effectiveRoles: readonly string[]): AdminAccessPayload {
-  const enabledRows = rows.filter((row) => !row.status || row.status === Status.ENABLED)
+  const childrenById = new Map<string, string[]>()
+  for (const row of rows) {
+    if (!row.parentId) continue
+    const childIds = childrenById.get(row.parentId) ?? []
+    childIds.push(row.id)
+    childrenById.set(row.parentId, childIds)
+  }
+  const hiddenIds = new Set<string>()
+  const pendingHiddenIds = rows.filter((row) => (row.status && row.status !== Status.ENABLED) || (row.group?.status && row.group.status !== Status.ENABLED)).map(({ id }) => id)
+  while (pendingHiddenIds.length > 0) {
+    const id = pendingHiddenIds.pop()!
+    if (hiddenIds.has(id)) continue
+    hiddenIds.add(id)
+    pendingHiddenIds.push(...(childrenById.get(id) ?? []))
+  }
+
+  const enabledRows = rows.filter((row) => !hiddenIds.has(row.id))
   const rowsById = new Map(enabledRows.map((row) => [row.id, row]))
   const effectiveRoleSet = new Set(effectiveRoles)
   const selectedIds = new Set<string>()
@@ -158,7 +174,7 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
       ...(row.iframeSrc ? { iframeSrc: row.iframeSrc } : {}),
       ...(row.ignoreAccess ? { ignoreAccess: true } : {}),
       ...(row.keepAlive ? { keepAlive: true } : {}),
-      ...(row.group ? { menuGroup: row.group } : {}),
+      ...(row.group ? { menuGroup: { id: row.group.id, label: row.group.label, order: row.group.order } } : {}),
       ...(row.menuVisibleWithForbidden ? { menuVisibleWithForbidden: true } : {}),
       ...(row.order !== undefined ? { order: row.order } : {}),
       ...(row.showActiveTabBorder ? { showActiveTabBorder: true } : {}),
@@ -198,7 +214,7 @@ async function loadAdminAccessMenuRows(): Promise<AdminAccessMenuRecord[]> {
     where: { status: Status.ENABLED },
     with: {
       group: {
-        columns: { id: true, label: true, order: true },
+        columns: { id: true, label: true, order: true, status: true },
       },
       roles: {
         columns: { id: true },

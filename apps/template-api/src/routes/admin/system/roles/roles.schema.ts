@@ -3,9 +3,11 @@ import { z } from 'zod'
 import { insertSystemRolesSchema, selectSystemRolesSchema } from '@/db/schema'
 import { roleIdField } from '@/lib/schemas'
 import { permissionItemSchema } from '@/lib/schemas/common-fields'
+import { Status } from '@/lib/enums'
 
 /** Patch Schema / 更新 Schema */
 export const systemRolesPatchSchema = insertSystemRolesSchema
+  .omit({ id: true })
   .extend({
     parentRoleIds: z.array(roleIdField).optional().describe('上级角色ID列表'),
   })
@@ -26,8 +28,14 @@ export const systemRolesIdParamsSchema = z.object({
   id: roleIdField,
 })
 
+export const rolePermissionItemSchema = permissionItemSchema.extend({
+  direct: z.boolean().meta({ description: '是否为当前角色的直接权限' }),
+  inherited: z.boolean().meta({ description: '是否从上级角色继承' }),
+  sourceRoleId: z.string().meta({ description: '权限来源角色 ID' }),
+})
+
 export const savePermissionsSchema = z.object({
-  permissions: z.array(permissionItemSchema).meta({ description: '权限列表' }),
+  permissions: z.array(rolePermissionItemSchema).meta({ description: '权限列表' }),
   groupings: z
     .array(
       z.object({
@@ -60,4 +68,41 @@ export const savePermissionsResponseSchema = z.object({
   added: z.number().int().meta({ description: '新增权限数量' }),
   removed: z.number().int().meta({ description: '删除权限数量' }),
   total: z.number().int().meta({ description: '总权限数量' }),
+})
+
+const roleMenuAuthorizationBaseSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  type: z.enum(['directory', 'menu', 'button']),
+  status: z.enum([Status.ENABLED, Status.DISABLED]),
+  accessScope: z.enum(['public', 'restricted']),
+  permissionCode: z.string().nullable(),
+  checked: z.boolean(),
+  direct: z.boolean(),
+  inherited: z.boolean(),
+  readOnly: z.boolean(),
+})
+
+export type RoleMenuAuthorizationNode = z.infer<typeof roleMenuAuthorizationBaseSchema> & { children?: RoleMenuAuthorizationNode[] }
+
+export const roleMenuAuthorizationNodeSchema: z.ZodType<RoleMenuAuthorizationNode> = z
+  .lazy(() => roleMenuAuthorizationBaseSchema.extend({ children: z.array(roleMenuAuthorizationNodeSchema).optional() }))
+  .meta({ id: 'RoleMenuAuthorizationNode' })
+
+export const roleMenuAuthorizationResponseSchema = z.object({
+  roleId: roleIdField,
+  readOnly: z.boolean(),
+  menuIds: z.array(z.string()).meta({ description: '全部已授权菜单 ID' }),
+  directMenuIds: z.array(z.string()).meta({ description: '当前角色直接授权菜单 ID' }),
+  inheritedMenuIds: z.array(z.string()).meta({ description: '继承授权菜单 ID' }),
+  tree: z.array(roleMenuAuthorizationNodeSchema),
+})
+
+export const saveRoleMenusSchema = z.object({
+  menuIds: z.array(z.string().min(1).max(128)).meta({ description: '当前角色直接菜单授权（全量）' }),
+})
+
+export const saveRoleMenusResponseSchema = z.object({
+  total: z.number().int(),
+  menuIds: z.array(z.string()),
 })

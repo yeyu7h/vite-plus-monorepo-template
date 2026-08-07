@@ -6,9 +6,12 @@ import { Effect } from 'effect'
 
 import db from '@/db'
 import { systemRoles } from '@/db/schema'
+import { systemMenuRoles } from '@/db/schema'
 
 import { withLock } from '@/lib/infrastructure'
 import { enforcerPromise } from '@/lib/services/casbin'
+import { buildMenuTree, loadMenuRows, replaceRoleMenuLinks } from '../menus/menus.helpers'
+import type { RoleMenuAuthorizationNode } from './roles.schema'
 
 /**
  * Get all parent roles for a role
@@ -145,6 +148,11 @@ export async function cleanRoleInheritance(roleId: string): Promise<void> {
 
   // Delete relationships as parent role (other roles inherit from roleId) / 删除作为父角色的关系（其他角色继承自roleId）
   await enforcer.removeFilteredGroupingPolicy(1, roleId)
+}
+
+export async function cleanRoleAuthorization(roleId: string): Promise<void> {
+  const enforcer = await enforcerPromise
+  await enforcer.deleteRole(roleId)
 }
 
 /**
@@ -293,11 +301,15 @@ export async function getRolePermissionsAndGroupings(roleId: string) {
   const enforcer = await enforcerPromise
 
   // Get all implicit permissions (including inherited) / 获取所有隐式权限（包括继承的）
-  const allImplicitPermissions = await enforcer.getImplicitPermissionsForUser(roleId.toString())
+  const [allImplicitPermissions, directPermissions] = await Promise.all([enforcer.getImplicitPermissionsForUser(roleId), enforcer.getPermissionsForUser(roleId)])
+  const directKeys = new Set(directPermissions.map((permission) => `${permission[1]}\u0000${permission[2]}`))
 
   const permissions = allImplicitPermissions.map((p) => ({
     resource: p[1],
     action: p[2],
+    sourceRoleId: p[0],
+    direct: p[0] === roleId && directKeys.has(`${p[1]}\u0000${p[2]}`),
+    inherited: p[0] !== roleId,
   }))
 
   // Get all role inheritance relationships / 获取所有角色继承关系
@@ -308,4 +320,90 @@ export async function getRolePermissionsAndGroupings(roleId: string) {
   }))
 
   return { permissions, groupings }
+}
+
+export async function getRoleMenuAuthorization(roleId: string) {
+  const role = await getRoleById(roleId)
+  if (!role) return null
+
+  const [rows, inheritedRoles] = await Promise.all([loadMenuRows(), resolveInheritedRoleIds(roleId)])
+  const inheritedRoleSet = new Set(inheritedRoles)
+  const directMenuIds = rows.filter(({ roleIds }) => roleIds.includes(roleId)).map(({ id }) => id)
+  const inheritedMenuIds = rows.filter(({ roleIds }) => roleIds.some((id) => inheritedRoleSet.has(id))).map(({ id }) => id)
+  const directSet = new Set(directMenuIds)
+  const inheritedSet = new Set(inheritedMenuIds)
+  const managementTree = buildMenuTree(rows)
+
+  const mapNode = (node: (typeof managementTree)[number]): RoleMenuAuthorizationNode => {
+    const direct = directSet.has(node.id)
+    const inherited = inheritedSet.has(node.id)
+    const isPublic = node.accessScope === 'public'
+    const children = node.children?.map(mapNode)
+    return {
+      id: node.id,
+      title: node.title,
+      type: node.type,
+      status: node.status,
+      accessScope: node.accessScope,
+      permissionCode: node.permissionCode ?? null,
+      checked: isPublic || direct || inherited || roleId === 'admin',
+      direct,
+      inherited,
+      readOnly: roleId === 'admin' || isPublic || inherited,
+      ...(children && children.length > 0 ? { children } : {}),
+    }
+  }
+
+  const menuIds = rows.filter(({ id, roleIds }) => roleIds.length === 0 || directSet.has(id) || inheritedSet.has(id) || roleId === 'admin').map(({ id }) => id)
+  return {
+    roleId,
+    readOnly: roleId === 'admin',
+    menuIds: [...new Set(menuIds)].sort(),
+    directMenuIds: [...new Set(directMenuIds)].sort(),
+    inheritedMenuIds: [...new Set(inheritedMenuIds)].sort(),
+    tree: managementTree.map(mapNode),
+  }
+}
+
+export async function saveRoleMenus(roleId: string, requestedMenuIds: readonly string[]) {
+  const role = await getRoleById(roleId)
+  if (!role) return { success: false as const, status: 'not_found' as const, error: '角色不存在' }
+  if (roleId === 'admin') return { success: false as const, status: 'forbidden' as const, error: 'admin 角色授权不允许修改' }
+
+  const [rows, inheritedRoles] = await Promise.all([loadMenuRows(), resolveInheritedRoleIds(roleId)])
+  const rowMap = new Map(rows.map((row) => [row.id, row]))
+  const missingIds = [...new Set(requestedMenuIds)].filter((id) => !rowMap.has(id))
+  if (missingIds.length > 0) return { success: false as const, status: 'not_found' as const, error: `菜单不存在: ${missingIds.join(', ')}` }
+
+  const inheritedRoleSet = new Set(inheritedRoles)
+  const inheritedMenuSet = new Set(rows.filter(({ roleIds }) => roleIds.some((id) => inheritedRoleSet.has(id))).map(({ id }) => id))
+  const directIds = new Set<string>()
+
+  for (const requestedId of requestedMenuIds) {
+    let current = rowMap.get(requestedId)
+    const visited = new Set<string>()
+    while (current && !visited.has(current.id)) {
+      visited.add(current.id)
+      if (current.roleIds.length > 0 && !inheritedMenuSet.has(current.id)) directIds.add(current.id)
+      current = current.parentId ? rowMap.get(current.parentId) : undefined
+    }
+  }
+
+  const menuIds = [...directIds].sort()
+  await replaceRoleMenuLinks(roleId, menuIds)
+
+  const restrictedIds = rows.filter(({ roleIds }) => roleIds.length > 0).map(({ id }) => id)
+  if (restrictedIds.length > 0) {
+    await db
+      .insert(systemMenuRoles)
+      .values(restrictedIds.map((menuId) => ({ menuId, roleId: 'admin' })))
+      .onConflictDoNothing()
+  }
+
+  return { success: true as const, menuIds, total: menuIds.length }
+}
+
+export async function resolveInheritedRoleIds(roleId: string): Promise<string[]> {
+  const enforcer = await enforcerPromise
+  return enforcer.getImplicitRolesForUser(roleId)
 }

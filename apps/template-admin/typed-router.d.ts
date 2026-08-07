@@ -155,10 +155,19 @@ declare module 'vue-router/auto-routes' {
       '/system',
       Record<never, never>,
       Record<never, never>,
+      | '/system/menu'
       | '/system/role'
       | '/system/settings'
       | '/system/settings/notification'
       | '/system/settings/theme'
+      | '/system/user'
+    >,
+    '/system/menu': RouteRecordInfo<
+      '/system/menu',
+      '/system/menu',
+      Record<never, never>,
+      Record<never, never>,
+      | never
     >,
     '/system/role': RouteRecordInfo<
       '/system/role',
@@ -185,6 +194,13 @@ declare module 'vue-router/auto-routes' {
     '/system/settings/theme': RouteRecordInfo<
       '/system/settings/theme',
       '/system/settings/theme',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/system/user': RouteRecordInfo<
+      '/system/user',
+      '/system/user',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -352,12 +368,22 @@ declare module 'vue-router/auto-routes' {
     'src/pages/system.vue': {
       routes:
         | '/system'
+        | '/system/menu'
         | '/system/role'
         | '/system/settings'
         | '/system/settings/notification'
         | '/system/settings/theme'
+        | '/system/user'
       views:
         | 'default'
+      pathParamNames:
+        | never
+    }
+    'src/pages/system/menu.vue': {
+      routes:
+        | '/system/menu'
+      views:
+        | never
       pathParamNames:
         | never
     }
@@ -390,6 +416,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/system/settings/theme.vue': {
       routes:
         | '/system/settings/theme'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/system/user.vue': {
+      routes:
+        | '/system/user'
       views:
         | never
       pathParamNames:

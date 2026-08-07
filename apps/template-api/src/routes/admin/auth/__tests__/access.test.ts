@@ -74,4 +74,23 @@ describe('buildAdminAccessPayload', () => {
     expect(result.menus[1]?.children?.map(({ id }) => id)).toEqual(['admin-page'])
     expect(result.menus[1]?.children?.[0]?.children).toBeUndefined()
   })
+
+  test('hides complete subtrees when an ancestor menu or its group is disabled', () => {
+    const hiddenRows: AdminAccessMenuRecord[] = [
+      { id: 'disabled-root', path: '/disabled', roleIds: [], status: 'DISABLED', title: '禁用根', type: 'directory' },
+      { id: 'disabled-child', parentId: 'disabled-root', path: 'child', roleIds: [], title: '子页面', type: 'menu' },
+      {
+        id: 'group-root',
+        group: { id: 'disabled-group', label: '禁用分组', order: 1, status: 'DISABLED' },
+        path: '/group',
+        roleIds: [],
+        title: '分组根',
+        type: 'directory',
+      },
+      { id: 'group-child', parentId: 'group-root', path: 'child', roleIds: [], title: '分组子页面', type: 'menu' },
+      { id: 'enabled', path: '/enabled', roleIds: [], title: '正常页面', type: 'menu' },
+    ]
+
+    expect(buildAdminAccessPayload(hiddenRows, []).menus.map(({ id }) => id)).toEqual(['enabled'])
+  })
 })

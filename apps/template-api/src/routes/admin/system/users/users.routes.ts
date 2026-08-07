@@ -1,6 +1,5 @@
 import { createRoute } from '@hono/zod-openapi'
 
-import { insertSystemUsersSchema } from '@/db/schema'
 import { RefineQueryParamsSchema, RefineResultSchema } from '@/lib/core/refine-query'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { jsonContent, jsonContentRequired } from '@monorepo/server-core'
@@ -12,9 +11,9 @@ import {
   saveRolesResponseSchema,
   saveRolesSchema,
   systemUsersDetailResponseSchema,
+  systemUsersCreateSchema,
   systemUsersListResponseSchema,
   systemUsersPatchSchema,
-  systemUsersResponseSchema,
 } from './users.schema'
 
 const routePrefix = '/system/users'
@@ -43,10 +42,13 @@ export const create = createRoute({
   method: 'post',
   path: routePrefix,
   request: {
-    body: jsonContentRequired(insertSystemUsersSchema, '创建系统用户参数'),
+    body: jsonContentRequired(systemUsersCreateSchema, '创建系统用户参数'),
   },
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(RefineResultSchema(systemUsersResponseSchema), '创建成功'),
+    [HttpStatusCodes.CREATED]: jsonContent(RefineResultSchema(systemUsersDetailResponseSchema), '创建成功'),
+    [HttpStatusCodes.CONFLICT]: jsonContent(respErrSchema, '用户名已存在'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '角色不存在或已禁用'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, '参数验证失败'),
   },
 })
@@ -78,9 +80,10 @@ export const update = createRoute({
     body: jsonContentRequired(systemUsersPatchSchema, '更新系统用户参数'),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemUsersResponseSchema), '更新成功'),
+    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemUsersDetailResponseSchema), '更新成功'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '请求参数错误'),
-    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '内置用户不允许修改状态'),
+    [HttpStatusCodes.CONFLICT]: jsonContent(respErrSchema, '用户名已存在'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '内置用户保护'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '用户不存在'),
   },
 })
@@ -116,6 +119,8 @@ export const saveRoles = createRoute({
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(saveRolesResponseSchema), '保存成功'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, 'The validation error(s)'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '用户或角色不存在'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '角色已禁用'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '内置用户不允许修改角色'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(respErrSchema, '保存角色失败'),
   },
 })

@@ -278,6 +278,21 @@ describe('system role routes', () => {
         }
       }
     })
+
+    it('should sort by creation time ascending by default', async () => {
+      const response = await client.system.roles.$get({ query: {} }, { headers: getAuthHeaders(adminToken) })
+
+      expect(response.status).toBe(HttpStatusCodes.OK)
+
+      if (response.status === HttpStatusCodes.OK) {
+        const json = await response.json()
+        const timestamps = (Array.isArray(json.data) ? json.data : [])
+          .map(({ createdAt }) => (createdAt ? new Date(createdAt).getTime() : null))
+          .filter((timestamp): timestamp is number => timestamp !== null)
+
+        expect(timestamps).toEqual([...timestamps].sort((left, right) => left - right))
+      }
+    })
   })
 
   describe('post /system/role - create role', () => {
@@ -1206,8 +1221,8 @@ describe('system role routes', () => {
 
         expect(verifyJson.data.permissions.length).toBe(2)
         // New format: { resource, action } / 新格式: { resource, action }
-        expect(verifyJson.data.permissions).toContainEqual({ resource: '/system/roles', action: 'POST' })
-        expect(verifyJson.data.permissions).toContainEqual({ resource: '/system/roles', action: 'DELETE' })
+        expect(verifyJson.data.permissions).toContainEqual(expect.objectContaining({ resource: '/system/roles', action: 'POST', direct: true, inherited: false }))
+        expect(verifyJson.data.permissions).toContainEqual(expect.objectContaining({ resource: '/system/roles', action: 'DELETE', direct: true, inherited: false }))
       }
     })
 
@@ -1344,9 +1359,9 @@ describe('system role routes', () => {
         expect(json.data.permissions.length).toBe(3)
 
         // Verify contains all permissions (1 direct + 2 inherited) / 验证包含所有权限（1个直接 + 2个继承）
-        expect(json.data.permissions).toContainEqual({ resource: '/system/roles', action: 'GET' })
-        expect(json.data.permissions).toContainEqual({ resource: '/system/users', action: 'GET' })
-        expect(json.data.permissions).toContainEqual({ resource: '/system/users', action: 'POST' })
+        expect(json.data.permissions).toContainEqual(expect.objectContaining({ resource: '/system/roles', action: 'GET', direct: true, inherited: false }))
+        expect(json.data.permissions).toContainEqual(expect.objectContaining({ resource: '/system/users', action: 'GET', direct: false, inherited: true }))
+        expect(json.data.permissions).toContainEqual(expect.objectContaining({ resource: '/system/users', action: 'POST', direct: false, inherited: true }))
       }
 
       // Update child role's permissions (pass only direct permissions) / 更新子角色的权限（只传直接权限）
@@ -1381,10 +1396,10 @@ describe('system role routes', () => {
         expect(verifyJson.data.permissions.length).toBe(4)
 
         // Verify contains all permissions (2 direct + 2 inherited) / 验证包含所有权限（2个直接 + 2个继承）
-        expect(verifyJson.data.permissions).toContainEqual({ resource: '/system/roles', action: 'GET' })
-        expect(verifyJson.data.permissions).toContainEqual({ resource: '/system/roles', action: 'POST' })
-        expect(verifyJson.data.permissions).toContainEqual({ resource: '/system/users', action: 'GET' })
-        expect(verifyJson.data.permissions).toContainEqual({ resource: '/system/users', action: 'POST' })
+        expect(verifyJson.data.permissions).toContainEqual(expect.objectContaining({ resource: '/system/roles', action: 'GET', direct: true, inherited: false }))
+        expect(verifyJson.data.permissions).toContainEqual(expect.objectContaining({ resource: '/system/roles', action: 'POST', direct: true, inherited: false }))
+        expect(verifyJson.data.permissions).toContainEqual(expect.objectContaining({ resource: '/system/users', action: 'GET', direct: false, inherited: true }))
+        expect(verifyJson.data.permissions).toContainEqual(expect.objectContaining({ resource: '/system/users', action: 'POST', direct: false, inherited: true }))
       }
     })
 

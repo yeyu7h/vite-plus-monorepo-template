@@ -3,9 +3,9 @@ import type { z } from 'zod'
 import type { systemRolesDetailResponseSchema } from './roles.schema'
 
 import type { SystemRolesRouteHandlerType } from './roles.types'
-import { eq } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import db from '@/db'
-import { systemRoles } from '@/db/schema'
+import { systemRoles, systemUserRoles } from '@/db/schema'
 import { executeRefineQuery, RefineQueryParamsSchema } from '@/lib/core/refine-query'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { HttpStatusPhrases } from '@monorepo/server-core'
@@ -13,13 +13,15 @@ import { HttpStatusPhrases } from '@monorepo/server-core'
 import { Resp } from '@/utils'
 
 import {
-  cleanRoleInheritance,
+  cleanRoleAuthorization,
   enrichRolesWithParents,
   enrichRoleWithParents,
   getRoleById,
   getRolePermissionsAndGroupings,
+  getRoleMenuAuthorization,
   roleExists,
   saveRolePermissions,
+  saveRoleMenus,
   setRoleParents,
   updateRoleParents,
   validateParentRolesExist,
@@ -35,7 +37,10 @@ export const list: SystemRolesRouteHandlerType<'list'> = async (c) => {
 
   const [error, result] = await executeRefineQuery<z.infer<typeof systemRolesDetailResponseSchema>>({
     table: systemRoles,
-    queryParams: parseResult.data,
+    queryParams: {
+      ...parseResult.data,
+      sorters: parseResult.data.sorters?.length ? parseResult.data.sorters : [{ field: 'createdAt', order: 'asc' }],
+    },
   })
 
   if (error) {
@@ -100,6 +105,11 @@ export const update: SystemRolesRouteHandlerType<'update'> = async (c) => {
 
   const { parentRoleIds, ...roleData } = body
 
+  if (id === 'admin') {
+    if (roleData.status === 'DISABLED') return c.json(Resp.fail('admin 角色不允许禁用'), HttpStatusCodes.FORBIDDEN)
+    if (parentRoleIds !== undefined) return c.json(Resp.fail('admin 角色授权不允许修改'), HttpStatusCodes.FORBIDDEN)
+  }
+
   if (parentRoleIds !== undefined) {
     const result = await updateRoleParents(id, parentRoleIds)
     if (!result.success) {
@@ -133,7 +143,20 @@ export const update: SystemRolesRouteHandlerType<'update'> = async (c) => {
 export const remove: SystemRolesRouteHandlerType<'remove'> = async (c) => {
   const { id } = c.req.valid('param')
 
-  await cleanRoleInheritance(id)
+  if (id === 'admin') return c.json(Resp.fail('admin 角色不允许删除'), HttpStatusCodes.FORBIDDEN)
+
+  const [reference] = await db.select({ count: count() }).from(systemUserRoles).where(eq(systemUserRoles.roleId, id))
+  if ((reference?.count ?? 0) > 0) {
+    return c.json(Resp.fail(`角色仍被 ${reference!.count} 个用户使用，不能删除`), HttpStatusCodes.CONFLICT)
+  }
+
+  const { groupings } = await getRolePermissionsAndGroupings(id)
+  const childRoles = groupings.filter(({ parent }) => parent === id).map(({ child }) => child)
+  if (childRoles.length > 0) {
+    return c.json(Resp.fail(`角色仍是以下角色的上级角色: ${childRoles.join(', ')}`), HttpStatusCodes.CONFLICT)
+  }
+
+  await cleanRoleAuthorization(id)
 
   const [deleted] = await db.delete(systemRoles).where(eq(systemRoles.id, id)).returning({ id: systemRoles.id })
 
@@ -156,6 +179,8 @@ export const savePermissions: SystemRolesRouteHandlerType<'savePermissions'> = a
   const { id } = c.req.valid('param')
   const { permissions, parentRoleIds } = c.req.valid('json')
 
+  if (id === 'admin') return c.json(Resp.fail('admin 角色授权不允许修改'), HttpStatusCodes.FORBIDDEN)
+
   const exists = await roleExists(id)
   if (!exists) {
     return c.json(Resp.fail('角色不存在'), HttpStatusCodes.NOT_FOUND)
@@ -174,4 +199,22 @@ export const savePermissions: SystemRolesRouteHandlerType<'savePermissions'> = a
   }
 
   return c.json(Resp.ok({ added: permResult.added, removed: permResult.removed, total: permResult.total }), HttpStatusCodes.OK)
+}
+
+export const getMenus: SystemRolesRouteHandlerType<'getMenus'> = async (c) => {
+  const { id } = c.req.valid('param')
+  const result = await getRoleMenuAuthorization(id)
+  if (!result) return c.json(Resp.fail('角色不存在'), HttpStatusCodes.NOT_FOUND)
+  return c.json(Resp.ok(result), HttpStatusCodes.OK)
+}
+
+export const saveMenus: SystemRolesRouteHandlerType<'saveMenus'> = async (c) => {
+  const { id } = c.req.valid('param')
+  const { menuIds } = c.req.valid('json')
+  const result = await saveRoleMenus(id, menuIds)
+  if (!result.success) {
+    const status = result.status === 'forbidden' ? HttpStatusCodes.FORBIDDEN : HttpStatusCodes.NOT_FOUND
+    return c.json(Resp.fail(result.error), status)
+  }
+  return c.json(Resp.ok({ total: result.total, menuIds: result.menuIds }), HttpStatusCodes.OK)
 }

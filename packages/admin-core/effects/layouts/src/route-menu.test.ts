@@ -109,42 +109,68 @@ test('marks current item and ancestors active', () => {
   expect(menus[0]?.children?.[1]?.active).toBe(true)
 })
 
-test('promotes visible deep routes to distinct second-level menu items and warns', () => {
-  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+test('builds third-level menu items without promotion', () => {
   const menus = buildAdminMenus([
-    { path: '/one/two/three', meta: { title: 'Three', order: 10 } },
-    { path: '/one/two/four/five', meta: { title: 'Five', order: 20 } },
-    { path: '/one/two/hidden', meta: { hideInMenu: true, title: 'Hidden' } },
+    { path: '/one', meta: { title: 'One', icon: 'i-lucide-one' } },
+    { path: '/one/two', meta: { title: 'Two', icon: 'i-lucide-two' } },
+    { path: '/one/two/three', meta: { title: 'Three', icon: 'i-lucide-three' } },
   ])
 
-  expect(menus[0]?.children).toMatchObject([
-    {
-      children: undefined,
-      id: '/one/two/three',
-      path: '/one/two/three',
-      title: 'Three',
-    },
-    {
-      children: undefined,
-      id: '/one/two/four/five',
-      path: '/one/two/four/five',
-      title: 'Five',
-    },
-  ])
-  expect(warn).toHaveBeenCalledTimes(2)
-  expect(warn).toHaveBeenNthCalledWith(1, expect.stringContaining('/one/two/three'))
-  expect(warn).toHaveBeenNthCalledWith(2, expect.stringContaining('/one/two/four/five'))
-})
-
-test('clamps configured menu depth to two levels', () => {
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
-  const menus = buildAdminMenus([{ path: '/one/two/three', meta: { title: 'Three' } }], { maxDepth: 3 })
-
-  expect(menus[0]?.children?.[0]).toMatchObject({
+  expect(menus[0]?.icon).toBe('i-lucide-one')
+  expect(menus[0]?.children?.[0]?.icon).toBe('i-lucide-two')
+  expect(menus[0]?.children?.[0]?.children?.[0]).toMatchObject({
     children: undefined,
+    icon: undefined,
     id: '/one/two/three',
     path: '/one/two/three',
     title: 'Three',
+  })
+})
+
+test('marks every ancestor of a third-level menu item active', () => {
+  const menus = markActiveAdminMenus(buildAdminMenus([{ path: '/one/two/three', meta: { title: 'Three' } }]), '/one/two/three')
+
+  expect(menus[0]?.active).toBe(true)
+  expect(menus[0]?.children?.[0]?.active).toBe(true)
+  expect(menus[0]?.children?.[0]?.children?.[0]?.active).toBe(true)
+})
+
+test('promotes visible deep routes to distinct third-level menu items and warns', () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  const menus = buildAdminMenus([
+    { path: '/one/two/three/four', meta: { title: 'Four', order: 10 } },
+    { path: '/one/two/three/five/six', meta: { title: 'Six', order: 20 } },
+    { path: '/one/two/three/hidden', meta: { hideInMenu: true, title: 'Hidden' } },
+  ])
+
+  expect(menus[0]?.children?.[0]?.children).toMatchObject([
+    {
+      children: undefined,
+      id: '/one/two/three/four',
+      path: '/one/two/three/four',
+      title: 'Four',
+    },
+    {
+      children: undefined,
+      id: '/one/two/three/five/six',
+      path: '/one/two/three/five/six',
+      title: 'Six',
+    },
+  ])
+  expect(warn).toHaveBeenCalledTimes(2)
+  expect(warn).toHaveBeenNthCalledWith(1, expect.stringContaining('/one/two/three/four'))
+  expect(warn).toHaveBeenNthCalledWith(2, expect.stringContaining('/one/two/three/five/six'))
+})
+
+test('clamps configured menu depth to three levels', () => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
+  const menus = buildAdminMenus([{ path: '/one/two/three/four', meta: { title: 'Four' } }], { maxDepth: 4 })
+
+  expect(menus[0]?.children?.[0]?.children?.[0]).toMatchObject({
+    children: undefined,
+    id: '/one/two/three/four',
+    path: '/one/two/three/four',
+    title: 'Four',
   })
 })
 
@@ -231,11 +257,10 @@ test('inherits grouped menu children from nearest parent menuGroup', () => {
   })
 })
 
-test('promotes grouped deep routes to the second item level by default', () => {
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
+test('builds grouped routes to the third item level by default', () => {
   const groups = buildAdminMenuGroups([{ path: '/one/two/three', meta: { title: 'Three', menuGroup: 'Deep' } }])
 
-  expect(groups[0]?.children[0]?.children?.[0]).toMatchObject({
+  expect(groups[0]?.children[0]?.children?.[0]?.children?.[0]).toMatchObject({
     children: undefined,
     id: '/one/two/three',
     path: '/one/two/three',

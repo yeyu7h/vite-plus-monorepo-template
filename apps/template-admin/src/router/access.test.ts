@@ -50,7 +50,14 @@ const accessFileRoutes: RouteRecordRaw[] = [
     path: '/system',
     children: [
       { component, path: 'role' },
-      { component, path: 'settings', children: [{ component, path: 'theme' }] },
+      {
+        component,
+        path: 'settings',
+        children: [
+          { component, path: 'level-three' },
+          { component, path: 'theme' },
+        ],
+      },
     ],
   },
 ]
@@ -95,6 +102,11 @@ const backendMenus = [
         path: 'settings',
         meta: { authority: ['admin'], title: '设置中心' },
         children: [
+          {
+            id: 'system-settings-level-three',
+            path: 'level-three',
+            meta: { authority: ['admin'], icon: 'i-lucide-list-tree', order: 10, title: '三级菜单示例' },
+          },
           {
             id: 'system-settings-theme',
             path: 'theme',
@@ -155,6 +167,21 @@ test('keeps hidden authorized child routes accessible without rendering them in 
 
   expect(result.routePathSet.has('/system/settings/theme')).toBe(true)
   expect(JSON.stringify(result.menuGroups)).not.toContain('/system/settings/theme')
+})
+
+test('keeps visible third-level routes nested in the menu tree', () => {
+  const result = resolveAdminAccess(accessFileRoutes, backendMenus, ['admin'])
+  const systemMenu = result.menuGroups.flatMap((group) => group.children).find((item) => item.id === '/system')
+  const settingsMenu = systemMenu?.children?.find((item) => item.id === '/system/settings')
+
+  expect(result.routePathSet.has('/system/settings/level-three')).toBe(true)
+  expect(settingsMenu?.children).toContainEqual(
+    expect.objectContaining({
+      id: '/system/settings/level-three',
+      path: '/system/settings/level-three',
+      title: '三级菜单示例',
+    }),
+  )
 })
 
 test('creates an accessible iframe route without a matching file page', () => {

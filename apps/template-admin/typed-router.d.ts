@@ -158,6 +158,7 @@ declare module 'vue-router/auto-routes' {
       | '/system/menu'
       | '/system/role'
       | '/system/settings'
+      | '/system/settings/level-three'
       | '/system/settings/notification'
       | '/system/settings/theme'
       | '/system/user'
@@ -181,8 +182,16 @@ declare module 'vue-router/auto-routes' {
       '/system/settings',
       Record<never, never>,
       Record<never, never>,
+      | '/system/settings/level-three'
       | '/system/settings/notification'
       | '/system/settings/theme'
+    >,
+    '/system/settings/level-three': RouteRecordInfo<
+      '/system/settings/level-three',
+      '/system/settings/level-three',
+      Record<never, never>,
+      Record<never, never>,
+      | never
     >,
     '/system/settings/notification': RouteRecordInfo<
       '/system/settings/notification',
@@ -371,6 +380,7 @@ declare module 'vue-router/auto-routes' {
         | '/system/menu'
         | '/system/role'
         | '/system/settings'
+        | '/system/settings/level-three'
         | '/system/settings/notification'
         | '/system/settings/theme'
         | '/system/user'
@@ -398,10 +408,19 @@ declare module 'vue-router/auto-routes' {
     'src/pages/system/settings.vue': {
       routes:
         | '/system/settings'
+        | '/system/settings/level-three'
         | '/system/settings/notification'
         | '/system/settings/theme'
       views:
         | 'default'
+      pathParamNames:
+        | never
+    }
+    'src/pages/system/settings/level-three.vue': {
+      routes:
+        | '/system/settings/level-three'
+      views:
+        | never
       pathParamNames:
         | never
     }

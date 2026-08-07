@@ -171,6 +171,14 @@ const menuTreeSeed: MenuSeed[] = [
         title: '设置中心',
         type: 'directory',
         children: [
+          {
+            id: 'system-settings-level-three',
+            path: 'level-three',
+            description: '验证左侧导航的三级展开和折叠弹层效果',
+            order: 10,
+            title: '三级菜单示例',
+            type: 'menu',
+          },
           { id: 'system-settings-theme', path: 'theme', activePath: '/system/settings', hideInMenu: true, order: 30, tabPath: '/system/settings', title: '主题设置', type: 'menu' },
           {
             id: 'system-settings-notification',
@@ -360,6 +368,7 @@ async function seedMenuRoles(menuRows: readonly InferInsertModel<typeof systemMe
       'system-user-update',
       'system-user-delete',
       'system-settings',
+      'system-settings-level-three',
       'system-settings-theme',
       'system-settings-notification',
       'system-settings-account',

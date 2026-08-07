@@ -34,7 +34,7 @@ interface MenuGroupBucket {
   routes: AdminNavigationRouteRecord[]
 }
 
-const MAX_MENU_DEPTH = 2
+const MAX_MENU_DEPTH = 3
 const DEFAULT_MAX_DEPTH = MAX_MENU_DEPTH
 const DEFAULT_GROUP_MAX_DEPTH = MAX_MENU_DEPTH
 const DEFAULT_MENU_GROUP_ID = 'default'
@@ -87,7 +87,7 @@ export function buildAdminMenus(routes: readonly AdminNavigationRouteRecord[], o
     }
   }
 
-  return roots.map(finalizeMenuNode).sort(compareMenuItems)
+  return roots.map((node) => finalizeMenuNode(node)).sort(compareMenuItems)
 }
 
 /**
@@ -218,8 +218,8 @@ function appendUniqueChild(parent: MenuNode, child: MenuNode) {
  * 将构建阶段的节点结构压平成对外暴露的菜单项
  * @param node 构建阶段节点
  */
-function finalizeMenuNode(node: MenuNode): AdminMenuItem {
-  const children = node.children.map(finalizeMenuNode).sort(compareMenuItems)
+function finalizeMenuNode(node: MenuNode, depth = 1): AdminMenuItem {
+  const children = node.children.map((child) => finalizeMenuNode(child, depth + 1)).sort(compareMenuItems)
   const firstChildPath = children[0]?.path
   // 占位父节点没有自己的跳转目标时 默认落到第一个子节点
   const order = node.order ?? resolveMenuOrder(children)
@@ -229,7 +229,7 @@ function finalizeMenuNode(node: MenuNode): AdminMenuItem {
     authority: node.authority,
     children: children.length > 0 ? children : void 0,
     externalLink: node.externalLink,
-    icon: node.icon,
+    icon: depth < MAX_MENU_DEPTH ? node.icon : void 0,
     id: node.id,
     order,
     path: node.ownRoute ? node.path : (firstChildPath ?? node.path),

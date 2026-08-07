@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { AdminMenuGroup, AdminMenuImageIcon, AdminMenuItem } from '@monorepo-admin-core/types'
 import type { NavigationMenuItem } from '@nuxt/ui'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import LayoutMenuList from './MenuList.vue'
 
 interface LayoutNavigationMenuItem extends NavigationMenuItem {
+  menu?: AdminMenuItem
   menuIcon?: AdminMenuItem['icon']
 }
 
@@ -15,23 +17,16 @@ const props = defineProps<{
 
 const isMenuCollapsed = computed(() => props.collapsed && !props.opened)
 const navigationItems = computed<LayoutNavigationMenuItem[][]>(() => props.groups.map(toNavigationMenuGroup).filter((group) => group.length > 0))
-const activeMenuValue = computed(() => findExpandedMenuValue(props.groups))
-const openedMenuValue = ref<string | undefined>()
+const activeRootItemId = computed(() => props.groups.flatMap((group) => group.children).find((item) => item.active && item.children?.length)?.id)
+const openedRootItemIds = ref<string[]>([])
 
-watch(activeMenuValue, (value) => {
-  openedMenuValue.value = value
-})
-
-onMounted(async () => {
-  const value = activeMenuValue.value
-  if (!value) return
-
-  openedMenuValue.value = void 0
-  await nextTick()
-  requestAnimationFrame(() => {
-    openedMenuValue.value = value
-  })
-})
+watch(
+  activeRootItemId,
+  (itemId) => {
+    if (itemId && !openedRootItemIds.value.includes(itemId)) openedRootItemIds.value = [...openedRootItemIds.value, itemId]
+  },
+  { immediate: true },
+)
 
 function toNavigationMenuGroup(group: AdminMenuGroup): LayoutNavigationMenuItem[] {
   return [
@@ -54,9 +49,9 @@ function toNavigationMenuItem(menu: AdminMenuItem): LayoutNavigationMenuItem {
   return {
     active: menu.active,
     children: menu.children?.map(toNavigationMenuItem),
-    class: hasChildren && menu.active && !isMenuCollapsed.value ? 'before:!bg-transparent hover:before:!bg-elevated/50' : void 0,
     icon,
     label: menu.title,
+    menu,
     menuIcon: menu.icon,
     target: menu.externalLink ? '_blank' : void 0,
     to: menu.externalLink ?? menu.path,
@@ -73,36 +68,10 @@ function getMenuImageIcon(icon: unknown, theme: 'light' | 'dark' = 'light'): str
 function isMenuImageIcon(icon: unknown): icon is AdminMenuImageIcon {
   return typeof icon === 'object' && icon !== null && 'light' in icon
 }
-
-function findExpandedMenuValue(groups: readonly AdminMenuGroup[]) {
-  for (const group of groups) {
-    const value = findExpandedMenuItemValue(group.children)
-    if (value) return value
-  }
-}
-
-function findExpandedMenuItemValue(items: readonly AdminMenuItem[]) {
-  for (const item of items) {
-    if (!item.children?.length) continue
-    if (item.active) return item.id
-
-    const childValue = findExpandedMenuItemValue(item.children)
-    if (childValue) return item.id
-  }
-}
 </script>
 
 <template>
-  <UNavigationMenu
-    v-model="openedMenuValue"
-    :collapsed="isMenuCollapsed"
-    :items="navigationItems"
-    popover
-    :highlight="false"
-    type="single"
-    orientation="vertical"
-    :ui="{ list: 'space-y-1', childList: 'space-y-1 pt-1' }"
-  >
+  <UNavigationMenu v-if="isMenuCollapsed" collapsed :items="navigationItems" popover :highlight="false" type="single" orientation="vertical" :ui="{ list: 'space-y-1', childList: 'space-y-1 pt-1' }">
     <template #item-leading="{ item }">
       <UIcon v-if="typeof item.menuIcon === 'string' && item.menuIcon.startsWith('i-')" class="font-bold text-dimmed" :class="{ 'text-primary': item.active }" :name="item.menuIcon" size="20" />
       <picture v-else-if="item.type !== 'label' && isMenuImageIcon(item.menuIcon)">
@@ -110,5 +79,18 @@ function findExpandedMenuItemValue(items: readonly AdminMenuItem[]) {
         <img class="w-5 h-5 object-cover" :src="getMenuImageIcon(item.menuIcon)" />
       </picture>
     </template>
+
+    <template #item-content="{ item }">
+      <div class="min-w-56 p-1">
+        <LayoutMenuList :depth="2" :items="item.menu?.children ?? []" />
+      </div>
+    </template>
   </UNavigationMenu>
+
+  <nav v-else aria-label="主导航" class="space-y-4">
+    <section v-for="group in groups" :key="group.id">
+      <p v-if="group.label" class="px-2.5 pb-1 text-xs font-medium text-dimmed">{{ group.label }}</p>
+      <LayoutMenuList v-model:open-item-ids="openedRootItemIds" controlled :items="group.children" />
+    </section>
+  </nav>
 </template>

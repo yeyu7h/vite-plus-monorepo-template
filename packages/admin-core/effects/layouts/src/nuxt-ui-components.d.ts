@@ -2,6 +2,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     UButton: (typeof import('@nuxt/ui/components/Button.vue'))['default']
     UCard: (typeof import('@nuxt/ui/components/Card.vue'))['default']
+    UCollapsible: (typeof import('@nuxt/ui/components/Collapsible.vue'))['default']
     UDashboardGroup: (typeof import('@nuxt/ui/components/DashboardGroup.vue'))['default']
     UDashboardSidebar: (typeof import('@nuxt/ui/components/DashboardSidebar.vue'))['default']
     UDashboardPanel: (typeof import('@nuxt/ui/components/DashboardPanel.vue'))['default']

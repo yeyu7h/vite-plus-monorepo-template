@@ -51,6 +51,20 @@ const menuForm = reactive({
   tabPath: '',
 })
 
+function findMenuNodeDepth(nodes: readonly SystemMenuApi.Node[], id: string, depth = 1): number | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return depth
+    const childDepth = findMenuNodeDepth(node.children ?? [], id, depth + 1)
+    if (childDepth) return childDepth
+  }
+}
+
+const menuFormDepth = computed(() => {
+  if (!menuForm.parentId) return 1
+  return (findMenuNodeDepth(tree.value, menuForm.parentId) ?? 1) + 1
+})
+const menuSupportsIcon = computed(() => menuForm.type !== 'button' && menuFormDepth.value < 3)
+
 const groupSlideoverOpen = ref(false)
 const editingGroup = ref<SystemMenuApi.Group | null>(null)
 const groupForm = reactive({ id: '', label: '', order: 0, status: 'ENABLED' as 'ENABLED' | 'DISABLED' })
@@ -86,7 +100,7 @@ const menuSchema = z
   })
   .superRefine((value, ctx) => {
     if (value.type === 'button' && !value.permissionCode.trim()) ctx.addIssue({ code: 'custom', path: ['permissionCode'], message: '按钮必须填写权限码' })
-    if (value.type !== 'button' && value.iconKind === 'image' && !value.iconLight.trim()) ctx.addIssue({ code: 'custom', path: ['iconLight'], message: '图片图标必须填写亮色图片地址' })
+    if (menuSupportsIcon.value && value.iconKind === 'image' && !value.iconLight.trim()) ctx.addIssue({ code: 'custom', path: ['iconLight'], message: '图片图标必须填写亮色图片地址' })
     if (value.type !== 'button' && value.externalLink.trim() && value.iframeSrc.trim()) {
       ctx.addIssue({ code: 'custom', path: ['externalLink'], message: '外部链接和 iframe 地址不能同时设置' })
       ctx.addIssue({ code: 'custom', path: ['iframeSrc'], message: 'iframe 地址和外部链接不能同时设置' })
@@ -207,7 +221,7 @@ function openMenuForm(menu?: SystemMenuApi.Node, parentId?: string) {
 async function saveMenu(event: FormSubmitEvent<z.output<typeof menuSchema>>) {
   saving.value = true
   const hasRoute = menuForm.type !== 'button'
-  const icon = hasRoute
+  const icon = menuSupportsIcon.value
     ? menuForm.iconKind === 'image'
       ? { light: menuForm.iconLight.trim(), ...(menuForm.iconDark.trim() ? { dark: menuForm.iconDark.trim() } : {}) }
       : menuForm.icon.trim() || null
@@ -413,7 +427,7 @@ onMounted(loadData)
             ]"
             class="w-full"
         /></UFormField>
-        <div v-if="menuForm.type !== 'button'" class="grid gap-4 sm:grid-cols-2">
+        <div v-if="menuSupportsIcon" class="grid gap-4 sm:grid-cols-2">
           <UFormField name="iconKind" label="图标类型">
             <USelect
               v-model="menuForm.iconKind"
@@ -430,10 +444,18 @@ onMounted(loadData)
             </UInput>
           </UFormField>
         </div>
-        <div v-if="menuForm.type !== 'button' && menuForm.iconKind === 'image'" class="grid gap-4 sm:grid-cols-2">
+        <div v-if="menuSupportsIcon && menuForm.iconKind === 'image'" class="grid gap-4 sm:grid-cols-2">
           <UFormField name="iconLight" label="亮色图片地址" required><UInput v-model="menuForm.iconLight" placeholder="https://example.com/icon-light.png" class="w-full" /></UFormField>
           <UFormField name="iconDark" label="暗色图片地址" hint="可选"><UInput v-model="menuForm.iconDark" placeholder="https://example.com/icon-dark.png" class="w-full" /></UFormField>
         </div>
+        <UAlert
+          v-if="menuForm.type !== 'button' && !menuSupportsIcon"
+          color="neutral"
+          variant="subtle"
+          icon="i-lucide-info"
+          title="三级菜单不支持图标"
+          description="三级菜单仅显示标题；保存时会自动清空已有图标。"
+        />
         <UFormField name="parentId" label="父节点"><USelect v-model="menuForm.parentId" :items="parentOptions" class="w-full" /></UFormField>
         <UFormField v-if="!menuForm.parentId" name="groupId" label="菜单分组"><USelect v-model="menuForm.groupId" :items="groupOptions" class="w-full" /></UFormField>
         <UFormField name="path" :label="menuForm.type === 'button' ? '按钮路径' : '路由路径'" required description="根节点使用 / 开头的绝对路径，子节点使用相对路径。"

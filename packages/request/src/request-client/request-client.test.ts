@@ -29,11 +29,13 @@ describe('RequestClient', () => {
 
     const getResponse = await get<AxiosResponse<{ method: string }>>('/get')
     await client.post('/post', { value: 1 })
-    await client.put('/put', { value: 2 })
+    await client.patch('/patch', { value: 2 })
+    await client.put('/put', { value: 3 })
     await client.delete('/delete')
 
     expect(getResponse.data).toEqual({ method: 'get' })
-    expect(requests.map(({ method }) => method)).toEqual(['get', 'post', 'put', 'delete'])
+    expect(requests.map(({ method }) => method)).toEqual(['get', 'post', 'patch', 'put', 'delete'])
+    expect(requests[2]?.data).toBe('{"value":2}')
     expect(requests[0]?.timeout).toBe(10_000)
     expect(requests[0]?.headers.getContentType()).toBe('application/json;charset=utf-8')
   })

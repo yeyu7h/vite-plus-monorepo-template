@@ -148,6 +148,7 @@ function isMenuImageIcon(icon: unknown): icon is { dark?: string; light: string 
 }
 
 async function loadData() {
+  const requestSessionVersion = accessStore.sessionVersion
   loading.value = true
   try {
     const [nextGroups, nextTree] = await Promise.all([systemMenuApi.listGroups(), systemMenuApi.getTree()])
@@ -155,7 +156,9 @@ async function loadData() {
     tree.value = nextTree
     if (expandedIds.value.size === 0) expandedIds.value = new Set(nextTree.map(({ id }) => id))
   } catch (error) {
-    toast.add({ title: '加载菜单失败', description: getApiErrorMessage(error), color: 'error' })
+    if (accessStore.isLoggedIn && accessStore.sessionVersion === requestSessionVersion) {
+      toast.add({ title: '加载菜单失败', description: getApiErrorMessage(error), color: 'error' })
+    }
   } finally {
     loading.value = false
   }

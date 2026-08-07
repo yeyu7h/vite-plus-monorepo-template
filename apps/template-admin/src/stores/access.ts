@@ -61,10 +61,13 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     return routePaths.value[0] ?? FORBIDDEN_ROUTE_PATH
   }
 
-  function resetAccess() {
+  function invalidateSession() {
     sessionVersion.value += 1
-    accessToken.value = null
-    localStorage.removeItem(ADMIN_ACCESS_TOKEN_STORAGE_KEY)
+    updateAccessToken(null)
+  }
+
+  function resetAccess() {
+    invalidateSession()
     resetAccessState()
   }
 
@@ -100,6 +103,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     canAccessPath,
     hasPermission,
     initializeAccess,
+    invalidateSession,
     isAccessInitialized,
     isLoggedIn,
     menuGroups,
@@ -108,6 +112,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     resetAccess,
     resolveAccessiblePath,
     resolveHomePath,
+    resetAccessState,
     sessionVersion,
     setAccessToken,
     updateAccessToken,

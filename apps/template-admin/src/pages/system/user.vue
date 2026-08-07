@@ -57,23 +57,29 @@ const columns: TableColumn<SystemUserApi.Item>[] = [
 const assignableRoleOptions = computed(() => roles.value.filter(({ status: roleStatus }) => roleStatus === 'ENABLED').map((role) => ({ label: `${role.name} (${role.id})`, value: role.id })))
 
 async function loadUsers() {
+  const requestSessionVersion = accessStore.sessionVersion
   loading.value = true
   try {
     const result = await systemUserApi.list(buildServerListQuery({ page: page.value, pageSize, search: search.value, searchFields: ['username', 'nickName'], status: status.value }))
     users.value = result.items
     total.value = result.total
   } catch (error) {
-    toast.add({ title: '加载用户失败', description: getApiErrorMessage(error), color: 'error' })
+    if (accessStore.isLoggedIn && accessStore.sessionVersion === requestSessionVersion) {
+      toast.add({ title: '加载用户失败', description: getApiErrorMessage(error), color: 'error' })
+    }
   } finally {
     loading.value = false
   }
 }
 
 async function loadRoles() {
+  const requestSessionVersion = accessStore.sessionVersion
   try {
     roles.value = (await systemRoleApi.list({ mode: 'off', sorters: JSON.stringify([{ field: 'name', order: 'asc' }]) })).items
   } catch (error) {
-    toast.add({ title: '加载角色选项失败', description: getApiErrorMessage(error), color: 'error' })
+    if (accessStore.isLoggedIn && accessStore.sessionVersion === requestSessionVersion) {
+      toast.add({ title: '加载角色选项失败', description: getApiErrorMessage(error), color: 'error' })
+    }
   }
 }
 

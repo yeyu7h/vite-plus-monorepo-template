@@ -9,10 +9,12 @@ const mocks = vi.hoisted(() => {
     accessToken: null as null | string,
     canAccessPath: vi.fn<(path: string) => boolean>(),
     initializeAccess: vi.fn<(accessPayload: CoreAuthApi.AccessResult, roles: readonly string[]) => void>(),
+    invalidateSession: vi.fn<() => void>(),
     isAccessInitialized: false,
     isLoggedIn: false,
     sessionVersion: 0,
     resetAccess: vi.fn<() => void>(),
+    resetAccessState: vi.fn<() => void>(),
     resolveHomePath: vi.fn<(path: string) => string>(),
     setAccessToken: vi.fn<(token: null | string) => void>(),
     updateAccessToken: vi.fn<(token: null | string) => void>(),
@@ -88,6 +90,11 @@ beforeEach(() => {
   })
   mocks.accessStore.initializeAccess.mockImplementation(() => {
     mocks.accessStore.isAccessInitialized = true
+  })
+  mocks.accessStore.invalidateSession.mockImplementation(() => {
+    mocks.accessStore.sessionVersion += 1
+    mocks.accessStore.accessToken = null
+    mocks.accessStore.isLoggedIn = false
   })
   mocks.accessStore.resetAccess.mockImplementation(() => {
     mocks.accessStore.sessionVersion += 1
@@ -253,10 +260,14 @@ test('logs out by resetting session state and redirecting to login', async () =>
   await store.logout()
 
   expect(mocks.logout).toHaveBeenCalledOnce()
-  expect(mocks.accessStore.resetAccess).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.invalidateSession).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.resetAccessState).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.resetAccess).not.toHaveBeenCalled()
   expect(mocks.tabReset).toHaveBeenCalledExactlyOnceWith({ storageKey: 'template-admin:open-tabs' })
   expect(userStore.userInfo).toBeNull()
   expect(mocks.routerReplace).toHaveBeenCalledExactlyOnceWith('/auth/login')
+  expect(mocks.accessStore.invalidateSession.mock.invocationCallOrder[0]).toBeLessThan(mocks.routerReplace.mock.invocationCallOrder[0]!)
+  expect(mocks.routerReplace.mock.invocationCallOrder[0]).toBeLessThan(mocks.accessStore.resetAccessState.mock.invocationCallOrder[0]!)
 })
 
 test('cleans up locally and redirects even when remote logout fails', async () => {
@@ -267,9 +278,24 @@ test('cleans up locally and redirects even when remote logout fails', async () =
   await expect(store.logout()).resolves.toBeUndefined()
 
   expect(mocks.logout).toHaveBeenCalledOnce()
-  expect(mocks.accessStore.resetAccess).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.invalidateSession).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.resetAccessState).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.resetAccess).not.toHaveBeenCalled()
   expect(mocks.tabReset).toHaveBeenCalledExactlyOnceWith({ storageKey: 'template-admin:open-tabs' })
   expect(mocks.routerReplace).toHaveBeenCalledExactlyOnceWith('/auth/login')
+})
+
+test('clears the session immediately when logging out without redirecting', async () => {
+  mocks.accessStore.accessToken = 'access-token:active'
+  const store = useAdminAuthStore()
+
+  await store.logout(false)
+
+  expect(mocks.logout).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.resetAccess).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.invalidateSession).not.toHaveBeenCalled()
+  expect(mocks.accessStore.resetAccessState).not.toHaveBeenCalled()
+  expect(mocks.routerReplace).not.toHaveBeenCalled()
 })
 
 test('clears the session and preserves the current path when the access token expires', async () => {
@@ -278,10 +304,14 @@ test('clears the session and preserves the current path when the access token ex
 
   await store.handleSessionExpired()
 
-  expect(mocks.accessStore.resetAccess).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.invalidateSession).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.resetAccessState).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.resetAccess).not.toHaveBeenCalled()
   expect(mocks.tabReset).toHaveBeenCalledExactlyOnceWith({ storageKey: 'template-admin:open-tabs' })
   expect(mocks.routerReplace).toHaveBeenCalledExactlyOnceWith({
     path: '/auth/login',
     query: { redirect: encodeURIComponent('/system/role') },
   })
+  expect(mocks.accessStore.invalidateSession.mock.invocationCallOrder[0]).toBeLessThan(mocks.routerReplace.mock.invocationCallOrder[0]!)
+  expect(mocks.routerReplace.mock.invocationCallOrder[0]).toBeLessThan(mocks.accessStore.resetAccessState.mock.invocationCallOrder[0]!)
 })

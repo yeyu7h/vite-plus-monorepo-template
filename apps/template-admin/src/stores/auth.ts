@@ -84,23 +84,33 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
       if (accessStore.accessToken) await coreAuthApi.logout()
     } catch {
       // Local session cleanup must complete even when the remote logout endpoint is unavailable.
-    } finally {
-      resetSession()
     }
 
-    if (redirect) {
+    if (!redirect) {
+      resetSession()
+      return
+    }
+
+    beginSessionReset()
+    try {
       await router.replace(LOGIN_ROUTE_PATH)
+    } finally {
+      finishSessionReset()
     }
   }
 
   async function handleSessionExpired() {
     const redirect = resolveLoginRedirect(router.currentRoute.value.fullPath)
-    resetSession()
 
-    await router.replace({
-      path: LOGIN_ROUTE_PATH,
-      query: redirect ? { redirect } : {},
-    })
+    beginSessionReset()
+    try {
+      await router.replace({
+        path: LOGIN_ROUTE_PATH,
+        query: redirect ? { redirect } : {},
+      })
+    } finally {
+      finishSessionReset()
+    }
   }
 
   async function setupAccess() {
@@ -141,6 +151,17 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     accessStore.resetAccess()
     tabStore.reset({ storageKey: ADMIN_TAB_STORAGE_KEY })
     userStore.clearUser()
+  }
+
+  function beginSessionReset() {
+    accessSetupPromise = void 0
+    accessStore.invalidateSession()
+    tabStore.reset({ storageKey: ADMIN_TAB_STORAGE_KEY })
+    userStore.clearUser()
+  }
+
+  function finishSessionReset() {
+    accessStore.resetAccessState()
   }
 
   return {

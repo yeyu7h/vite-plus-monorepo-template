@@ -141,3 +141,24 @@ test('clears the token and generated access on reset', () => {
   expect(storage.has('template-admin:access-token')).toBe(false)
   expect(mocks.resetAdminAccessRoutes).toHaveBeenCalledOnce()
 })
+
+test('invalidates the session without removing the current dynamic routes', () => {
+  storage.set('template-admin:access-token', 'access-token:active')
+  const store = useAdminAccessStore()
+  store.initializeAccess([], [])
+  const sessionVersion = store.sessionVersion
+
+  store.invalidateSession()
+
+  expect(store.accessToken).toBeNull()
+  expect(store.isLoggedIn).toBe(false)
+  expect(store.sessionVersion).toBe(sessionVersion + 1)
+  expect(store.isAccessInitialized).toBe(true)
+  expect(storage.has('template-admin:access-token')).toBe(false)
+  expect(mocks.resetAdminAccessRoutes).not.toHaveBeenCalled()
+
+  store.resetAccessState()
+
+  expect(store.isAccessInitialized).toBe(false)
+  expect(mocks.resetAdminAccessRoutes).toHaveBeenCalledOnce()
+})

@@ -67,6 +67,7 @@ const permissionColumns: TableColumn<NonNullable<SystemRoleApi.PermissionResult>
 const parentRoleOptions = computed(() => allRoles.value.filter(({ id }) => id !== editingRole.value?.id).map((role) => ({ label: `${role.name} (${role.id})`, value: role.id })))
 
 async function loadRoles() {
+  const requestSessionVersion = accessStore.sessionVersion
   loading.value = true
   try {
     const result = await systemRoleApi.list(
@@ -75,17 +76,22 @@ async function loadRoles() {
     roles.value = result.items
     total.value = result.total
   } catch (error) {
-    toast.add({ title: '加载角色失败', description: getApiErrorMessage(error), color: 'error' })
+    if (accessStore.isLoggedIn && accessStore.sessionVersion === requestSessionVersion) {
+      toast.add({ title: '加载角色失败', description: getApiErrorMessage(error), color: 'error' })
+    }
   } finally {
     loading.value = false
   }
 }
 
 async function loadAllRoles() {
+  const requestSessionVersion = accessStore.sessionVersion
   try {
     allRoles.value = (await systemRoleApi.list({ mode: 'off', sorters: JSON.stringify([{ field: 'name', order: 'asc' }]) })).items
   } catch (error) {
-    toast.add({ title: '加载角色选项失败', description: getApiErrorMessage(error), color: 'error' })
+    if (accessStore.isLoggedIn && accessStore.sessionVersion === requestSessionVersion) {
+      toast.add({ title: '加载角色选项失败', description: getApiErrorMessage(error), color: 'error' })
+    }
   }
 }
 
@@ -95,6 +101,7 @@ function searchRoles() {
 }
 
 async function openEditor(role?: SystemRoleApi.Item) {
+  const requestSessionVersion = accessStore.sessionVersion
   editingRole.value = role ?? null
   activeEditorTab.value = 'basic'
   Object.assign(roleForm, {
@@ -117,7 +124,9 @@ async function openEditor(role?: SystemRoleApi.Item) {
       permissions.value = apiPermissions
       selectedMenuIds.value = [...menus.menuIds]
     } catch (error) {
-      toast.add({ title: '加载角色授权失败', description: getApiErrorMessage(error), color: 'error' })
+      if (accessStore.isLoggedIn && accessStore.sessionVersion === requestSessionVersion) {
+        toast.add({ title: '加载角色授权失败', description: getApiErrorMessage(error), color: 'error' })
+      }
     } finally {
       editorLoading.value = false
     }

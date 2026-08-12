@@ -8,13 +8,24 @@ import { z } from 'zod'
 import type { SystemMenuApi } from '@/api/core/system'
 import { systemMenuApi } from '@/api/core/system'
 import { countMenuSubtree, flattenMenuTree, getApiErrorMessage } from '@/features/system-management/helpers'
+import {
+  getMenuAccessScopeMetadata,
+  getMenuStatusMetadata,
+  getMenuTypeFallbackIcon,
+  getMenuTypeMetadata,
+  menuAccessScopeOptions,
+  menuAccessScopeValues,
+  menuStatusOptions,
+  menuStatusValues,
+  menuTypeOptions,
+  menuTypeValues,
+} from '@/features/system-management/menu-metadata'
+import type { MenuAccessScope, MenuNodeType, MenuStatus } from '@/features/system-management/menu-metadata'
 import { useAdminAccessStore } from '@/stores/access'
 
 definePage({
   meta: { title: '菜单管理', icon: 'i-lucide-list-tree', order: 20, authority: ['admin'], contentMode: 'full' },
 })
-
-type MenuNodeType = 'group' | 'directory' | 'menu' | 'button'
 
 const accessStore = useAdminAccessStore()
 const toast = useToast()
@@ -26,18 +37,44 @@ const columnPinning = ref({ right: ['actions'] })
 
 const menuSlideoverOpen = ref(false)
 const editingMenu = ref<SystemMenuApi.Node | null>(null)
-const menuForm = reactive({
+type MenuForm = {
+  id: string
+  title: string
+  type: MenuNodeType
+  parentId: string | null
+  path: string
+  accessScope: MenuAccessScope
+  status: MenuStatus
+  order: number
+  permissionCode: string
+  description: string
+  iconKind: 'iconify' | 'image'
+  icon: string
+  iconLight: string
+  iconDark: string
+  activePath: string
+  externalLink: string
+  iframeSrc: string
+  hideInBreadcrumb: boolean
+  hideInMenu: boolean
+  hideInTab: boolean
+  keepAlive: boolean
+  menuVisibleWithForbidden: boolean
+  tabPath: string
+}
+
+const menuForm = reactive<MenuForm>({
   id: '',
   title: '',
-  type: 'menu' as MenuNodeType,
-  parentId: null as string | null,
+  type: 'menu',
+  parentId: null,
   path: '',
-  accessScope: 'restricted' as 'public' | 'restricted',
-  status: 'ENABLED' as 'ENABLED' | 'DISABLED',
+  accessScope: 'restricted',
+  status: 'ENABLED',
   order: 0,
   permissionCode: '',
   description: '',
-  iconKind: 'iconify' as 'iconify' | 'image',
+  iconKind: 'iconify',
   icon: '',
   iconLight: '',
   iconDark: '',
@@ -127,7 +164,9 @@ const menuSchema = z
       .min(1, '请输入节点 ID')
       .regex(/^[a-z0-9_-]+$/, '只能包含小写字母、数字、下划线和连字符'),
     title: z.string().min(1, '请输入标题'),
-    type: z.enum(['group', 'directory', 'menu', 'button']),
+    type: z.enum(menuTypeValues),
+    accessScope: z.enum(menuAccessScopeValues),
+    status: z.enum(menuStatusValues),
     path: z.string(),
     permissionCode: z.string(),
     iconKind: z.enum(['iconify', 'image']),
@@ -185,27 +224,6 @@ const menuTableMeta = {
   class: {
     tr: (row: TableRow<SystemMenuApi.Node & { depth: number; descendantCount: number }>) => (row.original.type === 'group' ? 'bg-muted' : ''),
   },
-}
-
-function menuTypeLabel(type: string) {
-  if (type === 'group') return '分组'
-  if (type === 'directory') return '目录'
-  if (type === 'button') return '按钮'
-  return '菜单'
-}
-
-function menuTypeColor(type: string): 'neutral' | 'info' | 'primary' | 'warning' {
-  if (type === 'group') return 'warning'
-  if (type === 'directory') return 'info'
-  if (type === 'button') return 'neutral'
-  return 'primary'
-}
-
-function menuTypeIcon(type: string) {
-  if (type === 'group') return 'i-lucide-panels-top-left'
-  if (type === 'directory') return 'i-lucide-folder'
-  if (type === 'button') return 'i-lucide-mouse-pointer-click'
-  return 'i-lucide-file'
 }
 
 function menuTreeShowsIcon(menu: SystemMenuApi.Node): boolean {
@@ -386,14 +404,16 @@ onMounted(loadData)
               <source media="(prefers-color-scheme: dark)" :srcset="getMenuImageIcon(row.original.icon, 'dark')" />
               <img :src="getMenuImageIcon(row.original.icon)" alt="" class="size-4 object-contain" />
             </picture>
-            <UIcon v-else :name="menuTypeIcon(row.original.type)" class="size-4 text-muted" />
+            <UIcon v-else :name="getMenuTypeFallbackIcon(row.original.type)" class="size-4 text-muted" />
           </template>
           <span v-else class="size-4 shrink-0" aria-hidden="true" />
           <span :class="row.original.type === 'group' ? 'font-semibold text-highlighted' : 'font-medium text-default'">{{ row.original.title }}</span>
           <UBadge v-if="row.original.descendantCount" :label="`${row.original.descendantCount} 个后代`" color="neutral" variant="subtle" size="sm" />
         </div>
       </template>
-      <template #type-cell="{ row }"><UBadge :label="menuTypeLabel(row.original.type)" :color="menuTypeColor(row.original.type)" variant="subtle" /></template>
+      <template #type-cell="{ row }">
+        <UBadge :label="getMenuTypeMetadata(row.original.type).label" :color="getMenuTypeMetadata(row.original.type).color" variant="subtle" />
+      </template>
       <template #path-cell="{ row }">
         <code v-if="row.original.type !== 'group'" class="text-xs text-muted">{{ menuTablePath(row.original) }}</code>
         <span v-else aria-hidden="true" />
@@ -401,14 +421,14 @@ onMounted(loadData)
       <template #accessScope-cell="{ row }">
         <UBadge
           v-if="row.original.type !== 'group'"
-          :label="row.original.accessScope === 'public' ? '公共' : '受限'"
-          :color="row.original.accessScope === 'public' ? 'neutral' : 'primary'"
+          :label="getMenuAccessScopeMetadata(row.original.accessScope).label"
+          :color="getMenuAccessScopeMetadata(row.original.accessScope).color"
           variant="subtle"
         />
         <span v-else aria-hidden="true" />
       </template>
       <template #status-cell="{ row }">
-        <UBadge :label="row.original.status === 'ENABLED' ? '启用' : '禁用'" :color="row.original.status === 'ENABLED' ? 'success' : 'neutral'" variant="subtle" />
+        <UBadge :label="getMenuStatusMetadata(row.original.status).label" :color="getMenuStatusMetadata(row.original.status).color" variant="subtle" />
       </template>
       <template #actions-cell="{ row }">
         <div class="flex justify-end gap-1">
@@ -460,16 +480,7 @@ onMounted(loadData)
         <UFormField name="id" label="节点 ID" required><UInput v-model="menuForm.id" :disabled="Boolean(editingMenu)" class="w-full" /></UFormField>
         <UFormField name="title" label="标题" required><UInput v-model="menuForm.title" class="w-full" /></UFormField>
         <UFormField name="type" label="类型" required>
-          <USelect
-            v-model="menuForm.type"
-            :items="[
-              { label: '分组', value: 'group' },
-              { label: '目录', value: 'directory' },
-              { label: '菜单', value: 'menu' },
-              { label: '按钮', value: 'button' },
-            ]"
-            class="w-full"
-          />
+          <USelect v-model="menuForm.type" :items="menuTypeOptions" class="w-full" />
         </UFormField>
 
         <UAlert
@@ -533,26 +544,13 @@ onMounted(loadData)
             <UInput v-model="menuForm.permissionCode" placeholder="system:menu:create" class="w-full" />
           </UFormField>
           <UFormField name="accessScope" label="访问范围" required>
-            <URadioGroup
-              v-model="menuForm.accessScope"
-              :items="[
-                { label: '受限', value: 'restricted', description: '默认仅 admin 可见，可在角色管理中继续授权。' },
-                { label: '公共', value: 'public', description: '所有已登录用户可见且不可在角色授权中取消。' },
-              ]"
-            />
+            <URadioGroup v-model="menuForm.accessScope" :items="menuAccessScopeOptions" />
           </UFormField>
         </template>
 
         <div class="grid grid-cols-2 gap-4">
           <UFormField name="status" label="状态">
-            <USelect
-              v-model="menuForm.status"
-              :items="[
-                { label: '启用', value: 'ENABLED' },
-                { label: '禁用', value: 'DISABLED' },
-              ]"
-              class="w-full"
-            />
+            <USelect v-model="menuForm.status" :items="menuStatusOptions" class="w-full" />
           </UFormField>
           <UFormField name="order" :label="menuForm.type === 'group' ? '分组排序' : '排序'"><UInputNumber v-model="menuForm.order" class="w-full" /></UFormField>
         </div>

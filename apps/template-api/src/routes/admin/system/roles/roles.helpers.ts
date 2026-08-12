@@ -354,7 +354,7 @@ export async function getRoleMenuAuthorization(roleId: string) {
     }
   }
 
-  const menuIds = rows.filter(({ id, roleIds }) => roleIds.length === 0 || directSet.has(id) || inheritedSet.has(id) || roleId === 'admin').map(({ id }) => id)
+  const menuIds = rows.filter(({ id, roleIds, type }) => type !== 'group' && (roleIds.length === 0 || directSet.has(id) || inheritedSet.has(id) || roleId === 'admin')).map(({ id }) => id)
   return {
     roleId,
     readOnly: roleId === 'admin',
@@ -392,7 +392,7 @@ export async function saveRoleMenus(roleId: string, requestedMenuIds: readonly s
   const menuIds = [...directIds].sort()
   await replaceRoleMenuLinks(roleId, menuIds)
 
-  const restrictedIds = rows.filter(({ roleIds }) => roleIds.length > 0).map(({ id }) => id)
+  const restrictedIds = rows.filter(({ roleIds, type }) => type !== 'group' && roleIds.length > 0).map(({ id }) => id)
   if (restrictedIds.length > 0) {
     await db
       .insert(systemMenuRoles)

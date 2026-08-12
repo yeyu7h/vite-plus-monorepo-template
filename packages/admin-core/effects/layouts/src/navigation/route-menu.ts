@@ -1,4 +1,4 @@
-import type { AdminMenuGroup, AdminMenuGroupMeta, AdminMenuItem, AdminNavigationRouteRecord, AdminRouteMeta } from '@monorepo-admin-core/types'
+import type { AdminGroupMeta, AdminMenuGroup, AdminMenuItem, AdminNavigationRouteRecord, AdminRouteMeta } from '@monorepo-admin-core/types'
 import { normalizeAdminNavigationPath } from './shared'
 
 interface MenuNode extends Omit<AdminMenuItem, 'children'> {
@@ -12,8 +12,8 @@ export interface BuildAdminMenusOptions {
 }
 
 export interface BuildAdminMenuGroupsOptions extends BuildAdminMenusOptions {
-  /** 未声明 `menuGroup` 时使用的默认分组信息 */
-  defaultGroup?: AdminMenuGroupMeta
+  /** 未声明 `group` 时使用的默认分组信息 */
+  defaultGroup?: AdminGroupMeta
 }
 
 interface ResolvedMenuGroupMeta {
@@ -75,7 +75,7 @@ export function buildAdminMenus(routes: readonly AdminNavigationRouteRecord[], o
 }
 
 /**
- * 从路由列表生成按 `menuGroup` 划分的菜单分组
+ * 从路由列表生成按 `group` 划分的菜单分组
  * @param routes 路由列表
  * @param options 生成选项
  */
@@ -114,7 +114,7 @@ export function buildAdminMenuGroups(routes: readonly AdminNavigationRouteRecord
  * @param routeByPath 可见路由索引
  */
 function resolveInheritedMenuGroup(route: AdminNavigationRouteRecord, routeByPath: ReadonlyMap<string, AdminNavigationRouteRecord>) {
-  if (route.meta.menuGroup) return route.meta.menuGroup
+  if (route.meta.group) return route.meta.group
 
   let parentPath = route.parentPath
   const visited = new Set<string>()
@@ -122,9 +122,9 @@ function resolveInheritedMenuGroup(route: AdminNavigationRouteRecord, routeByPat
   while (parentPath && !visited.has(parentPath)) {
     visited.add(parentPath)
     const parentRoute = routeByPath.get(parentPath)
-    const menuGroup = parentRoute?.meta.menuGroup
+    const group = parentRoute?.meta.group
 
-    if (menuGroup) return menuGroup
+    if (group) return group
     parentPath = parentRoute?.parentPath
   }
 }
@@ -288,23 +288,23 @@ function warnPromotedMenuRoute(path: string, maxDepth: number) {
 }
 
 /**
- * 将 route meta 中的 `menuGroup` 解析为统一的分组信息结构
- * @param menuGroup 原始分组配置
+ * 将 route meta 中的 `group` 解析为统一的分组信息结构
+ * @param group 原始分组配置
  * @param defaultGroup 默认分组配置
  */
-function resolveMenuGroupMeta(menuGroup: AdminRouteMeta['menuGroup'], defaultGroup?: AdminMenuGroupMeta): ResolvedMenuGroupMeta {
-  if (typeof menuGroup === 'string') {
+function resolveMenuGroupMeta(group: AdminRouteMeta['group'], defaultGroup?: AdminGroupMeta): ResolvedMenuGroupMeta {
+  if (typeof group === 'string') {
     return {
-      id: `group:${menuGroup}`,
-      label: menuGroup,
+      id: `group:${group}`,
+      label: group,
     }
   }
 
-  if (menuGroup) {
+  if (group) {
     return {
-      id: menuGroup.id ?? `group:${menuGroup.label}`,
-      label: menuGroup.label,
-      order: menuGroup.order,
+      id: group.id ?? `group:${group.label}`,
+      label: group.label,
+      order: group.order,
     }
   }
 

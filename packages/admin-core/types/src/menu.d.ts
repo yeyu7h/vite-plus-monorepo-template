@@ -37,7 +37,7 @@ export interface AdminMenuItem {
   title: string
 }
 
-export interface AdminMenuGroupMeta {
+export interface AdminGroupMeta {
   /** 菜单分组的稳定标识 */
   id?: string
   /** 菜单分组显示标题 */
@@ -83,7 +83,7 @@ export interface AdminBackendMenuMeta {
   /** 切换标签页时保留当前页面或 iframe 的运行状态 */
   keepAlive?: boolean
   /** 指定该菜单所属分组 */
-  menuGroup?: AdminMenuGroupMeta | string
+  group?: AdminGroupMeta | string
   /** 菜单可见 但权限不命中时访问页面渲染 403 */
   menuVisibleWithForbidden?: boolean
   /** 菜单排序权重 */

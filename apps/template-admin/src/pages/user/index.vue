@@ -15,7 +15,7 @@ definePage({
   meta: {
     title: '用户',
     icon: 'i-lucide-users',
-    menuGroup: {
+    group: {
       label: '系统管理',
       order: 20,
     },
@@ -363,7 +363,7 @@ function randomize() {
         :page="(table?.tableApi?.getState().pagination.pageIndex || 0) + 1"
         :items-per-page="table?.tableApi?.getState().pagination.pageSize"
         :total="table?.tableApi?.getFilteredRowModel().rows.length"
-        @update:page="(page) => table?.tableApi?.setPageIndex(page - 1)"
+        @update:page="(page: number) => table?.tableApi?.setPageIndex(page - 1)"
       />
     </div>
   </div>

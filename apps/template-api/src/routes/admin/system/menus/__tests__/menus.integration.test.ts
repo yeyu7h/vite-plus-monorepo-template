@@ -4,11 +4,10 @@ import { testClient } from 'hono/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test'
 
 import db from '@/db'
-import { systemMenuGroups, systemMenus } from '@/db/schema'
+import { systemMenus } from '@/db/schema'
 import env from '@/env'
 import { Status } from '@/lib/enums'
 import { authorize } from '@/middlewares/authorize'
-import menuGroupsRouter from '@/routes/admin/system/menu-groups/menu-groups.index'
 import menusRouter from '@/routes/admin/system/menus/menus.index'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { getAuthHeaders } from '~/tests/auth-utils'
@@ -18,11 +17,8 @@ const prefix = 'test_mgmt_'
 
 function createMenusApp() {
   return createTestApp()
-    .use('/system/menu-groups/*', jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' }))
-    .use('/system/menu-groups/*', authorize)
     .use('/system/menus/*', jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' }))
     .use('/system/menus/*', authorize)
-    .route('/', menuGroupsRouter)
     .route('/', menusRouter)
 }
 
@@ -30,7 +26,6 @@ const client = testClient(createMenusApp())
 
 async function cleanup() {
   await db.delete(systemMenus).where(like(systemMenus.id, `${prefix}%`))
-  await db.delete(systemMenuGroups).where(like(systemMenuGroups.id, `${prefix}%`))
 }
 
 describe('menu management routes', () => {
@@ -49,10 +44,13 @@ describe('menu management routes', () => {
     const rootId = `${prefix}root`
     const childId = `${prefix}child`
 
-    const groupResponse = await client.system['menu-groups'].$post({ json: { id: groupId, label: '测试分组', order: 10, status: Status.ENABLED } }, { headers: getAuthHeaders(token) })
+    const groupResponse = await client.system.menus.$post(
+      { json: { id: groupId, type: 'group', path: null, title: '测试分组', order: 10, status: Status.ENABLED, accessScope: 'public' } },
+      { headers: getAuthHeaders(token) },
+    )
     expect(groupResponse.status).toBe(HttpStatusCodes.CREATED)
 
-    const rootResponse = await client.system.menus.$post({ json: { id: rootId, groupId, type: 'directory', path: `/${rootId}`, title: '测试根菜单' } }, { headers: getAuthHeaders(token) })
+    const rootResponse = await client.system.menus.$post({ json: { id: rootId, parentId: groupId, type: 'directory', path: `/${rootId}`, title: '测试根菜单' } }, { headers: getAuthHeaders(token) })
     expect(rootResponse.status).toBe(HttpStatusCodes.CREATED)
     if (rootResponse.status === HttpStatusCodes.CREATED) {
       const body = await rootResponse.json()
@@ -71,14 +69,14 @@ describe('menu management routes', () => {
     const duplicatePath = await client.system.menus.$post({ json: { id: `${prefix}duplicate`, parentId: rootId, type: 'menu', path: 'child', title: '重复路径' } }, { headers: getAuthHeaders(token) })
     expect(duplicatePath.status).toBe(HttpStatusCodes.CONFLICT)
 
-    const referencedGroupDelete = await client.system['menu-groups'][':id'].$delete({ param: { id: groupId } }, { headers: getAuthHeaders(token) })
+    const referencedGroupDelete = await client.system.menus[':id'].$delete({ param: { id: groupId } }, { headers: getAuthHeaders(token) })
     expect(referencedGroupDelete.status).toBe(HttpStatusCodes.CONFLICT)
 
     const deleteResponse = await client.system.menus[':id'].$delete({ param: { id: rootId } }, { headers: getAuthHeaders(token) })
     expect(deleteResponse.status).toBe(HttpStatusCodes.OK)
     if (deleteResponse.status === HttpStatusCodes.OK) expect((await deleteResponse.json()).data.deletedCount).toBe(2)
 
-    const groupDelete = await client.system['menu-groups'][':id'].$delete({ param: { id: groupId } }, { headers: getAuthHeaders(token) })
+    const groupDelete = await client.system.menus[':id'].$delete({ param: { id: groupId } }, { headers: getAuthHeaders(token) })
     expect(groupDelete.status).toBe(HttpStatusCodes.OK)
   })
 })

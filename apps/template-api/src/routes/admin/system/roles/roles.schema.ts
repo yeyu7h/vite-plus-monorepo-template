@@ -73,7 +73,7 @@ export const savePermissionsResponseSchema = z.object({
 const roleMenuAuthorizationBaseSchema = z.object({
   id: z.string(),
   title: z.string(),
-  type: z.enum(['directory', 'menu', 'button']),
+  type: z.enum(['group', 'directory', 'menu', 'button']),
   status: z.enum([Status.ENABLED, Status.DISABLED]),
   accessScope: z.enum(['public', 'restricted']),
   permissionCode: z.string().nullable(),

@@ -3,6 +3,7 @@ import type { AdminMenuIcon, AdminMenuType } from '@/db/schema'
 import { Status } from '@/lib/enums'
 import { enforcerPromise } from '@/lib/services/casbin'
 import db from '@/db'
+import { systemMenuRoles, systemMenus } from '@/db/schema'
 
 export interface AdminAccessMenuMeta {
   activePath?: string
@@ -17,7 +18,7 @@ export interface AdminAccessMenuMeta {
   iframeSrc?: string
   ignoreAccess?: boolean
   keepAlive?: boolean
-  menuGroup?: { id: string; label: string; order: number } | string
+  group?: { id: string; label: string; order: number } | string
   menuVisibleWithForbidden?: boolean
   order?: number
   showActiveTabBorder?: boolean
@@ -30,7 +31,7 @@ export interface AdminAccessMenu {
   id: string
   meta: AdminAccessMenuMeta
   path: string
-  type: Exclude<AdminMenuType, 'button'>
+  type: Exclude<AdminMenuType, 'button' | 'group'>
 }
 
 export interface AdminAccessPayload {
@@ -44,8 +45,6 @@ export interface AdminAccessMenuRecord {
   contentMode?: 'default' | 'full' | null
   description?: string | null
   externalLink?: string | null
-  group?: { id: string; label: string; order: number; status?: string } | null
-  groupId?: string | null
   hideInBreadcrumb?: boolean
   hideInMenu?: boolean
   hideInTab?: boolean
@@ -57,7 +56,7 @@ export interface AdminAccessMenuRecord {
   menuVisibleWithForbidden?: boolean
   order?: number
   parentId?: string | null
-  path: string
+  path: string | null
   permissionCode?: string | null
   roleIds: string[]
   showActiveTabBorder?: boolean
@@ -82,7 +81,7 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
     childrenById.set(row.parentId, childIds)
   }
   const hiddenIds = new Set<string>()
-  const pendingHiddenIds = rows.filter((row) => (row.status && row.status !== Status.ENABLED) || (row.group?.status && row.group.status !== Status.ENABLED)).map(({ id }) => id)
+  const pendingHiddenIds = rows.filter((row) => row.status && row.status !== Status.ENABLED).map(({ id }) => id)
   while (pendingHiddenIds.length > 0) {
     const id = pendingHiddenIds.pop()!
     if (hiddenIds.has(id)) continue
@@ -97,6 +96,7 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
   const permissionCodes = new Set<string>()
 
   for (const row of enabledRows) {
+    if (row.type === 'group') continue
     const hasRoleRestriction = row.roleIds.length > 0
     const isAllowed = !hasRoleRestriction || row.roleIds.some((roleId) => effectiveRoleSet.has(roleId))
 
@@ -128,11 +128,13 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
 
   const childrenByParent = new Map<string | null, AdminAccessMenuRecord[]>()
   for (const row of enabledRows) {
-    if (!selectedIds.has(row.id) || row.type === 'button') continue
+    if (!selectedIds.has(row.id) || row.type === 'button' || row.type === 'group') continue
 
-    const siblings = childrenByParent.get(row.parentId ?? null) ?? []
+    const parent = row.parentId ? rowsById.get(row.parentId) : undefined
+    const routeParentId = parent?.type === 'group' ? null : (row.parentId ?? null)
+    const siblings = childrenByParent.get(routeParentId) ?? []
     siblings.push(row)
-    childrenByParent.set(row.parentId ?? null, siblings)
+    childrenByParent.set(routeParentId, siblings)
   }
 
   for (const siblings of childrenByParent.values()) {
@@ -152,7 +154,9 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
     return node
   }
 
-  const rootRows = enabledRows.filter((row) => row.type !== 'button' && selectedIds.has(row.id) && (!row.parentId || !selectedIds.has(row.parentId))).sort(compareMenuRows)
+  const rootRows = enabledRows
+    .filter((row) => row.type !== 'button' && row.type !== 'group' && selectedIds.has(row.id) && (!row.parentId || rowsById.get(row.parentId)?.type === 'group' || !selectedIds.has(row.parentId)))
+    .sort(compareMenuRows)
   const menus = rootRows.map((row) => buildNode(row))
 
   return {
@@ -161,6 +165,7 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
   }
 
   function toAccessMenu(row: AdminAccessMenuRecord): AdminAccessMenu {
+    const parent = row.parentId ? rowsById.get(row.parentId) : undefined
     const meta: AdminAccessMenuMeta = {
       ...(row.activePath ? { activePath: row.activePath } : {}),
       ...(row.roleIds.length > 0 ? { authority: [...row.roleIds].sort() } : {}),
@@ -174,7 +179,15 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
       ...(row.iframeSrc ? { iframeSrc: row.iframeSrc } : {}),
       ...(row.ignoreAccess ? { ignoreAccess: true } : {}),
       ...(row.keepAlive ? { keepAlive: true } : {}),
-      ...(row.group ? { menuGroup: { id: row.group.id, label: row.group.label, order: row.group.order } } : {}),
+      ...(parent?.type === 'group'
+        ? {
+            group: {
+              id: parent.id,
+              label: parent.title,
+              order: parent.order ?? 0,
+            },
+          }
+        : {}),
       ...(row.menuVisibleWithForbidden ? { menuVisibleWithForbidden: true } : {}),
       ...(row.order !== undefined ? { order: row.order } : {}),
       ...(row.showActiveTabBorder ? { showActiveTabBorder: true } : {}),
@@ -185,7 +198,7 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
     return {
       id: row.id,
       meta,
-      path: row.path,
+      path: row.path!,
       type: row.type === 'directory' ? 'directory' : 'menu',
     }
   }
@@ -210,24 +223,18 @@ export async function getAdminAccessByRoles(roles: readonly string[]): Promise<A
 }
 
 async function loadAdminAccessMenuRows(): Promise<AdminAccessMenuRecord[]> {
-  const rows = await db.query.systemMenus.findMany({
-    where: { status: Status.ENABLED },
-    with: {
-      group: {
-        columns: { id: true, label: true, order: true, status: true },
-      },
-      roles: {
-        columns: { id: true },
-      },
-    },
-    orderBy: { order: 'asc' },
-  })
+  const [rows, roleLinks] = await Promise.all([
+    db.select().from(systemMenus).orderBy(systemMenus.order),
+    db.select({ menuId: systemMenuRoles.menuId, roleId: systemMenuRoles.roleId }).from(systemMenuRoles),
+  ])
+  const roleIdsByMenu = new Map<string, string[]>()
+  for (const { menuId, roleId } of roleLinks) {
+    const roleIds = roleIdsByMenu.get(menuId) ?? []
+    roleIds.push(roleId)
+    roleIdsByMenu.set(menuId, roleIds)
+  }
 
-  return rows.map(({ group, roles, ...row }) => ({
-    ...row,
-    group: group ?? null,
-    roleIds: roles.map(({ id }) => id),
-  }))
+  return rows.map((row) => ({ ...row, roleIds: roleIdsByMenu.get(row.id) ?? [] }))
 }
 
 function compareMenuRows(left: AdminAccessMenuRecord, right: AdminAccessMenuRecord) {

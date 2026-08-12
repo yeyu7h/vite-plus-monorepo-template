@@ -56,6 +56,8 @@ export const remove = createRoute({
   request: { params: menuIdParamsSchema },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(menuDeleteResponseSchema), '删除成功'),
+    [HttpStatusCodes.CONFLICT]: jsonContent(respErrSchema, '非空菜单分组不能删除'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '菜单节点状态无效'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '菜单节点不存在'),
   },
 })

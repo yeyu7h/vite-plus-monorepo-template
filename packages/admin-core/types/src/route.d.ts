@@ -1,4 +1,4 @@
-import type { AdminMenuAuthority, AdminMenuGroupMeta, AdminMenuIcon } from './menu'
+import type { AdminGroupMeta, AdminMenuAuthority, AdminMenuIcon } from './menu'
 import type { AdminContentMode } from './content'
 
 export type AdminRouteSource = 'access' | 'core' | 'fallback'
@@ -33,7 +33,7 @@ export interface AdminRouteMeta {
   /** 指定页面使用的布局名称，`false` 表示不使用布局 */
   layout?: string | false
   /** 指定该路由所属的菜单分组，并可配置分组标题和排序 */
-  menuGroup?: AdminMenuGroupMeta | string
+  group?: AdminGroupMeta | string
   /** 菜单可见 但权限不命中时访问页面渲染 403 */
   menuVisibleWithForbidden?: boolean
   /** 控制菜单项或菜单分组的升序排序权重 */

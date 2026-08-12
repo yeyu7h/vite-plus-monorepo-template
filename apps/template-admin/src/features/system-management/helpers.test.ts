@@ -7,7 +7,6 @@ function menu(id: string, children?: SystemMenuApi.Node[]): SystemMenuApi.Node {
   return {
     id,
     parentId: null,
-    groupId: null,
     type: 'menu',
     path: `/${id}`,
     title: id,

@@ -1521,474 +1521,6 @@ export interface paths {
         };
         trace?: never;
     };
-    "/api/admin/system/menu-groups": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 获取菜单分组列表 */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description 当前页码 */
-                    current?: number;
-                    /** @description 每页大小 */
-                    pageSize?: number;
-                    /** @description 分页模式：server=服务端分页，client=客户端分页，off=不分页 */
-                    mode?: "server" | "client" | "off";
-                    /** @description 过滤条件，JSON 字符串格式 */
-                    filters?: string;
-                    /** @description 排序条件，JSON 字符串格式 */
-                    sorters?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description 获取成功 */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data: {
-                                /** @description 菜单分组ID */
-                                id: string;
-                                createdAt: string | null;
-                                createdBy: string | null;
-                                updatedAt: string | null;
-                                updatedBy: string | null;
-                                /** @description 菜单分组标题 */
-                                label: string;
-                                /** @description 菜单分组排序 */
-                                order: number;
-                                /**
-                                 * @description 状态 (ENABLED=启用, DISABLED=禁用)
-                                 * @enum {string}
-                                 */
-                                status: "ENABLED" | "DISABLED";
-                            }[];
-                        };
-                    };
-                };
-                /** @description 查询参数验证失败 */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description 服务器内部错误 */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** 创建菜单分组 */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description 创建菜单分组参数 */
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** @description 菜单分组 ID */
-                        id: string;
-                        /** @description 菜单分组标题 */
-                        label: string;
-                        /**
-                         * @description 排序序号
-                         * @default 0
-                         */
-                        order?: number;
-                        /**
-                         * @description 状态
-                         * @default ENABLED
-                         * @enum {string}
-                         */
-                        status?: "ENABLED" | "DISABLED";
-                    };
-                };
-            };
-            responses: {
-                /** @description 创建成功 */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data: {
-                                /** @description 菜单分组ID */
-                                id: string;
-                                createdAt: string | null;
-                                createdBy: string | null;
-                                updatedAt: string | null;
-                                updatedBy: string | null;
-                                /** @description 菜单分组标题 */
-                                label: string;
-                                /** @description 菜单分组排序 */
-                                order: number;
-                                /**
-                                 * @description 状态 (ENABLED=启用, DISABLED=禁用)
-                                 * @enum {string}
-                                 */
-                                status: "ENABLED" | "DISABLED";
-                            };
-                        };
-                    };
-                };
-                /** @description 菜单分组 ID 已存在 */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description 参数验证失败 */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/system/menu-groups/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** 删除菜单分组 */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description 菜单分组 ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description 删除成功 */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data: {
-                                /** @description 菜单分组 ID */
-                                id: string;
-                            };
-                        };
-                    };
-                };
-                /** @description 菜单分组不存在 */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description 菜单分组仍被菜单引用 */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        /** 更新菜单分组 */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description 菜单分组 ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            /** @description 更新菜单分组参数 */
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** @description 菜单分组标题 */
-                        label?: string;
-                        /**
-                         * @description 排序序号
-                         * @default 0
-                         */
-                        order?: number;
-                        /**
-                         * @description 状态
-                         * @default ENABLED
-                         * @enum {string}
-                         */
-                        status?: "ENABLED" | "DISABLED";
-                    };
-                };
-            };
-            responses: {
-                /** @description 更新成功 */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data: {
-                                /** @description 菜单分组ID */
-                                id: string;
-                                createdAt: string | null;
-                                createdBy: string | null;
-                                updatedAt: string | null;
-                                updatedBy: string | null;
-                                /** @description 菜单分组标题 */
-                                label: string;
-                                /** @description 菜单分组排序 */
-                                order: number;
-                                /**
-                                 * @description 状态 (ENABLED=启用, DISABLED=禁用)
-                                 * @enum {string}
-                                 */
-                                status: "ENABLED" | "DISABLED";
-                            };
-                        };
-                    };
-                };
-                /** @description 菜单分组不存在 */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description 参数验证失败 */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        trace?: never;
-    };
     "/api/admin/system/menus/tree": {
         parameters: {
             query?: never;
@@ -2051,15 +1583,13 @@ export interface paths {
                         id: string;
                         /** @description 父菜单 ID */
                         parentId?: string | null;
-                        /** @description 菜单分组 ID，仅根节点可设置 */
-                        groupId?: string | null;
                         /**
                          * @description 节点类型
                          * @enum {string}
                          */
-                        type: "directory" | "menu" | "button";
-                        /** @description 路由或按钮路径 */
-                        path: string;
+                        type: "group" | "directory" | "menu" | "button";
+                        /** @description 路由或按钮路径；分组节点为空 */
+                        path?: string | null;
                         /** @description 标题 */
                         title: string;
                         description?: string | null;
@@ -2238,8 +1768,68 @@ export interface paths {
                         };
                     };
                 };
+                /** @description 菜单节点状态无效 */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description 错误信息 */
+                            message?: string;
+                            /** @description 错误堆栈 */
+                            stack?: string;
+                            /** @description 错误对象 */
+                            error?: {
+                                /** @description 错误名称 */
+                                name: string;
+                                /** @description 错误详情 */
+                                issues?: {
+                                    /** @description 错误码 */
+                                    code: string;
+                                    /** @description 错误路径 */
+                                    path: (string | number)[];
+                                    /** @description 错误信息 */
+                                    message: string;
+                                }[];
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
                 /** @description 菜单节点不存在 */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description 错误信息 */
+                            message?: string;
+                            /** @description 错误堆栈 */
+                            stack?: string;
+                            /** @description 错误对象 */
+                            error?: {
+                                /** @description 错误名称 */
+                                name: string;
+                                /** @description 错误详情 */
+                                issues?: {
+                                    /** @description 错误码 */
+                                    code: string;
+                                    /** @description 错误路径 */
+                                    path: (string | number)[];
+                                    /** @description 错误信息 */
+                                    message: string;
+                                }[];
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                /** @description 非空菜单分组不能删除 */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2288,15 +1878,13 @@ export interface paths {
                     "application/json": {
                         /** @description 父菜单 ID */
                         parentId?: string | null;
-                        /** @description 菜单分组 ID，仅根节点可设置 */
-                        groupId?: string | null;
                         /**
                          * @description 节点类型
                          * @enum {string}
                          */
-                        type?: "directory" | "menu" | "button";
-                        /** @description 路由或按钮路径 */
-                        path?: string;
+                        type?: "group" | "directory" | "menu" | "button";
+                        /** @description 路由或按钮路径；分组节点为空 */
+                        path?: string | null;
                         /** @description 标题 */
                         title?: string;
                         description?: string | null;
@@ -5199,7 +4787,7 @@ export interface components {
                 iframeSrc?: string;
                 ignoreAccess?: boolean;
                 keepAlive?: boolean;
-                menuGroup?: {
+                group?: {
                     id: string;
                     label: string;
                     order: number;
@@ -5223,15 +4811,13 @@ export interface components {
             updatedBy: string | null;
             /** @description 父菜单节点ID */
             parentId: string | null;
-            /** @description 菜单分组ID */
-            groupId: string | null;
             /**
              * @description 菜单节点类型
              * @enum {string}
              */
-            type: "directory" | "menu" | "button";
+            type: "group" | "directory" | "menu" | "button";
             /** @description 路由或按钮路径 */
-            path: string;
+            path: string | null;
             /** @description 菜单标题 */
             title: string;
             description: string | null;
@@ -5274,7 +4860,7 @@ export interface components {
             id: string;
             title: string;
             /** @enum {string} */
-            type: "directory" | "menu" | "button";
+            type: "group" | "directory" | "menu" | "button";
             /** @enum {string} */
             status: "ENABLED" | "DISABLED";
             /** @enum {string} */

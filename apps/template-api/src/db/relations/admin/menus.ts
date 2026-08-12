@@ -1,16 +1,9 @@
 import type { RelationsConfig, RelationsHelper } from '../types'
 
-/** 菜单分组、菜单自关联和菜单-角色多对多关系。 */
+/** 菜单自关联和菜单-角色多对多关系。 */
 export const menuRelations = (r: RelationsHelper) =>
   ({
-    systemMenuGroups: {
-      menus: r.many.systemMenus(),
-    },
     systemMenus: {
-      group: r.one.systemMenuGroups({
-        from: r.systemMenus.groupId,
-        to: r.systemMenuGroups.id,
-      }),
       parent: r.one.systemMenus({
         alias: 'system_menu_hierarchy',
         from: r.systemMenus.parentId,

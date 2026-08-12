@@ -11,9 +11,6 @@ type ResponseData<Operation extends { responses: Record<number, unknown> }, Stat
 
 type RequestBody<Operation> = Operation extends { requestBody: { content: { 'application/json': infer Body } } } ? Body : never
 
-type MenuGroupsListOperation = paths['/api/admin/system/menu-groups']['get']
-type MenuGroupsCreateOperation = paths['/api/admin/system/menu-groups']['post']
-type MenuGroupsUpdateOperation = paths['/api/admin/system/menu-groups/{id}']['patch']
 type MenusCreateOperation = paths['/api/admin/system/menus']['post']
 type MenusUpdateOperation = paths['/api/admin/system/menus/{id}']['patch']
 type MenusDeleteOperation = paths['/api/admin/system/menus/{id}']['delete']
@@ -36,9 +33,6 @@ export type ListQuery = {
 }
 
 export namespace SystemMenuApi {
-  export type Group = ResponseData<MenuGroupsListOperation, 200>[number]
-  export type GroupCreateBody = RequestBody<MenuGroupsCreateOperation>
-  export type GroupUpdateBody = RequestBody<MenuGroupsUpdateOperation>
   export type Node = components['schemas']['AdminMenuManagementNode']
   export type CreateBody = RequestBody<MenusCreateOperation>
   export type UpdateBody = RequestBody<MenusUpdateOperation>
@@ -71,10 +65,6 @@ async function getPaginated<T>(url: string, query: ListQuery) {
 }
 
 export const systemMenuApi = {
-  listGroups: () => client.get<SystemMenuApi.Group[]>('/admin/system/menu-groups', { params: { mode: 'off', sorters: JSON.stringify([{ field: 'order', order: 'asc' }]) } }),
-  createGroup: (data: SystemMenuApi.GroupCreateBody) => client.post<SystemMenuApi.Group>('/admin/system/menu-groups', data),
-  updateGroup: (id: string, data: SystemMenuApi.GroupUpdateBody) => client.patch<SystemMenuApi.Group>(`/admin/system/menu-groups/${id}`, data),
-  deleteGroup: (id: string) => client.delete<{ id: string }>(`/admin/system/menu-groups/${id}`),
   getTree: () => client.get<SystemMenuApi.Node[]>('/admin/system/menus/tree'),
   create: (data: SystemMenuApi.CreateBody) => client.post<SystemMenuApi.Node>('/admin/system/menus', data),
   update: (id: string, data: SystemMenuApi.UpdateBody) => client.patch<SystemMenuApi.Node>(`/admin/system/menus/${id}`, data),

@@ -205,13 +205,13 @@ test('clamps configured menu depth to three levels', () => {
 
 test('builds sorted menu groups from route meta', () => {
   const groups = buildAdminMenuGroups([
-    { path: '/system', meta: { title: 'System', menuGroup: { label: '系统管理', order: 20 } } },
+    { path: '/system', meta: { title: 'System', group: { label: '系统管理', order: 20 } } },
     { path: '/system/role', parentPath: '/system', meta: { title: '角色管理', order: 20 } },
-    { path: '/dashboard', meta: { title: 'Dashboard', menuGroup: { label: '概览', order: 10 } } },
+    { path: '/dashboard', meta: { title: 'Dashboard', group: { label: '概览', order: 10 } } },
     { path: '/dashboard/workbench', parentPath: '/dashboard', meta: { title: '工作台', order: 10 } },
     { path: '/system/settings', parentPath: '/system', meta: { title: '系统设置', order: 30 } },
-    { path: '/docs/vite-plus', meta: { title: 'Vite+ Docs', menuGroup: { id: 'links', label: '链接', order: 30 } } },
-    { path: '/hidden/audit', meta: { title: '审计日志', hideInMenu: true, menuGroup: '隐藏' } },
+    { path: '/docs/vite-plus', meta: { title: 'Vite+ Docs', group: { id: 'links', label: '链接', order: 30 } } },
+    { path: '/hidden/audit', meta: { title: '审计日志', hideInMenu: true, group: '隐藏' } },
   ])
 
   expect(groups).toHaveLength(3)
@@ -230,7 +230,7 @@ test('builds sorted menu groups from route meta', () => {
   })
 })
 
-test('uses an unlabeled default group for routes without menuGroup', () => {
+test('uses an unlabeled default group for routes without group', () => {
   const groups = buildAdminMenuGroups([
     { path: '/dashboard', meta: { title: 'Dashboard' } },
     { path: '/dashboard/workbench', parentPath: '/dashboard', meta: { title: '工作台' } },
@@ -270,9 +270,9 @@ test('uses an unlabeled default group for routes without menuGroup', () => {
   ])
 })
 
-test('inherits grouped menu children from nearest parent menuGroup', () => {
+test('inherits grouped menu children from nearest parent group', () => {
   const groups = buildAdminMenuGroups([
-    { path: '/monitor', meta: { title: '监控', menuGroup: { label: '运维', order: 10 } } },
+    { path: '/monitor', meta: { title: '监控', group: { label: '运维', order: 10 } } },
     { path: '/monitor/jobs', parentPath: '/monitor', meta: { title: '任务监控' } },
   ])
 
@@ -293,7 +293,7 @@ test('inherits grouped menu children from nearest parent menuGroup', () => {
 
 test('builds grouped routes to the third item level by default', () => {
   const groups = buildAdminMenuGroups([
-    { path: '/one', meta: { title: 'One', menuGroup: 'Deep' } },
+    { path: '/one', meta: { title: 'One', group: 'Deep' } },
     { path: '/one/two', parentPath: '/one', meta: { title: 'Two' } },
     { path: '/one/two/three', parentPath: '/one/two', meta: { title: 'Three' } },
   ])
@@ -309,7 +309,7 @@ test('builds grouped routes to the third item level by default', () => {
 test('marks current grouped menu items active without mutating group state', () => {
   const groups = markActiveAdminMenuGroups(
     buildAdminMenuGroups([
-      { path: '/system', meta: { title: '系统', menuGroup: '系统管理' } },
+      { path: '/system', meta: { title: '系统', group: '系统管理' } },
       { path: '/system/user', parentPath: '/system', meta: { title: '用户管理', order: 10 } },
       { path: '/system/role', parentPath: '/system', meta: { title: '角色管理', order: 20 } },
     ]),

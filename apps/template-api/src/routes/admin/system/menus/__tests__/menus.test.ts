@@ -8,7 +8,6 @@ function menu(id: string, parentId: string | null, order: number, roleIds: strin
   return {
     id,
     parentId,
-    groupId: null,
     type: 'menu' as const,
     path: parentId ? id : `/${id}`,
     title: id,
@@ -52,5 +51,14 @@ describe('menu management helpers', () => {
   test('counts every node in a subtree exactly once', () => {
     const rows = [menu('root', null, 1), menu('child', 'root', 1), menu('leaf', 'child', 1), menu('other', null, 2)]
     expect(collectMenuSubtreeIds(rows, 'root').sort()).toEqual(['child', 'leaf', 'root'])
+  })
+
+  test('keeps group nodes as the ordered root of the management tree', () => {
+    const group = { ...menu('workspace', null, 10), type: 'group' as const, path: null, title: '工作台' }
+    const dashboard = { ...menu('dashboard', 'workspace', 20), path: '/dashboard' }
+    const tree = buildMenuTree([dashboard, group])
+
+    expect(tree[0]).toMatchObject({ id: 'workspace', type: 'group', path: null })
+    expect(tree[0]?.children?.[0]).toMatchObject({ id: 'dashboard', path: '/dashboard' })
   })
 })

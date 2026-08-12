@@ -5,7 +5,7 @@ definePage({
   meta: {
     title: '仪表盘',
     icon: 'i-lucide-gauge',
-    menuGroup: {
+    group: {
       label: '概览',
       order: 10,
     },

@@ -23,15 +23,15 @@ function mergeBackendMenuWithFileRoute(
   fileRouteMap: Map<string, RouteRecordRaw>,
   options: MergeBackendMenusOptions,
   parentPath = '',
-  inheritedMenuGroup?: AdminRouteMeta['menuGroup'],
+  inheritedGroup?: AdminRouteMeta['group'],
 ): RouteRecordRaw | undefined {
   if (menu.type === 'button') return void 0
 
   const fullPath = resolveAdminRoutePath(parentPath, menu.path)
   const fileRoute = fileRouteMap.get(fullPath)
-  const menuGroup = menu.meta.menuGroup ?? inheritedMenuGroup
+  const group = menu.meta.group ?? inheritedGroup
   const children = menu.children?.flatMap((child) => {
-    const route = mergeBackendMenuWithFileRoute(child, fileRouteMap, options, fullPath, menuGroup)
+    const route = mergeBackendMenuWithFileRoute(child, fileRouteMap, options, fullPath, group)
     return route ? [route] : []
   })
   const iframeSrc = menu.meta.iframeSrc?.trim()
@@ -53,7 +53,7 @@ function mergeBackendMenuWithFileRoute(
       ...menu.meta,
       ...(iframeSrc ? { iframeSrc } : {}),
       ...(externalLink ? { externalLink } : {}),
-      menuGroup,
+      group,
       source: 'access',
     },
     path: resolveMergedRoutePath(parentPath, fullPath),

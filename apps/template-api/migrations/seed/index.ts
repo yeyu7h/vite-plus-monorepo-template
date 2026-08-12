@@ -3,7 +3,7 @@ import type { InferInsertModel } from 'drizzle-orm'
 
 import { eq } from 'drizzle-orm'
 import db from '@/db'
-import { systemMenuGroups, systemMenuRoles, systemMenus, systemUsers, systemRoles, casbinRule, systemUserRoles } from '@/db/schema'
+import { systemMenuRoles, systemMenus, systemUsers, systemRoles, casbinRule, systemUserRoles } from '@/db/schema'
 import type { AdminMenuIcon, AdminMenuType } from '@/db/schema'
 import { Status } from '@/lib/enums/common'
 
@@ -16,7 +16,6 @@ type MenuSeed = {
   contentMode?: 'default' | 'full'
   description?: string
   externalLink?: string
-  groupId?: string
   hideInBreadcrumb?: boolean
   hideInMenu?: boolean
   hideInTab?: boolean
@@ -28,7 +27,7 @@ type MenuSeed = {
   menuVisibleWithForbidden?: boolean
   order: number
   parentId?: string
-  path: string
+  path: string | null
   permissionCode?: string
   showActiveTabBorder?: boolean
   tabPath?: string
@@ -36,18 +35,18 @@ type MenuSeed = {
   type: AdminMenuType
 }
 
-const menuGroupsSeed = [
-  { id: 'workspace', label: '工作台', order: 10 },
-  { id: 'ops', label: '运维', order: 20 },
-  { id: 'system', label: '系统管理', order: 30 },
-  { id: 'links', label: '链接', order: 40 },
+const groupNodesSeed: MenuSeed[] = [
+  { id: 'group_workspace', path: null, order: 10, title: '工作台', type: 'group' },
+  { id: 'group_ops', path: null, order: 20, title: '运维', type: 'group' },
+  { id: 'group_system', path: null, order: 30, title: '系统管理', type: 'group' },
+  { id: 'group_links', path: null, order: 40, title: '链接', type: 'group' },
 ]
 
 const menuTreeSeed: MenuSeed[] = [
   {
     id: 'dashboard',
     path: '/dashboard',
-    groupId: 'workspace',
+    parentId: 'group_workspace',
     icon: 'i-lucide-layout-dashboard',
     order: 10,
     title: 'Dashboard',
@@ -57,7 +56,7 @@ const menuTreeSeed: MenuSeed[] = [
   {
     id: 'reports',
     path: '/reports',
-    groupId: 'workspace',
+    parentId: 'group_workspace',
     icon: 'i-lucide-chart-column',
     order: 20,
     title: '报表',
@@ -67,7 +66,7 @@ const menuTreeSeed: MenuSeed[] = [
   {
     id: 'monitor',
     path: '/monitor',
-    groupId: 'ops',
+    parentId: 'group_ops',
     icon: {
       dark: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/Apple.png',
       light: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/Apple.png',
@@ -89,12 +88,12 @@ const menuTreeSeed: MenuSeed[] = [
       },
     ],
   },
-  { id: 'user', path: '/user/', groupId: 'workspace', icon: 'i-lucide-users', keepAlive: true, order: 40, title: '用户列表', type: 'menu' },
-  { id: 'map', path: '/map', groupId: 'ops', icon: 'i-lucide-map', order: 35, showActiveTabBorder: true, title: '地图', type: 'menu', contentMode: 'full' },
+  { id: 'user', path: '/user', parentId: 'group_workspace', icon: 'i-lucide-users', keepAlive: true, order: 40, title: '用户列表', type: 'menu' },
+  { id: 'map', path: '/map', parentId: 'group_ops', icon: 'i-lucide-map', order: 35, showActiveTabBorder: true, title: '地图', type: 'menu', contentMode: 'full' },
   {
     id: 'access',
     path: '/access',
-    groupId: 'workspace',
+    parentId: 'group_workspace',
     icon: 'i-lucide-key-round',
     order: 45,
     title: '权限演示',
@@ -114,7 +113,7 @@ const menuTreeSeed: MenuSeed[] = [
   {
     id: 'system',
     path: '/system',
-    groupId: 'system',
+    parentId: 'group_system',
     icon: 'i-lucide-settings',
     order: 50,
     title: '系统',
@@ -145,9 +144,6 @@ const menuTreeSeed: MenuSeed[] = [
           { id: 'system-menu-create', path: 'create', order: 10, permissionCode: 'system:menu:create', title: '创建菜单', type: 'button' },
           { id: 'system-menu-update', path: 'update', order: 20, permissionCode: 'system:menu:update', title: '编辑菜单', type: 'button' },
           { id: 'system-menu-delete', path: 'delete', order: 30, permissionCode: 'system:menu:delete', title: '删除菜单', type: 'button' },
-          { id: 'system-menu-group-create', path: 'group-create', order: 40, permissionCode: 'system:menu-group:create', title: '创建菜单分组', type: 'button' },
-          { id: 'system-menu-group-update', path: 'group-update', order: 50, permissionCode: 'system:menu-group:update', title: '编辑菜单分组', type: 'button' },
-          { id: 'system-menu-group-delete', path: 'group-delete', order: 60, permissionCode: 'system:menu-group:delete', title: '删除菜单分组', type: 'button' },
         ],
       },
       {
@@ -199,7 +195,7 @@ const menuTreeSeed: MenuSeed[] = [
   {
     id: 'tailwindcss-document',
     path: '/tailwindcss/document',
-    groupId: 'links',
+    parentId: 'group_links',
     iframeSrc: 'https://tailwindcss.com/docs',
     icon: 'i-lucide-book-open-text',
     keepAlive: true,
@@ -208,7 +204,7 @@ const menuTreeSeed: MenuSeed[] = [
     title: 'Tailwind CSS 文档',
     type: 'menu',
   },
-  { id: 'docs-vite-plus', path: '/docs/vite-plus', groupId: 'links', externalLink: 'https://viteplus.dev/guide/', icon: 'i-lucide-book-open', order: 60, title: 'Vite+ 文档', type: 'menu' },
+  { id: 'docs-vite-plus', path: '/docs/vite-plus', parentId: 'group_links', externalLink: 'https://viteplus.dev/guide/', icon: 'i-lucide-book-open', order: 60, title: 'Vite+ 文档', type: 'menu' },
   { id: 'invalid-route-demo', path: '/not-exists', icon: 'i-lucide-circle-alert', order: 999, title: '无效菜单示例', type: 'menu' },
 ]
 
@@ -217,7 +213,7 @@ function flattenMenuTree(nodes: readonly MenuSeed[], parentId?: string): Array<I
     const { children, ...menu } = node
     const row: InferInsertModel<typeof systemMenus> = {
       ...menu,
-      parentId,
+      parentId: parentId ?? menu.parentId,
     }
 
     return [row, ...flattenMenuTree(children ?? [], node.id)]
@@ -316,21 +312,10 @@ async function seedRoles() {
   }
 }
 
-async function seedMenuGroups() {
-  try {
-    console.info(`${logPrefix} 开始写入菜单分组...`)
-    await db.insert(systemMenuGroups).values(menuGroupsSeed).onConflictDoNothing()
-    console.info(`${logPrefix} 已创建 ${menuGroupsSeed.length} 个菜单分组`)
-  } catch (error) {
-    console.error(`${logPrefix} 写入菜单分组失败:`, error)
-    throw error
-  }
-}
-
 async function seedMenus() {
   try {
     console.info(`${logPrefix} 开始写入菜单...`)
-    const menuRows = flattenMenuTree(menuTreeSeed)
+    const menuRows = flattenMenuTree([...groupNodesSeed, ...menuTreeSeed])
     await db.insert(systemMenus).values(menuRows).onConflictDoNothing()
     console.info(`${logPrefix} 已创建 ${menuRows.length} 个菜单节点`)
     return menuRows
@@ -360,9 +345,6 @@ async function seedMenuRoles(menuRows: readonly InferInsertModel<typeof systemMe
       'system-menu-create',
       'system-menu-update',
       'system-menu-delete',
-      'system-menu-group-create',
-      'system-menu-group-update',
-      'system-menu-group-delete',
       'system-user',
       'system-user-create',
       'system-user-update',
@@ -419,10 +401,6 @@ async function seedCasbinRules(roles: any) {
     }
 
     const adminRules = [
-      { v1: '/system/menu-groups', v2: 'GET' },
-      { v1: '/system/menu-groups', v2: 'POST' },
-      { v1: '/system/menu-groups/{id}', v2: 'PATCH' },
-      { v1: '/system/menu-groups/{id}', v2: 'DELETE' },
       { v1: '/system/menus/tree', v2: 'GET' },
       { v1: '/system/menus', v2: 'POST' },
       { v1: '/system/menus/{id}', v2: 'PATCH' },
@@ -495,7 +473,6 @@ async function main() {
     hasError = true
   }
   try {
-    await seedMenuGroups()
     menuRows = await seedMenus()
   } catch {
     hasError = true

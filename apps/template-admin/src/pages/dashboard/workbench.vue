@@ -3,7 +3,7 @@ definePage({
   meta: {
     title: '工作台',
     icon: 'i-lucide-layout-dashboard',
-    menuGroup: {
+    group: {
       label: '概览',
       order: 10,
     },

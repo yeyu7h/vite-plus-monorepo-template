@@ -80,7 +80,7 @@ test('skips placeholder parent routes without title when menu group already cove
       meta: {
         title: '角色管理',
         icon: 'i-lucide-shield-check',
-        menuGroup: '系统管理',
+        group: '系统管理',
       },
     },
     [
@@ -110,7 +110,7 @@ test('does not inherit parent hideInBreadcrumb onto current child route', () => 
         title: '工作台',
         icon: 'i-lucide-layout-dashboard',
         hideInBreadcrumb: true,
-        menuGroup: '概览',
+        group: '概览',
       },
     },
     [
@@ -205,7 +205,7 @@ test('keeps external links non-clickable in breadcrumbs', () => {
 })
 
 test('builds a non-clickable breadcrumb prefix from string menu group', () => {
-  const prefix = buildAdminBreadcrumbPrefix({ path: '/system/role', meta: { title: '角色管理', menuGroup: '系统管理' } })
+  const prefix = buildAdminBreadcrumbPrefix({ path: '/system/role', meta: { title: '角色管理', group: '系统管理' } })
 
   expect(prefix).toEqual([
     {
@@ -219,7 +219,7 @@ test('builds a non-clickable breadcrumb prefix from object menu group', () => {
     path: '/dashboard/workbench',
     meta: {
       title: '工作台',
-      menuGroup: {
+      group: {
         label: '概览',
         order: 10,
       },

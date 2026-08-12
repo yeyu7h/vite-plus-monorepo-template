@@ -3,7 +3,7 @@ definePage({
   meta: {
     title: 'Vite+ Docs',
     icon: 'i-lucide-book-open',
-    menuGroup: {
+    group: {
       id: 'links',
       label: '链接',
       order: 90,

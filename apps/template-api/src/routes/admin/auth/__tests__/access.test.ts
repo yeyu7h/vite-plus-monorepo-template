@@ -5,7 +5,16 @@ import { buildAdminAccessPayload } from '../access.helpers'
 
 const rows: AdminAccessMenuRecord[] = [
   {
+    id: 'workspace-group',
+    order: 10,
+    path: null,
+    roleIds: [],
+    title: '工作台',
+    type: 'group',
+  },
+  {
     id: 'public',
+    parentId: 'workspace-group',
     order: 1,
     path: '/public',
     roleIds: [],
@@ -62,6 +71,7 @@ describe('buildAdminAccessPayload', () => {
 
     expect(result.permissionCodes).toEqual([])
     expect(result.menus.map(({ id }) => id)).toEqual(['public'])
+    expect(result.menus[0]?.meta.group).toEqual({ id: 'workspace-group', label: '工作台', order: 10 })
     expect(result.menus[0]?.children?.map(({ id }) => id)).toEqual(['public-page', 'visible-forbidden'])
     expect(result.menus[0]?.children?.[1]?.meta).toMatchObject({ authority: ['admin'], menuVisibleWithForbidden: true })
   })
@@ -75,13 +85,21 @@ describe('buildAdminAccessPayload', () => {
     expect(result.menus[1]?.children?.[0]?.children).toBeUndefined()
   })
 
-  test('hides complete subtrees when an ancestor menu or its group is disabled', () => {
+  test('hides complete subtrees when an ancestor menu or group node is disabled', () => {
     const hiddenRows: AdminAccessMenuRecord[] = [
       { id: 'disabled-root', path: '/disabled', roleIds: [], status: 'DISABLED', title: '禁用根', type: 'directory' },
       { id: 'disabled-child', parentId: 'disabled-root', path: 'child', roleIds: [], title: '子页面', type: 'menu' },
       {
+        id: 'disabled-group',
+        path: null,
+        roleIds: [],
+        status: 'DISABLED',
+        title: '禁用分组',
+        type: 'group',
+      },
+      {
         id: 'group-root',
-        group: { id: 'disabled-group', label: '禁用分组', order: 1, status: 'DISABLED' },
+        parentId: 'disabled-group',
         path: '/group',
         roleIds: [],
         title: '分组根',

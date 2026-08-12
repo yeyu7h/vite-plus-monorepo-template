@@ -53,10 +53,20 @@ function forwardToggle(id: string, checked: boolean) {
           @click="toggleExpanded(item.id)"
         />
         <span v-else class="inline-block size-6" />
-        <UCheckbox :model-value="selectedIds.includes(item.id)" :disabled="item.readOnly" :aria-label="item.title" @update:model-value="emit('toggle', item.id, Boolean($event))" />
-        <UIcon :name="item.type === 'button' ? 'i-lucide-mouse-pointer-click' : item.type === 'directory' ? 'i-lucide-folder' : 'i-lucide-file'" class="size-4 text-muted" />
+        <UCheckbox
+          v-if="item.type !== 'group'"
+          :model-value="selectedIds.includes(item.id)"
+          :disabled="item.readOnly"
+          :aria-label="item.title"
+          @update:model-value="emit('toggle', item.id, Boolean($event))"
+        />
+        <span v-else class="inline-block size-4" />
+        <UIcon
+          :name="item.type === 'group' ? 'i-lucide-panels-top-left' : item.type === 'button' ? 'i-lucide-mouse-pointer-click' : item.type === 'directory' ? 'i-lucide-folder' : 'i-lucide-file'"
+          class="size-4 text-muted"
+        />
         <span class="min-w-0 flex-1 truncate text-sm text-default">{{ item.title }}</span>
-        <UBadge v-if="item.accessScope === 'public'" label="公共" color="neutral" variant="subtle" size="sm" />
+        <UBadge v-if="item.type !== 'group' && item.accessScope === 'public'" label="公共" color="neutral" variant="subtle" size="sm" />
         <UBadge v-if="item.inherited" label="继承" color="info" variant="subtle" size="sm" />
         <UBadge v-else-if="item.direct" label="直接" color="primary" variant="subtle" size="sm" />
       </div>

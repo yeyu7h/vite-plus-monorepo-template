@@ -17,9 +17,8 @@ const menuIconSchema = zod.union([zod.string(), zod.object({ dark: zod.string().
 const menuFields = {
   id: menuIdField,
   parentId: zod.string().min(1).max(128).nullable().optional().meta({ description: '父菜单 ID' }),
-  groupId: zod.string().min(1).max(64).nullable().optional().meta({ description: '菜单分组 ID，仅根节点可设置' }),
-  type: zod.enum(['directory', 'menu', 'button']).meta({ description: '节点类型' }),
-  path: zod.string().trim().min(1, '路径不能为空').max(255, '路径最多 255 个字符').meta({ description: '路由或按钮路径' }),
+  type: zod.enum(['group', 'directory', 'menu', 'button']).meta({ description: '节点类型' }),
+  path: zod.string().trim().min(1, '路径不能为空').max(255, '路径最多 255 个字符').nullable().optional().meta({ description: '路由或按钮路径；分组节点为空' }),
   title: zod.string().trim().min(1, '标题不能为空').max(128, '标题最多 128 个字符').meta({ description: '标题' }),
   description: zod.string().max(1000).nullable().optional(),
   icon: menuIconSchema.nullable().optional(),
@@ -41,7 +40,17 @@ const menuFields = {
   accessScope: menuAccessScopeSchema.optional(),
 }
 
-function validateTypeFields(data: { permissionCode?: string | null; type?: 'button' | 'directory' | 'menu' }, ctx: z.RefinementCtx) {
+function validateTypeFields(
+  data: { accessScope?: 'public' | 'restricted'; parentId?: string | null; path?: string | null; permissionCode?: string | null; type?: 'group' | 'button' | 'directory' | 'menu' },
+  ctx: z.RefinementCtx,
+) {
+  if (data.type === 'group') {
+    if (data.parentId) ctx.addIssue({ code: 'custom', path: ['parentId'], message: '菜单分组只能位于顶层' })
+    if (data.path) ctx.addIssue({ code: 'custom', path: ['path'], message: '菜单分组不能设置路径' })
+    if (data.accessScope === 'restricted') ctx.addIssue({ code: 'custom', path: ['accessScope'], message: '菜单分组不参与角色授权' })
+  } else if (data.type && !data.path) {
+    ctx.addIssue({ code: 'custom', path: ['path'], message: '非分组节点必须设置路径' })
+  }
   if (data.type === 'button' && !data.permissionCode) {
     ctx.addIssue({ code: 'custom', path: ['permissionCode'], message: '按钮节点必须设置权限码' })
   }

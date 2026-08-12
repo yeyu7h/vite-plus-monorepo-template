@@ -41,8 +41,8 @@ const accessFileRoutes: RouteRecordRaw[] = [
   {
     component,
     path: '/dashboard',
-    meta: { menuGroup: { label: '旧分组', order: 1 }, title: 'Old dashboard' },
-    children: [{ component, path: 'workbench', meta: { menuGroup: { label: '旧分组', order: 1 }, title: 'Old title' } }],
+    meta: { group: { label: '旧分组', order: 1 }, title: 'Old dashboard' },
+    children: [{ component, path: 'workbench', meta: { group: { label: '旧分组', order: 1 }, title: 'Old title' } }],
   },
   { component, path: '/access', children: [{ component, path: 'menu-visible-403' }] },
   {
@@ -66,7 +66,7 @@ const backendMenus = [
   {
     id: 'dashboard',
     path: '/dashboard',
-    meta: { icon: 'i-lucide-layout-dashboard', menuGroup: { label: '工作台', order: 10 }, order: 10, title: 'Dashboard' },
+    meta: { icon: 'i-lucide-layout-dashboard', group: { label: '工作台', order: 10 }, order: 10, title: 'Dashboard' },
     children: [
       {
         id: 'dashboard-workbench',
@@ -78,7 +78,7 @@ const backendMenus = [
   {
     id: 'access',
     path: '/access',
-    meta: { icon: 'i-lucide-key-round', menuGroup: { label: '工作台', order: 10 }, order: 30, title: '权限演示' },
+    meta: { icon: 'i-lucide-key-round', group: { label: '工作台', order: 10 }, order: 30, title: '权限演示' },
     children: [
       {
         id: 'access-menu-visible-403',
@@ -129,11 +129,11 @@ test('merges backend meta into matching file routes and ignores missing paths', 
   expect(result.routePathSet.has('/dashboard/workbench')).toBe(true)
   expect(result.routePathSet.has('/missing')).toBe(false)
   expect(result.accessibleRoutes[0]?.meta?.title).toBe('Dashboard')
-  expect(result.accessibleRoutes[0]?.meta?.menuGroup).toEqual({ label: '工作台', order: 10 })
+  expect(result.accessibleRoutes[0]?.meta?.group).toEqual({ label: '工作台', order: 10 })
   expect(result.accessibleRoutes[0]?.children?.[0]?.meta?.title).toBe('工作台')
   expect(result.accessibleRoutes[0]?.children?.[0]?.path).toBe('workbench')
   expect(result.accessibleRoutes[0]?.children?.[0]?.meta?.icon).toBe('i-lucide-monitor')
-  expect(result.accessibleRoutes[0]?.children?.[0]?.meta?.menuGroup).toEqual({ label: '工作台', order: 10 })
+  expect(result.accessibleRoutes[0]?.children?.[0]?.meta?.group).toEqual({ label: '工作台', order: 10 })
 })
 
 test('filters routes by authority after merging backend menus', () => {
@@ -194,7 +194,7 @@ test('creates an accessible iframe route without a matching file page', () => {
         meta: {
           iframeSrc: 'https://doc.vben.pro',
           keepAlive: true,
-          menuGroup: { label: '链接', order: 40 },
+          group: { label: '链接', order: 40 },
           title: 'Vben 文档',
         },
       },

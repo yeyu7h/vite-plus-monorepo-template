@@ -3,7 +3,7 @@ definePage({
   meta: {
     title: '系统',
     icon: 'i-lucide-settings',
-    menuGroup: {
+    group: {
       label: '系统管理',
       order: 20,
     },

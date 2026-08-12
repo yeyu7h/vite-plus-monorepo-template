@@ -24,7 +24,7 @@ test('merges backend menu meta onto matching file routes only', () => {
     {
       id: 'dashboard',
       path: '/dashboard',
-      meta: { menuGroup: { label: '工作台', order: 10 }, title: 'Dashboard' },
+      meta: { group: { label: '工作台', order: 10 }, title: 'Dashboard' },
       children: [
         {
           id: 'dashboard-workbench',
@@ -45,7 +45,7 @@ test('merges backend menu meta onto matching file routes only', () => {
   expect(mergedRoutes).toHaveLength(1)
   expect(mergedRoutes[0]?.meta?.title).toBe('Dashboard')
   expect(mergedRoutes[0]?.children?.map((route) => route.path)).toEqual(['workbench'])
-  expect(mergedRoutes[0]?.children?.[0]?.meta?.menuGroup).toEqual({ label: '工作台', order: 10 })
+  expect(mergedRoutes[0]?.children?.[0]?.meta?.group).toEqual({ label: '工作台', order: 10 })
 })
 
 test('promotes a deeply nested file page to an absolute top-level backend route', () => {
@@ -68,7 +68,7 @@ test('creates iframe routes and their structural parent without matching file pa
       {
         id: 'embedded',
         path: '/embedded',
-        meta: { menuGroup: { label: '链接', order: 40 }, title: '内嵌页面' },
+        meta: { group: { label: '链接', order: 40 }, title: '内嵌页面' },
         children: [
           {
             id: 'embedded-vben',
@@ -89,7 +89,7 @@ test('creates iframe routes and their structural parent without matching file pa
   expect(mergedRoutes[0]?.children?.[0]?.path).toBe('vben')
   expect(mergedRoutes[0]?.children?.[0]?.component).toBe(iframeComponent)
   expect(mergedRoutes[0]?.children?.[0]?.meta?.iframeSrc).toBe('https://doc.vben.pro')
-  expect(mergedRoutes[0]?.children?.[0]?.meta?.menuGroup).toEqual({ label: '链接', order: 40 })
+  expect(mergedRoutes[0]?.children?.[0]?.meta?.group).toEqual({ label: '链接', order: 40 })
 })
 
 test('creates external-link routes without matching file pages', () => {
@@ -118,12 +118,12 @@ test('keeps multi-segment backend root menus as navigation roots', () => {
       {
         id: 'docs-vite-plus',
         path: '/docs/vite-plus',
-        meta: { externalLink: 'https://viteplus.dev/guide/', menuGroup: '链接', order: 20, title: 'Vite+ 文档' },
+        meta: { externalLink: 'https://viteplus.dev/guide/', group: '链接', order: 20, title: 'Vite+ 文档' },
       },
       {
         id: 'tailwindcss-document',
         path: '/tailwindcss/document',
-        meta: { externalLink: 'https://tailwindcss.com/docs', menuGroup: '链接', order: 10, title: 'Tailwind CSS 文档' },
+        meta: { externalLink: 'https://tailwindcss.com/docs', group: '链接', order: 10, title: 'Tailwind CSS 文档' },
       },
     ],
     ['admin'],
@@ -251,7 +251,7 @@ test('derives canonical active and tab paths independently from route meta', () 
     {
       component,
       path: '/system',
-      meta: { menuGroup: { label: '系统管理', order: 30 }, title: '系统' },
+      meta: { group: { label: '系统管理', order: 30 }, title: '系统' },
       children: [
         {
           component,
@@ -270,7 +270,7 @@ test('derives canonical active and tab paths independently from route meta', () 
   expect(navigationRoutes).toEqual([
     {
       activePath: '/system',
-      meta: { menuGroup: { label: '系统管理', order: 30 }, title: '系统' },
+      meta: { group: { label: '系统管理', order: 30 }, title: '系统' },
       parentPath: void 0,
       path: '/system',
       source: void 0,
@@ -303,12 +303,12 @@ test('resolves accessible routes menus and route paths with injected forbidden c
       {
         id: 'dashboard',
         path: '/dashboard',
-        meta: { menuGroup: { label: '工作台', order: 10 }, title: 'Dashboard' },
+        meta: { group: { label: '工作台', order: 10 }, title: 'Dashboard' },
       },
       {
         id: 'access',
         path: '/access',
-        meta: { menuGroup: { label: '工作台', order: 10 }, title: '权限演示' },
+        meta: { group: { label: '工作台', order: 10 }, title: '权限演示' },
         children: [
           {
             id: 'access-menu-visible-403',

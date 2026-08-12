@@ -10,7 +10,7 @@ const adminMenuIconSchema = z.union([
   }),
 ])
 
-const adminMenuGroupSchema = z.object({
+const adminGroupSchema = z.object({
   id: z.string(),
   label: z.string(),
   order: z.number().int(),
@@ -29,7 +29,7 @@ export const adminAccessMenuMetaSchema = z.object({
   iframeSrc: z.string().optional(),
   ignoreAccess: z.boolean().optional(),
   keepAlive: z.boolean().optional(),
-  menuGroup: z.union([adminMenuGroupSchema, z.string()]).optional(),
+  group: z.union([adminGroupSchema, z.string()]).optional(),
   menuVisibleWithForbidden: z.boolean().optional(),
   order: z.number().int().optional(),
   showActiveTabBorder: z.boolean().optional(),

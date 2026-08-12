@@ -33,7 +33,7 @@ export function buildAdminBreadcrumbs(route: AdminCurrentRouteRecord, routes: re
     const hasExplicitTitle = Boolean(meta?.title)
 
     // layout 插件可能生成同路径的占位父级 路由存在但没有导航 meta 时不要把它当成真实层级
-    if (path !== currentPath && !hasExplicitTitle && route.meta.menuGroup) return []
+    if (path !== currentPath && !hasExplicitTitle && route.meta.group) return []
 
     const title = path === currentPath ? (route.meta.title ?? meta?.title ?? formatAdminNavigationTitle(segment)) : (meta?.title ?? formatAdminNavigationTitle(segment))
 
@@ -44,12 +44,12 @@ export function buildAdminBreadcrumbs(route: AdminCurrentRouteRecord, routes: re
 }
 
 /**
- * 从 `menuGroup` 生成位于面包屑最前面的分组前缀
+ * 从 `group` 生成位于面包屑最前面的分组前缀
  * @param route 当前路由
  */
 export function buildAdminBreadcrumbPrefix(route: AdminCurrentRouteRecord): AdminBreadcrumbItem[] {
-  const menuGroup = route.meta.menuGroup
-  const title = typeof menuGroup === 'string' ? menuGroup : menuGroup?.label
+  const group = route.meta.group
+  const title = typeof group === 'string' ? group : group?.label
 
   if (!title) return []
 

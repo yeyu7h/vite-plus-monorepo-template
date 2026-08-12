@@ -4,17 +4,25 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { cn } from '@monorepo/shared/utils'
 import { useTabTransition } from './use-tab-transition'
 
-const props = defineProps<{
-  activeKey: string
-  tabs: AdminTabItem[]
-}>()
+const TAB_BASIS = '15rem'
+
+const props = withDefaults(
+  defineProps<{
+    activeKey: string
+    tabs: AdminTabItem[]
+    widthTransition?: boolean
+  }>(),
+  {
+    widthTransition: true,
+  },
+)
 
 const emit = defineEmits<{
   close: [key: string]
   select: [key: string]
 }>()
 
-const tabTransition = useTabTransition({ onClosed: finishTabClose })
+const tabTransition = useTabTransition({ onClosed: finishTabClose, tabBasis: TAB_BASIS })
 
 const hasHydratedTabs = ref(false)
 const localTabs = ref<AdminTabItem[]>([])
@@ -32,9 +40,11 @@ watch(
 
     const previousKeys = new Set(previousTabs.map((tab) => tab.key))
 
-    for (const tab of tabs) {
-      if (!previousKeys.has(tab.key)) {
-        tabTransition.prepareTabOpenTransition(tab.key)
+    if (props.widthTransition) {
+      for (const tab of tabs) {
+        if (!previousKeys.has(tab.key)) {
+          tabTransition.prepareTabOpenTransition(tab.key)
+        }
       }
     }
 
@@ -42,9 +52,11 @@ watch(
 
     await nextTick()
 
-    for (const tab of tabs) {
-      if (!previousKeys.has(tab.key)) {
-        tabTransition.startTabOpenTransition(tab.key)
+    if (props.widthTransition) {
+      for (const tab of tabs) {
+        if (!previousKeys.has(tab.key)) {
+          tabTransition.startTabOpenTransition(tab.key)
+        }
       }
     }
   },
@@ -55,10 +67,14 @@ const activeTabKey = computed(() => props.activeKey)
 
 function closeTab(key: string) {
   const index = localTabs.value.findIndex((tab) => tab.key === key)
-  if (index === -1) return
-
   const tab = localTabs.value[index]
   if (!tab || !isTabClosable(tab)) return
+
+  if (!props.widthTransition) {
+    localTabs.value = localTabs.value.filter((tab) => tab.key !== key)
+    emit('close', key)
+    return
+  }
 
   const started = tabTransition.startTabCloseTransition(key)
   if (!started) return
@@ -91,6 +107,10 @@ function isTabClosable(tab: AdminTabItem) {
 
 function isActiveTab(tab: AdminTabItem) {
   return tab.key === activeTabKey.value
+}
+
+function getTabStyle(key: string) {
+  return tabTransition.getTabTransitionStyle(key, TAB_BASIS)
 }
 
 function getTabImageIcon(icon: unknown, theme: 'light' | 'dark' = 'light'): string {
@@ -131,35 +151,41 @@ function syncLocalTabs(tabs: AdminTabItem[]) {
 </script>
 
 <template>
-  <div class="flex h-full">
+  <div class="flex h-full min-w-0 flex-1 overflow-x-clip overflow-y-visible">
     <div
       v-for="tab in localTabs"
       :key="tab.key"
-      :ref="(el) => tabTransition.setTabElement(tab.key, el as HTMLDivElement | null)"
       :class="
         cn(
-          'group/tab relative flex h-full min-w-0 shrink-0 items-center justify-center select-none transition-[width] duration-200 ease-out after:absolute after:inset-x-0 after:-bottom-px after:h-px after:origin-center after:scale-x-0 after:content-[\'\']',
+          'tab-item group/tab relative flex h-full min-w-0 shrink items-center justify-center duration-200 ease-out select-none after:absolute after:inset-x-0 after:-bottom-px after:h-px after:origin-center after:scale-x-0 after:content-[\'\']',
+          widthTransition ? 'transition-[flex-basis]' : 'transition-none',
           isActiveTab(tab) ? cn('is-active z-10 bg-default after:scale-x-100', tab.showActiveTabBorder ? 'after:bg-border' : 'after:bg-default') : 'hover:bg-elevated hover:dark:bg-default',
           tabTransition.closingTabIds.value.has(tab.key) && 'pointer-events-none',
         )
       "
-      :style="tabTransition.getTabTransitionStyle(tab.key)"
+      :style="getTabStyle(tab.key)"
       @click="selectTab(tab.key)"
       @transitionend.self="tabTransition.handleTabTransitionEnd($event, tab.key)"
     >
       <div class="flex h-full min-w-0 flex-1 items-center justify-center overflow-hidden">
-        <div class="flex min-w-max items-center justify-center px-3">
-          <UIcon v-if="typeof tab.icon === 'string' && tab.icon.startsWith('i-')" class="mr-2 shrink-0 text-muted group-[.is-active]/tab:text-default" :name="tab.icon" size="18" />
-          <picture v-else-if="isTabImageIcon(tab.icon)">
-            <source media="(prefers-color-scheme: dark)" :srcset="getTabImageIcon(tab.icon, 'dark')" />
-            <img class="mr-2 size-4.5 object-contain" :src="getTabImageIcon(tab.icon)" />
-          </picture>
+        <div class="flex w-full min-w-0 items-center overflow-hidden px-3">
+          <div class="tab-primary-content flex min-w-0 flex-1 items-center overflow-hidden">
+            <UIcon v-if="typeof tab.icon === 'string' && tab.icon.startsWith('i-')" class="tab-leading-icon mr-2 shrink-0 text-muted group-[.is-active]/tab:text-default" :name="tab.icon" size="18" />
+            <picture v-else-if="isTabImageIcon(tab.icon)" class="tab-leading-icon shrink-0">
+              <source media="(prefers-color-scheme: dark)" :srcset="getTabImageIcon(tab.icon, 'dark')" />
+              <img class="mr-2 size-4.5 object-contain" :src="getTabImageIcon(tab.icon)" />
+            </picture>
 
-          <span class="text-sm leading-none font-medium text-muted group-[.is-active]/tab:text-default">{{ tab.title }}</span>
+            <span
+              class="min-w-0 flex-1 overflow-hidden text-sm leading-none font-medium whitespace-nowrap text-muted [mask-image:linear-gradient(to_right,black_calc(100%_-_0.75rem),transparent)] [mask-repeat:no-repeat] group-[.is-active]/tab:text-default"
+            >
+              {{ tab.title }}
+            </span>
+          </div>
 
           <button
             v-if="isTabClosable(tab)"
-            class="ml-3 flex size-5 shrink-0 items-center justify-center rounded-full text-muted hover:bg-accented hover:text-default group-[.is-active]/tab:text-default"
+            class="tab-close-button ml-3 flex size-5 shrink-0 items-center justify-center rounded-full text-muted hover:bg-accented hover:text-default group-[.is-active]/tab:text-default"
             type="button"
             title="关闭标签页"
             @click.stop="closeTab(tab.key)"
@@ -181,3 +207,40 @@ function syncLocalTabs(tabs: AdminTabItem[]) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.tab-item {
+  container-name: admin-tab;
+  container-type: inline-size;
+}
+
+@container admin-tab (max-width: 5.75rem) {
+  .tab-close-button {
+    display: none;
+  }
+
+  .is-active .tab-close-button {
+    display: flex;
+  }
+}
+
+@container admin-tab (max-width: 5.25rem) {
+  .is-active .tab-leading-icon {
+    display: none;
+  }
+}
+
+@container admin-tab (max-width: 3.5rem) {
+  .is-active .tab-primary-content {
+    display: none;
+  }
+
+  .is-active .tab-close-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: 0;
+    transform: translate(-50%, -50%);
+  }
+}
+</style>

@@ -2,9 +2,15 @@
 import { TabsView } from '@monorepo-admin-core/tabs-ui'
 import { useAdminTabbar } from './use-admin-tabbar'
 
-const props = defineProps<{
-  storageKey?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    storageKey?: string
+    widthTransition?: boolean
+  }>(),
+  {
+    widthTransition: true,
+  },
+)
 
 const { activeKey, closeTab, refreshTab, selectTab, tabs } = useAdminTabbar({
   storageKey: props.storageKey,
@@ -12,5 +18,5 @@ const { activeKey, closeTab, refreshTab, selectTab, tabs } = useAdminTabbar({
 </script>
 
 <template>
-  <TabsView :active-key="activeKey" :tabs="tabs" @close="closeTab" @refresh="refreshTab" @select="selectTab" />
+  <TabsView :active-key="activeKey" :tabs="tabs" :width-transition="widthTransition" @close="closeTab" @refresh="refreshTab" @select="selectTab" />
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FormSubmitEvent, TableColumn, TableRow } from '@nuxt/ui'
+import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
 import { resolveAdminRoutePath } from '@monorepo-admin-core/access-effect'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -7,6 +7,7 @@ import { z } from 'zod'
 
 import type { SystemMenuApi } from '@/api/core/system'
 import { systemMenuApi } from '@/api/core/system'
+import { useConfirm } from '@/composables/useConfirm'
 import { countMenuSubtree, flattenMenuTree, getApiErrorMessage } from '@/features/system-management/helpers'
 import {
   getMenuAccessScopeMetadata,
@@ -28,6 +29,7 @@ definePage({
 })
 
 const accessStore = useAdminAccessStore()
+const confirm = useConfirm()
 const toast = useToast()
 const loading = ref(false)
 const saving = ref(false)
@@ -88,9 +90,6 @@ const menuForm = reactive<MenuForm>({
   menuVisibleWithForbidden: false,
   tabPath: '',
 })
-
-const deleteMenuOpen = ref(false)
-const deletingMenu = ref<SystemMenuApi.Node | null>(null)
 
 const flatRows = computed(() => flattenMenuTree(tree.value, expandedIds.value))
 const allMenuNodes = computed(() => {
@@ -214,17 +213,11 @@ const menuColumns: TableColumn<SystemMenuApi.Node & { depth: number; descendantC
     meta: {
       class: {
         th: 'w-32 min-w-32 max-w-32',
-        td: (cell) => `w-32 min-w-32 max-w-32${cell.row.original.type === 'group' ? ' bg-muted' : ''}`,
+        td: 'w-32 min-w-32 max-w-32',
       },
     },
   },
 ]
-
-const menuTableMeta = {
-  class: {
-    tr: (row: TableRow<SystemMenuApi.Node & { depth: number; descendantCount: number }>) => (row.original.type === 'group' ? 'bg-muted' : ''),
-  },
-}
 
 function menuTreeShowsIcon(menu: SystemMenuApi.Node): boolean {
   if (menu.type !== 'directory' && menu.type !== 'menu') return true
@@ -347,24 +340,26 @@ async function saveMenu(event: FormSubmitEvent<z.output<typeof menuSchema>>) {
   }
 }
 
-function requestDeleteMenu(menu: SystemMenuApi.Node) {
-  deletingMenu.value = menu
-  deleteMenuOpen.value = true
-}
-
-async function confirmDeleteMenu() {
-  if (!deletingMenu.value) return
-  saving.value = true
-  try {
-    const result = await systemMenuApi.delete(deletingMenu.value.id)
-    deleteMenuOpen.value = false
-    toast.add({ title: deletingMenu.value.type === 'group' ? '菜单分组已删除' : '菜单已删除', description: `共删除 ${result.deletedCount} 个节点。`, color: 'success' })
-    await loadData()
-  } catch (error) {
-    toast.add({ title: '删除菜单节点失败', description: getApiErrorMessage(error), color: 'error' })
-  } finally {
-    saving.value = false
-  }
+async function requestDeleteMenu(menu: SystemMenuApi.Node) {
+  const groupHasChildren = menu.type === 'group' && Boolean(menu.children?.length)
+  await confirm({
+    title: menu.type === 'group' ? '删除菜单分组' : '删除菜单子树',
+    description:
+      menu.type === 'group'
+        ? groupHasChildren
+          ? `分组“${menu.title}”仍包含 ${countMenuSubtree(menu) - 1} 个菜单节点，服务端会拒绝删除；请先移动或删除这些菜单。`
+          : `将删除空分组“${menu.title}”。此操作不可撤销。`
+        : `将永久删除“${menu.title}”及其全部后代，共 ${countMenuSubtree(menu)} 个节点，同时移除所有角色关联。此操作不可撤销。`,
+    confirmLabel: '确认删除',
+    confirmDisabled: groupHasChildren,
+    errorTitle: '删除菜单节点失败',
+    formatError: getApiErrorMessage,
+    onConfirm: async () => {
+      const result = await systemMenuApi.delete(menu.id)
+      toast.add({ title: menu.type === 'group' ? '菜单分组已删除' : '菜单已删除', description: `共删除 ${result.deletedCount} 个节点。`, color: 'success' })
+      await loadData()
+    },
+  })
 }
 
 onMounted(loadData)
@@ -377,16 +372,7 @@ onMounted(loadData)
       <UButton icon="i-lucide-plus" label="新建菜单" @click="openMenuForm()" />
     </div>
 
-    <UTable
-      v-model:column-pinning="columnPinning"
-      :data="flatRows"
-      :columns="menuColumns"
-      :meta="menuTableMeta"
-      :loading="loading"
-      :ui="{ th: 'whitespace-nowrap' }"
-      sticky="header"
-      class="min-h-0 flex-1"
-    >
+    <UTable v-model:column-pinning="columnPinning" :data="flatRows" :columns="menuColumns" :loading="loading" :ui="{ th: 'whitespace-nowrap' }" sticky="header" class="min-h-0 flex-1">
       <template #title-cell="{ row }">
         <div class="flex items-center gap-2" :style="{ paddingInlineStart: `${row.original.depth * 20}px` }">
           <UButton
@@ -597,24 +583,4 @@ onMounted(loadData)
     </template>
     <template #footer="{ close }"><UButton label="取消" color="neutral" variant="outline" @click="close" /><UButton type="submit" form="menu-form" label="保存" :loading="saving" /></template>
   </USlideover>
-
-  <UModal
-    v-model:open="deleteMenuOpen"
-    :title="deletingMenu?.type === 'group' ? '删除菜单分组' : '删除菜单子树'"
-    :description="
-      deletingMenu
-        ? deletingMenu.type === 'group'
-          ? deletingMenu.children?.length
-            ? `分组“${deletingMenu.title}”仍包含 ${countMenuSubtree(deletingMenu) - 1} 个菜单节点，服务端会拒绝删除；请先移动或删除这些菜单。`
-            : `将删除空分组“${deletingMenu.title}”。此操作不可撤销。`
-          : `将永久删除“${deletingMenu.title}”及其全部后代，共 ${countMenuSubtree(deletingMenu)} 个节点，同时移除所有角色关联。此操作不可撤销。`
-        : ''
-    "
-    :ui="{ footer: 'justify-end' }"
-  >
-    <template #footer="{ close }">
-      <UButton label="取消" color="neutral" variant="outline" @click="close" />
-      <UButton label="确认删除" color="error" :disabled="deletingMenu?.type === 'group' && Boolean(deletingMenu.children?.length)" :loading="saving" @click="confirmDeleteMenu" />
-    </template>
-  </UModal>
 </template>

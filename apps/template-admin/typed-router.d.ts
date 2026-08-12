@@ -149,6 +149,7 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       Record<never, never>,
       | '/system/menu'
+      | '/system/params'
       | '/system/role'
       | '/system/settings'
       | '/system/settings/level-three'
@@ -159,6 +160,13 @@ declare module 'vue-router/auto-routes' {
     '/system/menu': RouteRecordInfo<
       '/system/menu',
       '/system/menu',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/system/params': RouteRecordInfo<
+      '/system/params',
+      '/system/params',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -362,6 +370,7 @@ declare module 'vue-router/auto-routes' {
       routes:
         | '/system'
         | '/system/menu'
+        | '/system/params'
         | '/system/role'
         | '/system/settings'
         | '/system/settings/level-three'
@@ -376,6 +385,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/system/menu.vue': {
       routes:
         | '/system/menu'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/system/params.vue': {
+      routes:
+        | '/system/params'
       views:
         | never
       pathParamNames:

@@ -14,6 +14,10 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@codemirror/lang-json": "catalog:",
+    "@codemirror/lint": "catalog:",
+    "@codemirror/state": "catalog:",
+    "@codemirror/theme-one-dark": "catalog:",
     "@monorepo-admin-core/access-effect": "workspace:*",
     "@monorepo-admin-core/layout-effect": "workspace:*",
     "@monorepo-admin-core/layout-ui": "workspace:*",
@@ -25,6 +29,7 @@
     "@tanstack/vue-query": "catalog:tanstack",
     "@tanstack/vue-table": "catalog:tanstack",
     "cap-widget": "catalog:",
+    "codemirror": "catalog:",
     "pinia": "catalog:vue3",
     "tailwindcss": "catalog:",
     "vue": "catalog:vue3",

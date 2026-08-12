@@ -6,12 +6,14 @@ import { z } from 'zod'
 
 import type { SystemRoleApi } from '@/api/core/system'
 import { systemRoleApi } from '@/api/core/system'
+import { useConfirm } from '@/composables/useConfirm'
 import { ALL_STATUS_VALUE, buildServerListQuery, getApiErrorMessage, getDirectRoleMenuIds, toggleRoleMenuSelection } from '@/features/system-management/helpers'
 import { useAdminAccessStore } from '@/stores/access'
 
 definePage({ meta: { title: '角色管理', icon: 'i-lucide-shield-check', order: 10, authority: ['admin'] } })
 
 const accessStore = useAdminAccessStore()
+const confirm = useConfirm()
 const toast = useToast()
 const loading = ref(false)
 const saving = ref(false)
@@ -37,9 +39,6 @@ const roleForm = reactive({
   status: 'ENABLED' as 'ENABLED' | 'DISABLED',
   parentRoleIds: [] as string[],
 })
-
-const deleteOpen = ref(false)
-const deletingRole = ref<SystemRoleApi.Item | null>(null)
 
 const roleSchema = z.object({
   id: z
@@ -176,24 +175,19 @@ async function saveMenuAuthorization() {
   }
 }
 
-function requestDelete(role: SystemRoleApi.Item) {
-  deletingRole.value = role
-  deleteOpen.value = true
-}
-
-async function confirmDelete() {
-  if (!deletingRole.value) return
-  saving.value = true
-  try {
-    await systemRoleApi.delete(deletingRole.value.id)
-    deleteOpen.value = false
-    toast.add({ title: '角色已删除', color: 'success' })
-    await Promise.all([loadRoles(), loadAllRoles()])
-  } catch (error) {
-    toast.add({ title: '删除角色失败', description: getApiErrorMessage(error), color: 'error' })
-  } finally {
-    saving.value = false
-  }
+async function requestDelete(role: SystemRoleApi.Item) {
+  await confirm({
+    title: '删除角色',
+    description: `将永久删除角色“${role.name}”。若仍有用户使用它，或其他角色继承它，服务端会拒绝删除。`,
+    confirmLabel: '确认删除',
+    errorTitle: '删除角色失败',
+    formatError: getApiErrorMessage,
+    onConfirm: async () => {
+      await systemRoleApi.delete(role.id)
+      toast.add({ title: '角色已删除', color: 'success' })
+      await Promise.all([loadRoles(), loadAllRoles()])
+    },
+  })
 }
 
 watch(status, searchRoles)
@@ -339,15 +333,4 @@ onMounted(() => Promise.all([loadRoles(), loadAllRoles()]))
       />
     </template>
   </USlideover>
-
-  <UModal
-    v-model:open="deleteOpen"
-    title="删除角色"
-    :description="deletingRole ? `将永久删除角色“${deletingRole.name}”。若仍有用户使用它，或其他角色继承它，服务端会拒绝删除。` : ''"
-    :ui="{ footer: 'justify-end' }"
-  >
-    <template #footer="{ close }"
-      ><UButton label="取消" color="neutral" variant="outline" @click="close" /><UButton label="确认删除" color="error" :loading="saving" @click="confirmDelete"
-    /></template>
-  </UModal>
 </template>

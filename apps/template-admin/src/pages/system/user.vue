@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 import type { SystemRoleApi, SystemUserApi } from '@/api/core/system'
 import { systemRoleApi, systemUserApi } from '@/api/core/system'
+import { useConfirm } from '@/composables/useConfirm'
 import { ALL_STATUS_VALUE, buildServerListQuery, getApiErrorMessage } from '@/features/system-management/helpers'
 import { useAdminAccessStore } from '@/stores/access'
 import { useAdminUserStore } from '@/stores/user'
@@ -13,6 +14,7 @@ import { useAdminUserStore } from '@/stores/user'
 definePage({ meta: { title: '用户管理', icon: 'i-lucide-users-round', order: 30, authority: ['admin'] } })
 
 const accessStore = useAdminAccessStore()
+const confirm = useConfirm()
 const userStore = useAdminUserStore()
 const toast = useToast()
 const loading = ref(false)
@@ -35,9 +37,6 @@ const form = reactive({
   status: 'ENABLED' as 'ENABLED' | 'DISABLED',
   roleIds: [] as string[],
 })
-
-const deleteOpen = ref(false)
-const deletingUser = ref<SystemUserApi.Item | null>(null)
 
 const createSchema = z.object({
   username: z.string().min(4, '用户名最少 4 个字符').max(32).regex(/^\w+$/, '只能包含字母、数字和下划线'),
@@ -123,24 +122,19 @@ async function saveUser(event: FormSubmitEvent<z.output<typeof createSchema> | z
   }
 }
 
-function requestDelete(user: SystemUserApi.Item) {
-  deletingUser.value = user
-  deleteOpen.value = true
-}
-
-async function confirmDelete() {
-  if (!deletingUser.value) return
-  saving.value = true
-  try {
-    await systemUserApi.delete(deletingUser.value.id)
-    deleteOpen.value = false
-    toast.add({ title: '用户已删除', color: 'success' })
-    await loadUsers()
-  } catch (error) {
-    toast.add({ title: '删除用户失败', description: getApiErrorMessage(error), color: 'error' })
-  } finally {
-    saving.value = false
-  }
+async function requestDelete(user: SystemUserApi.Item) {
+  await confirm({
+    title: '删除用户',
+    description: `将永久删除用户“${user.nickName}（${user.username}）”及其角色关联。此操作不可撤销。`,
+    confirmLabel: '确认删除',
+    errorTitle: '删除用户失败',
+    formatError: getApiErrorMessage,
+    onConfirm: async () => {
+      await systemUserApi.delete(user.id)
+      toast.add({ title: '用户已删除', color: 'success' })
+      await loadUsers()
+    },
+  })
 }
 
 watch(status, searchUsers)
@@ -241,15 +235,4 @@ onMounted(() => Promise.all([loadUsers(), loadRoles()]))
     </template>
     <template #footer="{ close }"><UButton label="取消" color="neutral" variant="outline" @click="close" /><UButton type="submit" form="user-form" label="保存" :loading="saving" /></template>
   </USlideover>
-
-  <UModal
-    v-model:open="deleteOpen"
-    title="删除用户"
-    :description="deletingUser ? `将永久删除用户“${deletingUser.nickName}（${deletingUser.username}）”及其角色关联。此操作不可撤销。` : ''"
-    :ui="{ footer: 'justify-end' }"
-  >
-    <template #footer="{ close }"
-      ><UButton label="取消" color="neutral" variant="outline" @click="close" /><UButton label="确认删除" color="error" :loading="saving" @click="confirmDelete"
-    /></template>
-  </UModal>
 </template>

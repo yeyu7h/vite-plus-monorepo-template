@@ -14,6 +14,11 @@ type RequestBody<Operation> = Operation extends { requestBody: { content: { 'app
 type MenusCreateOperation = paths['/api/admin/system/menus']['post']
 type MenusUpdateOperation = paths['/api/admin/system/menus/{id}']['patch']
 type MenusDeleteOperation = paths['/api/admin/system/menus/{id}']['delete']
+type ParamsListOperation = paths['/api/admin/system/params']['get']
+type ParamsCreateOperation = paths['/api/admin/system/params']['post']
+type ParamsGetOperation = paths['/api/admin/system/params/{id}']['get']
+type ParamsUpdateOperation = paths['/api/admin/system/params/{id}']['patch']
+type ParamsDeleteOperation = paths['/api/admin/system/params/{id}']['delete']
 type RolesListOperation = paths['/api/admin/system/roles']['get']
 type RolesCreateOperation = paths['/api/admin/system/roles']['post']
 type RolesUpdateOperation = paths['/api/admin/system/roles/{id}']['patch']
@@ -37,6 +42,14 @@ export namespace SystemMenuApi {
   export type CreateBody = RequestBody<MenusCreateOperation>
   export type UpdateBody = RequestBody<MenusUpdateOperation>
   export type DeleteResult = ResponseData<MenusDeleteOperation, 200>
+}
+
+export namespace SystemParamApi {
+  export type Item = ResponseData<ParamsListOperation, 200>[number]
+  export type CreateBody = RequestBody<ParamsCreateOperation>
+  export type Detail = ResponseData<ParamsGetOperation, 200>
+  export type UpdateBody = RequestBody<ParamsUpdateOperation>
+  export type DeleteResult = ResponseData<ParamsDeleteOperation, 200>
 }
 
 export namespace SystemRoleApi {
@@ -69,6 +82,14 @@ export const systemMenuApi = {
   create: (data: SystemMenuApi.CreateBody) => client.post<SystemMenuApi.Node>('/admin/system/menus', data),
   update: (id: string, data: SystemMenuApi.UpdateBody) => client.patch<SystemMenuApi.Node>(`/admin/system/menus/${id}`, data),
   delete: (id: string) => client.delete<SystemMenuApi.DeleteResult>(`/admin/system/menus/${id}`),
+}
+
+export const systemParamApi = {
+  list: (query: ListQuery) => getPaginated<SystemParamApi.Item>('/admin/system/params', query),
+  get: (id: string) => client.get<SystemParamApi.Detail>(`/admin/system/params/${id}`),
+  create: (data: SystemParamApi.CreateBody) => client.post<SystemParamApi.Item>('/admin/system/params', data),
+  update: (id: string, data: SystemParamApi.UpdateBody) => client.patch<SystemParamApi.Item>(`/admin/system/params/${id}`, data),
+  delete: (id: string) => client.delete<SystemParamApi.DeleteResult>(`/admin/system/params/${id}`),
 }
 
 export const systemRoleApi = {

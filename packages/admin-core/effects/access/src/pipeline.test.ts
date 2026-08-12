@@ -111,6 +111,32 @@ test('creates external-link routes without matching file pages', () => {
   expect(mergedRoutes[0]?.meta?.externalLink).toBe('https://viteplus.dev/guide/')
 })
 
+test('keeps multi-segment backend root menus as navigation roots', () => {
+  const result = resolveAdminAccess(
+    [],
+    [
+      {
+        id: 'docs-vite-plus',
+        path: '/docs/vite-plus',
+        meta: { externalLink: 'https://viteplus.dev/guide/', menuGroup: '链接', order: 20, title: 'Vite+ 文档' },
+      },
+      {
+        id: 'tailwindcss-document',
+        path: '/tailwindcss/document',
+        meta: { externalLink: 'https://tailwindcss.com/docs', menuGroup: '链接', order: 10, title: 'Tailwind CSS 文档' },
+      },
+    ],
+    ['admin'],
+    { externalLinkComponent, forbiddenComponent },
+  )
+
+  expect(result.navigationRoutes.map((route) => route.parentPath)).toEqual([void 0, void 0])
+  expect(result.menuGroups[0]?.children).toMatchObject([
+    { children: undefined, id: '/tailwindcss/document', title: 'Tailwind CSS 文档' },
+    { children: undefined, id: '/docs/vite-plus', title: 'Vite+ 文档' },
+  ])
+})
+
 test('does not create routes for button menu nodes', () => {
   const mergedRoutes = mergeBackendMenusWithFileRoutes(
     [{ id: 'system-role-create', path: '/system/role/create', type: 'button', meta: { title: '创建角色' } }],
@@ -258,7 +284,7 @@ test('derives canonical active and tab paths independently from route meta', () 
         tabPath: '/system/settings',
         title: '主题设置',
       },
-      parentPath: '/system/settings',
+      parentPath: '/system',
       path: '/system/settings/theme',
       source: void 0,
       tabPath: '/system/settings',

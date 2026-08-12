@@ -57,8 +57,8 @@ export interface AdminNavigationRouteRecord {
   /** 导航层消费的路由元信息 */
   meta: AdminRouteMeta
   /**
-   * 当前路由的父级规范化路径
-   * - 例如 `/system/settings/theme` 的父级路径是 `/system/settings` 顶级路由没有父级时为空
+   * 当前路由在后端菜单树中的父级规范化路径
+   * - 只由实际路由树结构确定，不根据 URL 片段推导；顶级路由即使路径包含多段也没有父级
    */
   parentPath?: string
   /** 当前路由的规范化完整路径 */

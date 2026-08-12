@@ -23,8 +23,12 @@ const bodyClass = computed(() => cn('isolate relative min-w-0 p-0 sm:gap-0 sm:p-
 <template>
   <UDashboardGroup :ui="{ base: platform.is.mobile ? 'static inset-auto min-h-svh overflow-visible' : void 0 }" unit="px">
     <LayoutSidebar>
-      <template #menu="{ collapsed, opened }">
-        <slot name="menu" :collapsed="collapsed" :opened="opened" />
+      <template #menu="{ collapsed, opened, setOverlayOpen }">
+        <slot name="menu" :collapsed="collapsed" :opened="opened" :set-overlay-open="setOverlayOpen" />
+      </template>
+
+      <template #footer="{ collapsed, opened, setOverlayOpen }">
+        <slot name="footer" :collapsed="collapsed" :opened="opened" :set-overlay-open="setOverlayOpen" />
       </template>
     </LayoutSidebar>
 

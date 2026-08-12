@@ -40,8 +40,13 @@ const menuGroups = computed(() => markActiveAdminMenuGroups(props.menuGroups ?? 
       <AdminRouteContent />
     </slot>
 
-    <template #menu="{ collapsed, opened }">
+    <template #menu="{ collapsed, opened, setOverlayOpen }">
+      <slot name="sidebar-top" :collapsed="collapsed" :opened="opened" :set-overlay-open="setOverlayOpen" />
       <LayoutMenu :collapsed="collapsed" :groups="menuGroups" :opened="opened" />
+    </template>
+
+    <template #footer="{ collapsed, opened, setOverlayOpen }">
+      <slot name="footer" :collapsed="collapsed" :opened="opened" :set-overlay-open="setOverlayOpen" />
     </template>
 
     <template #tabbar>

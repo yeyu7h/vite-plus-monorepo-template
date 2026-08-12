@@ -7,9 +7,11 @@ afterEach(() => {
 
 test('builds sorted menu trees from visible route meta', () => {
   const menus = buildAdminMenus([
-    { path: '/system/role', meta: { title: '角色管理', icon: 'i-lucide-shield', order: 20 } },
-    { path: '/dashboard/workbench', meta: { title: '工作台', icon: 'i-lucide-layout-dashboard', order: 10 } },
-    { path: '/system/user', meta: { title: '用户管理', icon: 'i-lucide-users', order: 10 } },
+    { path: '/system', meta: { title: 'System', order: 10 } },
+    { path: '/system/role', parentPath: '/system', meta: { title: '角色管理', icon: 'i-lucide-shield', order: 20 } },
+    { path: '/dashboard', meta: { title: 'Dashboard', order: 10 } },
+    { path: '/dashboard/workbench', parentPath: '/dashboard', meta: { title: '工作台', icon: 'i-lucide-layout-dashboard', order: 10 } },
+    { path: '/system/user', parentPath: '/system', meta: { title: '用户管理', icon: 'i-lucide-users', order: 10 } },
     { path: '/hidden/audit', meta: { title: '审计日志', hideInMenu: true, order: 1 } },
   ])
 
@@ -30,7 +32,7 @@ test('builds sorted menu trees from visible route meta', () => {
       ],
       id: '/dashboard',
       order: 10,
-      path: '/dashboard/workbench',
+      path: '/dashboard',
       title: 'Dashboard',
       activePath: undefined,
       authority: undefined,
@@ -64,7 +66,7 @@ test('builds sorted menu trees from visible route meta', () => {
       ],
       id: '/system',
       order: 10,
-      path: '/system/user',
+      path: '/system',
       title: 'System',
       activePath: undefined,
       authority: undefined,
@@ -74,7 +76,7 @@ test('builds sorted menu trees from visible route meta', () => {
   ])
 })
 
-test('keeps external links and authority placeholders', () => {
+test('keeps a root external link with a multi-segment path at the root level', () => {
   const menus = buildAdminMenus([
     {
       path: '/external/docs',
@@ -87,9 +89,12 @@ test('keeps external links and authority placeholders', () => {
     },
   ])
 
-  expect(menus[0]?.children?.[0]).toMatchObject({
+  expect(menus).toHaveLength(1)
+  expect(menus[0]).toMatchObject({
     authority: ['admin'],
+    children: undefined,
     externalLink: 'https://viteplus.dev/guide/',
+    id: '/external/docs',
     path: 'https://viteplus.dev/guide/',
     title: 'Vite+ Docs',
   })
@@ -98,8 +103,9 @@ test('keeps external links and authority placeholders', () => {
 test('marks current item and ancestors active', () => {
   const menus = markActiveAdminMenus(
     buildAdminMenus([
-      { path: '/system/user', meta: { title: '用户管理' } },
-      { path: '/system/role', meta: { title: '角色管理' } },
+      { path: '/system', meta: { title: '系统' } },
+      { path: '/system/user', parentPath: '/system', meta: { title: '用户管理', order: 10 } },
+      { path: '/system/role', parentPath: '/system', meta: { title: '角色管理', order: 20 } },
     ]),
     '/system/role',
   )
@@ -112,8 +118,8 @@ test('marks current item and ancestors active', () => {
 test('builds third-level menu items without promotion', () => {
   const menus = buildAdminMenus([
     { path: '/one', meta: { title: 'One', icon: 'i-lucide-one' } },
-    { path: '/one/two', meta: { title: 'Two', icon: 'i-lucide-two' } },
-    { path: '/one/two/three', meta: { title: 'Three', icon: 'i-lucide-three' } },
+    { path: '/one/two', parentPath: '/one', meta: { title: 'Two', icon: 'i-lucide-two' } },
+    { path: '/one/two/three', parentPath: '/one/two', meta: { title: 'Three', icon: 'i-lucide-three' } },
   ])
 
   expect(menus[0]?.icon).toBe('i-lucide-one')
@@ -128,7 +134,14 @@ test('builds third-level menu items without promotion', () => {
 })
 
 test('marks every ancestor of a third-level menu item active', () => {
-  const menus = markActiveAdminMenus(buildAdminMenus([{ path: '/one/two/three', meta: { title: 'Three' } }]), '/one/two/three')
+  const menus = markActiveAdminMenus(
+    buildAdminMenus([
+      { path: '/one', meta: { title: 'One' } },
+      { path: '/one/two', parentPath: '/one', meta: { title: 'Two' } },
+      { path: '/one/two/three', parentPath: '/one/two', meta: { title: 'Three' } },
+    ]),
+    '/one/two/three',
+  )
 
   expect(menus[0]?.active).toBe(true)
   expect(menus[0]?.children?.[0]?.active).toBe(true)
@@ -138,12 +151,20 @@ test('marks every ancestor of a third-level menu item active', () => {
 test('promotes visible deep routes to distinct third-level menu items and warns', () => {
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   const menus = buildAdminMenus([
-    { path: '/one/two/three/four', meta: { title: 'Four', order: 10 } },
-    { path: '/one/two/three/five/six', meta: { title: 'Six', order: 20 } },
-    { path: '/one/two/three/hidden', meta: { hideInMenu: true, title: 'Hidden' } },
+    { path: '/one', meta: { title: 'One' } },
+    { path: '/one/two', parentPath: '/one', meta: { title: 'Two' } },
+    { path: '/one/two/three', parentPath: '/one/two', meta: { title: 'Three' } },
+    { path: '/one/two/three/four', parentPath: '/one/two/three', meta: { title: 'Four', order: 10 } },
+    { path: '/one/two/three/five/six', parentPath: '/one/two/three', meta: { title: 'Six', order: 20 } },
+    { path: '/one/two/three/hidden', parentPath: '/one/two/three', meta: { hideInMenu: true, title: 'Hidden' } },
   ])
 
   expect(menus[0]?.children?.[0]?.children).toMatchObject([
+    {
+      id: '/one/two/three',
+      path: '/one/two/three',
+      title: 'Three',
+    },
     {
       children: undefined,
       id: '/one/two/three/four',
@@ -164,9 +185,17 @@ test('promotes visible deep routes to distinct third-level menu items and warns'
 
 test('clamps configured menu depth to three levels', () => {
   vi.spyOn(console, 'warn').mockImplementation(() => {})
-  const menus = buildAdminMenus([{ path: '/one/two/three/four', meta: { title: 'Four' } }], { maxDepth: 4 })
+  const menus = buildAdminMenus(
+    [
+      { path: '/one', meta: { title: 'One' } },
+      { path: '/one/two', parentPath: '/one', meta: { title: 'Two' } },
+      { path: '/one/two/three', parentPath: '/one/two', meta: { title: 'Three' } },
+      { path: '/one/two/three/four', parentPath: '/one/two/three', meta: { title: 'Four' } },
+    ],
+    { maxDepth: 4 },
+  )
 
-  expect(menus[0]?.children?.[0]?.children?.[0]).toMatchObject({
+  expect(menus[0]?.children?.[0]?.children?.find((item) => item.id === '/one/two/three/four')).toMatchObject({
     children: undefined,
     id: '/one/two/three/four',
     path: '/one/two/three/four',
@@ -176,9 +205,11 @@ test('clamps configured menu depth to three levels', () => {
 
 test('builds sorted menu groups from route meta', () => {
   const groups = buildAdminMenuGroups([
-    { path: '/system/role', meta: { title: '角色管理', order: 20, menuGroup: { label: '系统管理', order: 20 } } },
-    { path: '/dashboard/workbench', meta: { title: '工作台', order: 10, menuGroup: { label: '概览', order: 10 } } },
-    { path: '/system/settings', meta: { title: '系统设置', order: 30, menuGroup: { label: '系统管理', order: 20 } } },
+    { path: '/system', meta: { title: 'System', menuGroup: { label: '系统管理', order: 20 } } },
+    { path: '/system/role', parentPath: '/system', meta: { title: '角色管理', order: 20 } },
+    { path: '/dashboard', meta: { title: 'Dashboard', menuGroup: { label: '概览', order: 10 } } },
+    { path: '/dashboard/workbench', parentPath: '/dashboard', meta: { title: '工作台', order: 10 } },
+    { path: '/system/settings', parentPath: '/system', meta: { title: '系统设置', order: 30 } },
     { path: '/docs/vite-plus', meta: { title: 'Vite+ Docs', menuGroup: { id: 'links', label: '链接', order: 30 } } },
     { path: '/hidden/audit', meta: { title: '审计日志', hideInMenu: true, menuGroup: '隐藏' } },
   ])
@@ -200,7 +231,10 @@ test('builds sorted menu groups from route meta', () => {
 })
 
 test('uses an unlabeled default group for routes without menuGroup', () => {
-  const groups = buildAdminMenuGroups([{ path: '/dashboard/workbench', meta: { title: '工作台' } }])
+  const groups = buildAdminMenuGroups([
+    { path: '/dashboard', meta: { title: 'Dashboard' } },
+    { path: '/dashboard/workbench', parentPath: '/dashboard', meta: { title: '工作台' } },
+  ])
 
   expect(groups).toEqual([
     {
@@ -225,7 +259,7 @@ test('uses an unlabeled default group for routes without menuGroup', () => {
           icon: undefined,
           id: '/dashboard',
           order: 0,
-          path: '/dashboard/workbench',
+          path: '/dashboard',
           title: 'Dashboard',
         },
       ],
@@ -239,7 +273,7 @@ test('uses an unlabeled default group for routes without menuGroup', () => {
 test('inherits grouped menu children from nearest parent menuGroup', () => {
   const groups = buildAdminMenuGroups([
     { path: '/monitor', meta: { title: '监控', menuGroup: { label: '运维', order: 10 } } },
-    { path: '/monitor/jobs', meta: { title: '任务监控' } },
+    { path: '/monitor/jobs', parentPath: '/monitor', meta: { title: '任务监控' } },
   ])
 
   expect(groups).toHaveLength(1)
@@ -258,7 +292,11 @@ test('inherits grouped menu children from nearest parent menuGroup', () => {
 })
 
 test('builds grouped routes to the third item level by default', () => {
-  const groups = buildAdminMenuGroups([{ path: '/one/two/three', meta: { title: 'Three', menuGroup: 'Deep' } }])
+  const groups = buildAdminMenuGroups([
+    { path: '/one', meta: { title: 'One', menuGroup: 'Deep' } },
+    { path: '/one/two', parentPath: '/one', meta: { title: 'Two' } },
+    { path: '/one/two/three', parentPath: '/one/two', meta: { title: 'Three' } },
+  ])
 
   expect(groups[0]?.children[0]?.children?.[0]?.children?.[0]).toMatchObject({
     children: undefined,
@@ -271,8 +309,9 @@ test('builds grouped routes to the third item level by default', () => {
 test('marks current grouped menu items active without mutating group state', () => {
   const groups = markActiveAdminMenuGroups(
     buildAdminMenuGroups([
-      { path: '/system/user', meta: { title: '用户管理', menuGroup: '系统管理' } },
-      { path: '/system/role', meta: { title: '角色管理', menuGroup: '系统管理' } },
+      { path: '/system', meta: { title: '系统', menuGroup: '系统管理' } },
+      { path: '/system/user', parentPath: '/system', meta: { title: '用户管理', order: 10 } },
+      { path: '/system/role', parentPath: '/system', meta: { title: '角色管理', order: 20 } },
     ]),
     '/system/role',
   )

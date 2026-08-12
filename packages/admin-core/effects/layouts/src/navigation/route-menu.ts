@@ -1,11 +1,9 @@
 import type { AdminMenuGroup, AdminMenuGroupMeta, AdminMenuItem, AdminNavigationRouteRecord, AdminRouteMeta } from '@monorepo-admin-core/types'
-import { formatAdminNavigationTitle, normalizeAdminNavigationPath } from './shared'
+import { normalizeAdminNavigationPath } from './shared'
 
 interface MenuNode extends Omit<AdminMenuItem, 'children'> {
   /** 组装过程中的子节点集合 */
   children: MenuNode[]
-  /** 当前节点是否对应一个真实路由 而不是中间层级占位节点 */
-  ownRoute: boolean
 }
 
 export interface BuildAdminMenusOptions {
@@ -48,42 +46,28 @@ export function buildAdminMenus(routes: readonly AdminNavigationRouteRecord[], o
   const maxDepth = resolveMenuMaxDepth(options.maxDepth)
   const nodes = new Map<string, MenuNode>()
   const roots: MenuNode[] = []
-  const routeByPath = new Map<string, AdminNavigationRouteRecord>()
-
-  // 先按规范化后的路径建立索引 这样子级路由在补父节点时能回捞到真实父级 meta
-  const visibleRoutes = routes.map((route) => ({ ...route, path: normalizeAdminNavigationPath(route.path) })).filter((route) => isMenuRoute(route))
+  const visibleRoutes = routes
+    .map((route) => ({
+      ...route,
+      parentPath: route.parentPath ? normalizeAdminNavigationPath(route.parentPath) : void 0,
+      path: normalizeAdminNavigationPath(route.path),
+    }))
+    .filter((route) => isMenuRoute(route))
+  const routeByPath = new Map(visibleRoutes.map((route) => [route.path, route]))
 
   for (const route of visibleRoutes) {
-    routeByPath.set(route.path, route)
+    nodes.set(route.path, createMenuNode(route))
   }
 
   for (const route of visibleRoutes) {
-    const segments = route.path.split('/').filter(Boolean)
-    const depth = Math.min(segments.length, maxDepth)
-    const shouldPromote = segments.length > maxDepth
-    let parent: MenuNode | undefined
+    const node = nodes.get(route.path)!
+    const parentPath = resolveMenuParentPath(route, routeByPath, maxDepth)
+    const parent = parentPath ? nodes.get(parentPath) : void 0
 
-    if (shouldPromote) warnPromotedMenuRoute(route.path, maxDepth)
-
-    // 逐级补齐父节点 深层路由保留完整路径并提升到菜单允许的最深层级 避免共享路径前缀的路由互相覆盖
-    for (let index = 0; index < depth; index += 1) {
-      const isPromotedLeaf = shouldPromote && index === depth - 1
-      const segment = isPromotedLeaf ? segments.at(-1) : segments[index]
-      if (!segment) continue
-
-      const nodeId = isPromotedLeaf ? route.path : `/${segments.slice(0, index + 1).join('/')}`
-      const ancestorRoute = routeByPath.get(nodeId)
-      // 只有最深一层直接使用当前路由 中间层优先复用已存在的祖先路由信息
-      const nodeRoute = index === depth - 1 ? route : ancestorRoute
-      const node = ensureMenuNode(nodes, nodeId, segment, nodeRoute)
-
-      if (parent) {
-        appendUniqueChild(parent, node)
-      } else if (!roots.includes(node)) {
-        roots.push(node)
-      }
-
-      parent = node
+    if (parent) {
+      appendUniqueChild(parent, node)
+    } else if (!roots.includes(node)) {
+      roots.push(node)
     }
   }
 
@@ -98,7 +82,13 @@ export function buildAdminMenus(routes: readonly AdminNavigationRouteRecord[], o
 export function buildAdminMenuGroups(routes: readonly AdminNavigationRouteRecord[], options: BuildAdminMenuGroupsOptions = {}): AdminMenuGroup[] {
   const maxDepth = resolveMenuMaxDepth(options.maxDepth ?? DEFAULT_GROUP_MAX_DEPTH)
   const buckets = new Map<string, MenuGroupBucket>()
-  const visibleRoutes = routes.map((route) => ({ ...route, path: normalizeAdminNavigationPath(route.path) })).filter((route) => isMenuRoute(route))
+  const visibleRoutes = routes
+    .map((route) => ({
+      ...route,
+      parentPath: route.parentPath ? normalizeAdminNavigationPath(route.parentPath) : void 0,
+      path: normalizeAdminNavigationPath(route.path),
+    }))
+    .filter((route) => isMenuRoute(route))
   const routeByPath = new Map(visibleRoutes.map((route) => [route.path, route]))
 
   for (const route of visibleRoutes) {
@@ -126,13 +116,16 @@ export function buildAdminMenuGroups(routes: readonly AdminNavigationRouteRecord
 function resolveInheritedMenuGroup(route: AdminNavigationRouteRecord, routeByPath: ReadonlyMap<string, AdminNavigationRouteRecord>) {
   if (route.meta.menuGroup) return route.meta.menuGroup
 
-  let parentPath = route.parentPath ?? getParentNavigationPath(route.path)
+  let parentPath = route.parentPath
+  const visited = new Set<string>()
 
-  while (parentPath) {
-    const menuGroup = routeByPath.get(parentPath)?.meta.menuGroup
+  while (parentPath && !visited.has(parentPath)) {
+    visited.add(parentPath)
+    const parentRoute = routeByPath.get(parentPath)
+    const menuGroup = parentRoute?.meta.menuGroup
 
     if (menuGroup) return menuGroup
-    parentPath = getParentNavigationPath(parentPath)
+    parentPath = parentRoute?.parentPath
   }
 }
 
@@ -170,37 +163,52 @@ export function markActiveAdminMenus(items: readonly AdminMenuItem[], activePath
 }
 
 /**
- * 获取或创建某一级菜单节点 并在命中真实路由时补齐元信息
- * @param nodes 已创建节点索引
- * @param id 节点 id
- * @param segment 当前路径片段
- * @param route 命中的真实路由
+ * 从真实路由创建菜单节点 不再根据 URL 片段生成占位父节点
+ * @param route 后端菜单树生成的导航路由
  */
-function ensureMenuNode(nodes: Map<string, MenuNode>, id: string, segment: string, route?: AdminNavigationRouteRecord): MenuNode {
-  const existing = nodes.get(id)
-  const node =
-    existing ??
-    ({
-      children: [],
-      id,
-      ownRoute: false,
-      path: id,
-      title: formatAdminNavigationTitle(segment),
-    } satisfies MenuNode)
+function createMenuNode(route: AdminNavigationRouteRecord): MenuNode {
+  return {
+    activePath: route.activePath ?? route.meta.activePath,
+    authority: route.meta.authority,
+    children: [],
+    externalLink: route.meta.externalLink,
+    icon: route.meta.icon,
+    id: route.path,
+    order: route.meta.order,
+    path: route.meta.externalLink ?? route.path,
+    title: route.meta.title!,
+  }
+}
 
-  if (route) {
-    node.activePath = route.activePath ?? route.meta.activePath
-    node.authority = route.meta.authority
-    node.externalLink = route.meta.externalLink
-    node.icon = route.meta.icon
-    node.order = route.meta.order
-    node.ownRoute = true
-    node.path = route.meta.externalLink ?? route.path
-    node.title = route.meta.title ?? node.title
+/**
+ * 按后端父子链解析菜单父节点 超过最大深度时提升到允许的最深层级
+ * @param route 当前路由
+ * @param routeByPath 当前菜单分组内的可见路由索引
+ * @param maxDepth 菜单允许的最大深度
+ */
+function resolveMenuParentPath(route: AdminNavigationRouteRecord, routeByPath: ReadonlyMap<string, AdminNavigationRouteRecord>, maxDepth: number) {
+  const ancestors: AdminNavigationRouteRecord[] = []
+  const visited = new Set<string>([route.path])
+  let parentPath = route.parentPath
+
+  while (parentPath && !visited.has(parentPath)) {
+    visited.add(parentPath)
+    const parent = routeByPath.get(parentPath)
+    if (!parent) break
+    ancestors.unshift(parent)
+    parentPath = parent.parentPath
   }
 
-  nodes.set(id, node)
-  return node
+  if (ancestors.length === 0 || maxDepth === 1) {
+    if (ancestors.length >= maxDepth) warnPromotedMenuRoute(route.path, maxDepth)
+    return void 0
+  }
+
+  const depth = ancestors.length + 1
+  if (depth <= maxDepth) return ancestors.at(-1)?.path
+
+  warnPromotedMenuRoute(route.path, maxDepth)
+  return ancestors[maxDepth - 2]?.path
 }
 
 /**
@@ -220,8 +228,6 @@ function appendUniqueChild(parent: MenuNode, child: MenuNode) {
  */
 function finalizeMenuNode(node: MenuNode, depth = 1): AdminMenuItem {
   const children = node.children.map((child) => finalizeMenuNode(child, depth + 1)).sort(compareMenuItems)
-  const firstChildPath = children[0]?.path
-  // 占位父节点没有自己的跳转目标时 默认落到第一个子节点
   const order = node.order ?? resolveMenuOrder(children)
 
   return {
@@ -232,7 +238,7 @@ function finalizeMenuNode(node: MenuNode, depth = 1): AdminMenuItem {
     icon: depth < MAX_MENU_DEPTH ? node.icon : void 0,
     id: node.id,
     order,
-    path: node.ownRoute ? node.path : (firstChildPath ?? node.path),
+    path: node.path,
     title: node.title,
   }
 }
@@ -354,11 +360,4 @@ function isMenuActive(item: AdminMenuItem, activePath: string) {
   const navigationPath = normalizeAdminNavigationPath(item.path)
 
   return activePath === itemPath || activePath.startsWith(`${itemPath}/`) || activePath === navigationPath
-}
-
-function getParentNavigationPath(path: string) {
-  const segments = normalizeAdminNavigationPath(path).split('/').filter(Boolean)
-  if (segments.length <= 1) return void 0
-
-  return `/${segments.slice(0, -1).join('/')}`
 }

@@ -17,6 +17,15 @@ const UCollapsibleStub = defineComponent({
   },
 })
 
+const PersistentCollapsibleStub = defineComponent({
+  props: {
+    open: Boolean,
+  },
+  setup(props, { slots }) {
+    return () => h('div', [slots.default?.({ open: props.open }), slots.content?.()])
+  },
+})
+
 const RouterLinkStub = defineComponent({
   props: {
     to: String,
@@ -82,6 +91,106 @@ test('opens second and third menu levels independently', async () => {
 
   expect(wrapper.text()).toContain('三级菜单示例')
   expect(wrapper.get('a').attributes('href')).toBe('/system/settings/level-three')
+  for (const content of wrapper.findAll('[data-menu-children]')) {
+    expect(content.classes()).toEqual(expect.arrayContaining(['animate-[fade-in_150ms_ease-out]', 'opacity-100']))
+  }
+})
+
+test('animates the trailing chevron when a directory expands', async () => {
+  const wrapper = mountMenuList([directory('/system', '系统', '设置')])
+  const chevron = wrapper.get('u-icon-stub[name="i-lucide-chevron-down"]')
+
+  expect(chevron.classes()).toEqual(expect.arrayContaining(['size-4', 'transition-transform', 'duration-200', 'ease-out']))
+  expect(chevron.element.parentElement?.classList.contains('ms-auto')).toBe(true)
+  expect(chevron.element.parentElement?.classList.contains('w-4')).toBe(true)
+  expect(chevron.attributes('style')).toContain('rotate(-90deg)')
+
+  await buttonByText(wrapper, '系统').trigger('click')
+
+  expect(chevron.attributes('style')).toContain('rotate(0deg)')
+})
+
+test('renders the external-link icon at the upper-right of the label', () => {
+  const wrapper = mountMenuList([{ externalLink: 'https://example.com', id: '/external', path: '/external', title: '这是一个很长的外部链接菜单名称' }])
+  const link = wrapper.get('a[target="_blank"]')
+  const label = link.get('[data-menu-external-label]')
+  const content = label.get('[data-menu-external-content]')
+  const text = content.get('[data-menu-label-text]')
+  const externalIcon = link.get('u-icon-stub[name="i-lucide-arrow-up-right"]')
+
+  expect(content.classes()).toEqual(expect.arrayContaining(['inline-flex', 'max-w-full', 'min-w-0', 'items-start']))
+  expect(text.classes()).toEqual(expect.arrayContaining(['min-w-0', 'truncate']))
+  expect(externalIcon.element.parentElement).toBe(content.element)
+  expect(externalIcon.classes()).toEqual(expect.arrayContaining(['ms-0.5', 'size-3', 'shrink-0', 'text-dimmed']))
+  expect(link.find('u-icon-stub[name="i-lucide-external-link"]').exists()).toBe(false)
+})
+
+test('limits a collapsed active leaf background to the icon area', async () => {
+  const collapsed = ref(true)
+  const items: AdminMenuItem[] = [{ active: true, icon: 'i-lucide-file', id: '/active', path: '/active', title: '当前菜单' }]
+  const wrapper = mount(
+    defineComponent({
+      setup: () => () => h(LayoutMenuList, { collapsed: collapsed.value, items }),
+    }),
+    { global: { stubs: menuStubs } },
+  )
+  const link = wrapper.get('a[title="当前菜单"]')
+  const icon = link.get('u-icon-stub[name="i-lucide-file"]')
+
+  expect(link.classes()).toEqual(expect.arrayContaining(['isolate', 'w-full', 'before:z-0', 'before:size-8', 'before:rounded-md', 'before:bg-elevated']))
+  expect(link.classes()).not.toContain('bg-elevated')
+  expect(icon.classes()).toEqual(expect.arrayContaining(['relative', 'z-10']))
+
+  collapsed.value = false
+  await nextTick()
+
+  expect(link.classes()).toContain('bg-elevated')
+  expect(link.classes()).not.toContain('before:size-8')
+})
+
+test('keeps a root icon at the same horizontal position while expanding and collapsing', async () => {
+  const collapsed = ref(true)
+  const items: AdminMenuItem[] = [{ icon: 'i-lucide-file', id: '/item', path: '/item', title: '菜单' }]
+  const wrapper = mount(
+    defineComponent({
+      setup: () => () => h(LayoutMenuList, { collapsed: collapsed.value, items }),
+    }),
+    { global: { stubs: menuStubs } },
+  )
+  const link = wrapper.get('a[title="菜单"]')
+
+  expect(link.classes()).toContain('px-1.5')
+  expect(link.classes()).not.toContain('justify-center')
+
+  collapsed.value = false
+  await nextTick()
+
+  expect(link.classes()).toContain('pl-1.5')
+  expect(link.classes()).not.toContain('justify-center')
+
+  collapsed.value = true
+  await nextTick()
+
+  expect(link.classes()).toContain('px-1.5')
+  expect(link.classes()).not.toContain('justify-center')
+})
+
+test('fades nested menu content while the sidebar collapses', () => {
+  const wrapper = mount(LayoutMenuList, {
+    props: {
+      collapsed: true,
+      items: [directory('/system', '系统', '设置', true)],
+    },
+    global: {
+      stubs: {
+        ...menuStubs,
+        UCollapsible: PersistentCollapsibleStub,
+      },
+    },
+  })
+  const content = wrapper.get('[data-menu-children]')
+
+  expect(content.classes()).toEqual(expect.arrayContaining(['animate-[fade-out_150ms_ease-out]', 'opacity-0']))
 })
 
 test('renders icons on the first two levels but not on the third level', async () => {
@@ -109,8 +218,24 @@ test('renders icons on the first two levels but not on the third level', async (
   expect(wrapper.find('u-icon-stub[name="i-lucide-circle-1"]').exists()).toBe(true)
   expect(wrapper.find('u-icon-stub[name="i-lucide-circle-2"]').exists()).toBe(true)
   expect(wrapper.find('u-icon-stub[name="i-lucide-circle-3"]').exists()).toBe(false)
-  expect(buttonByText(wrapper, '二级').classes()).toContain('pl-2.5')
-  expect(linkByText(wrapper, '三级').classes()).toContain('pl-[13px]')
+  expect(buttonByText(wrapper, '二级').classes()).toEqual(expect.arrayContaining(['gap-1.5', 'py-1.5', 'pl-2.5', 'text-sm', 'font-medium']))
+  expect(buttonByText(wrapper, '二级').classes()).not.toContain('min-h-9')
+  expect(buttonByText(wrapper, '二级').classes()).not.toContain('py-2')
+  expect(linkByText(wrapper, '三级').classes()).toContain('pl-2.75')
+  expect(wrapper.findAll('ul')).toHaveLength(3)
+  for (const list of wrapper.findAll('ul')) {
+    expect(list.classes()).toContain('space-y-1')
+  }
+  expect(wrapper.findAll('.border-l')).toHaveLength(2)
+  const guides = wrapper.findAll('.border-l')
+  expect(guides[0]!.classes()).toContain('ml-4')
+  expect(guides[1]!.classes()).toContain('ml-5')
+  for (const guide of guides) {
+    expect(guide.classes()).toEqual(expect.arrayContaining(['border-default', 'pl-1.25']))
+    expect(guide.classes()).not.toContain('border-muted')
+    expect(guide.classes()).not.toContain('pt-1')
+    expect(guide.element.parentElement?.classList.contains('pt-1')).toBe(true)
+  }
 })
 
 test('keeps previously opened siblings when expanding another directory', async () => {
@@ -182,5 +307,6 @@ test('opens the active sibling and its active descendants initially', () => {
   expect(wrapper.text()).toContain('第二个子菜单')
   expect(buttonByText(wrapper, '第二个目录').classes()).not.toContain('bg-elevated')
   expect(buttonByText(wrapper, '第二个目录').classes()).toContain('text-primary')
+  expect(buttonByText(wrapper, '第二个目录').classes()).toContain('hover:bg-elevated/50')
   expect(wrapper.get('a').classes()).toContain('bg-elevated')
 })

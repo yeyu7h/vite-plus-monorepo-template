@@ -8,6 +8,7 @@ import DropdownMenu from '@nuxt/ui/components/DropdownMenu.vue'
 import Button from '@nuxt/ui/components/Button.vue'
 import Input from '@nuxt/ui/components/Input.vue'
 import Table from '@nuxt/ui/components/Table.vue'
+import { getPaginationRowModel } from '@tanstack/vue-table'
 import { platform } from '@monorepo/shared/utils'
 
 definePage({
@@ -318,6 +319,10 @@ const columns: TableColumn<Payment>[] = [
 ]
 
 const table = useTemplateRef('table')
+const pagination = ref({
+  pageIndex: 0,
+  pageSize: 10,
+})
 
 function randomize() {
   data.value = [...data.value].sort(() => Math.random() - 0.5)
@@ -325,8 +330,8 @@ function randomize() {
 </script>
 
 <template>
-  <div class="flex-1 divide-y divide-accented w-full flex flex-col h-full">
-    <div class="flex items-center gap-2 px-4 py-3.5 overflow-x-auto">
+  <div class="flex-1 w-full flex flex-col h-full">
+    <div class="flex items-center gap-2 border-b border-default px-4 py-3.5 overflow-x-auto">
       <Input
         :model-value="table?.tableApi?.getColumn('email')?.getFilterValue() as string"
         class="max-w-sm min-w-[12ch]"
@@ -337,14 +342,29 @@ function randomize() {
       <Button color="neutral" label="Randomize" @click="randomize" />
     </div>
 
-    <Table ref="table" :data="data" :columns="columns" sticky="header" :ui="platform.is.mobile ? { root: 'overflow-visible overflow-x-auto' } : void 0" class="flex-1">
+    <Table
+      ref="table"
+      v-model:pagination="pagination"
+      :data="data"
+      :columns="columns"
+      :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }"
+      sticky="header"
+      :ui="platform.is.mobile ? { root: 'overflow-visible overflow-x-auto' } : void 0"
+      class="flex-1"
+    >
       <template #expanded="{ row }">
         <pre>{{ row.original }}</pre>
       </template>
     </Table>
 
-    <div class="px-4 py-3.5 text-sm text-muted">
-      {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0 }} of {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} row(s) selected.
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-default px-4 py-3">
+      <span class="text-sm text-muted"> {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0 }} of {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} row(s) selected. </span>
+      <UPagination
+        :page="(table?.tableApi?.getState().pagination.pageIndex || 0) + 1"
+        :items-per-page="table?.tableApi?.getState().pagination.pageSize"
+        :total="table?.tableApi?.getFilteredRowModel().rows.length"
+        @update:page="(page) => table?.tableApi?.setPageIndex(page - 1)"
+      />
     </div>
   </div>
 </template>

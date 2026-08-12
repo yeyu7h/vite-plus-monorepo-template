@@ -59,13 +59,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/access': RouteRecordInfo<
-      '/access',
-      '/access',
-      Record<never, never>,
-      Record<never, never>,
-      | '/access/menu-visible-403'
-    >,
     '/access/menu-visible-403': RouteRecordInfo<
       '/access/menu-visible-403',
       '/access/menu-visible-403',
@@ -263,15 +256,6 @@ declare module 'vue-router/auto-routes' {
         | '/404'
       views:
         | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/access.vue': {
-      routes:
-        | '/access'
-        | '/access/menu-visible-403'
-      views:
-        | 'default'
       pathParamNames:
         | never
     }

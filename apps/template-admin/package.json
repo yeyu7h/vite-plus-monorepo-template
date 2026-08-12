@@ -23,6 +23,7 @@
     "@nuxt/ui": "catalog:vue3",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/vue-query": "catalog:tanstack",
+    "@tanstack/vue-table": "catalog:tanstack",
     "cap-widget": "catalog:",
     "pinia": "catalog:vue3",
     "tailwindcss": "catalog:",

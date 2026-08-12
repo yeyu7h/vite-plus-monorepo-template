@@ -43,7 +43,7 @@
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^25.6.2",
+    "@types/node": "^25.9.5",
     "bumpp": "^11.1.0",
     "typescript": "^6.0.3",
     "vite": "catalog:",

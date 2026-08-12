@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AdminMenuItem } from '@monorepo-admin-core/types'
 import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
@@ -7,7 +8,7 @@ import { z } from 'zod'
 import type { SystemRoleApi, SystemUserApi } from '@/api/core/system'
 import { systemRoleApi, systemUserApi } from '@/api/core/system'
 import { useConfirm } from '@/composables/useConfirm'
-import { ALL_STATUS_VALUE, buildServerListQuery, getApiErrorMessage } from '@/features/system-management/helpers'
+import { ALL_STATUS_VALUE, buildServerListQuery, buildSystemUserUpdateBody, getApiErrorMessage } from '@/features/system-management/helpers'
 import { useAdminAccessStore } from '@/stores/access'
 import { useAdminUserStore } from '@/stores/user'
 
@@ -34,6 +35,7 @@ const form = reactive({
   nickName: '',
   password: '',
   avatar: '',
+  homePath: null as string | null,
   status: 'ENABLED' as 'ENABLED' | 'DISABLED',
   roleIds: [] as string[],
 })
@@ -42,6 +44,7 @@ const createSchema = z.object({
   username: z.string().min(4, '用户名最少 4 个字符').max(32).regex(/^\w+$/, '只能包含字母、数字和下划线'),
   nickName: z.string().min(1, '请输入昵称').max(32),
   password: z.string().min(6, '初始密码最少 6 个字符').max(20),
+  homePath: z.string().startsWith('/', '默认首页路径必须以 / 开头').max(255).nullable(),
 })
 const updateSchema = createSchema.omit({ password: true })
 
@@ -54,6 +57,27 @@ const columns: TableColumn<SystemUserApi.Item>[] = [
 ]
 
 const assignableRoleOptions = computed(() => roles.value.filter(({ status: roleStatus }) => roleStatus === 'ENABLED').map((role) => ({ label: `${role.name} (${role.id})`, value: role.id })))
+const homePathOptions = computed(() => {
+  const options: Array<{ label: string; value: string }> = []
+  const paths = new Set<string>()
+
+  const appendItems = (items: readonly AdminMenuItem[], ancestors: readonly string[]) => {
+    for (const item of items) {
+      const labels = [...ancestors, item.title]
+      if (item.children?.length) {
+        appendItems(item.children, labels)
+      } else if (!item.externalLink && item.path && !paths.has(item.path)) {
+        paths.add(item.path)
+        options.push({ label: labels.join(' / '), value: item.path })
+      }
+    }
+  }
+
+  for (const group of accessStore.menuGroups) appendItems(group.children, group.label ? [group.label] : [])
+  if (form.homePath && !paths.has(form.homePath)) options.push({ label: `当前值（不可用）· ${form.homePath}`, value: form.homePath })
+
+  return options
+})
 
 async function loadUsers() {
   const requestSessionVersion = accessStore.sessionVersion
@@ -94,6 +118,7 @@ function openEditor(user?: SystemUserApi.Item) {
     nickName: user?.nickName ?? '',
     password: '',
     avatar: user?.avatar ?? '',
+    homePath: user?.homePath ?? null,
     status: user?.status ?? 'ENABLED',
     roleIds: user?.roles.map(({ id }) => id) ?? [],
   })
@@ -107,10 +132,11 @@ async function saveUser(event: FormSubmitEvent<z.output<typeof createSchema> | z
       username: event.data.username,
       nickName: event.data.nickName,
       avatar: form.avatar || null,
+      homePath: event.data.homePath,
       status: form.status,
       roleIds: form.roleIds,
     }
-    if (editingUser.value) await systemUserApi.update(editingUser.value.id, common)
+    if (editingUser.value) await systemUserApi.update(editingUser.value.id, buildSystemUserUpdateBody(common, editingUser.value.builtIn === true))
     else await systemUserApi.create({ ...common, password: form.password })
     slideoverOpen.value = false
     toast.add({ title: editingUser.value ? '用户已更新' : '用户已创建', color: 'success' })
@@ -218,6 +244,9 @@ onMounted(() => Promise.all([loadUsers(), loadRoles()]))
           ><UInput v-model="form.password" type="password" class="w-full" autocomplete="new-password"
         /></UFormField>
         <UFormField name="avatar" label="头像地址"><UInput v-model="form.avatar" class="w-full" /></UFormField>
+        <UFormField name="homePath" label="默认首页" description="登录后优先打开；不可访问时自动进入第一个可访问菜单。"
+          ><USelectMenu v-model="form.homePath" value-key="value" :items="homePathOptions" placeholder="跟随系统默认" clear class="w-full"
+        /></UFormField>
         <UFormField name="status" label="状态"
           ><USelect
             v-model="form.status"

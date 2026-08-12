@@ -163,7 +163,7 @@ describe('system user routes', () => {
       }
     })
 
-    it('should support sorting', async () => {
+    it('should always place the built-in admin first and sort regular users', async () => {
       const response = await client.system.users.$get(
         {
           query: {
@@ -178,14 +178,17 @@ describe('system user routes', () => {
       if (response.status === HttpStatusCodes.OK) {
         const json = await response.json()
         const items = Array.isArray(json.data) ? json.data : []
-        if (items.length > 1) {
-          const firstCreatedAt = items[0].createdAt
-          const secondCreatedAt = items[1].createdAt
-          if (firstCreatedAt && secondCreatedAt) {
-            const first = new Date(firstCreatedAt).getTime()
-            const second = new Date(secondCreatedAt).getTime()
+        expect(items[0]).toMatchObject({ username: 'admin', builtIn: true })
 
-            expect(first).toBeGreaterThanOrEqual(second)
+        const regularUsers = items.filter((item: { builtIn: boolean | null }) => !item.builtIn)
+        for (let index = 1; index < regularUsers.length; index++) {
+          const previousCreatedAt = regularUsers[index - 1].createdAt
+          const currentCreatedAt = regularUsers[index].createdAt
+          if (previousCreatedAt && currentCreatedAt) {
+            const previous = new Date(previousCreatedAt).getTime()
+            const current = new Date(currentCreatedAt).getTime()
+
+            expect(previous).toBeGreaterThanOrEqual(current)
           }
         }
       }
@@ -196,7 +199,6 @@ describe('system user routes', () => {
     it('should validate required fields', async () => {
       const response = await client.system.users.$post(
         {
-          // @ts-expect-error - Testing required field validation, intentionally passing incomplete data / 测试必填字段验证，故意传入不完整的数据
           json: {
             username: `${testUsername}_required`,
           },
@@ -431,6 +433,7 @@ describe('system user routes', () => {
           json: {
             nickName: '更新后的昵称',
             avatar: 'https://example.com/new-avatar.png',
+            homePath: '/system/role',
           },
         },
         { headers: getAuthHeaders(adminToken) },
@@ -443,7 +446,20 @@ describe('system user routes', () => {
 
         expect(json.data.nickName).toBe('更新后的昵称')
         expect(json.data.avatar).toBe('https://example.com/new-avatar.png')
+        expect(json.data.homePath).toBe('/system/role')
       }
+    })
+
+    it('should reject a home path without a leading slash', async () => {
+      const response = await client.system.users[':id'].$patch(
+        {
+          param: { id: userId },
+          json: { homePath: 'system/role' },
+        },
+        { headers: getAuthHeaders(adminToken) },
+      )
+
+      expect(response.status).toBe(HttpStatusCodes.UNPROCESSABLE_ENTITY)
     })
 
     it('should return 403 when updating built-in user status', async () => {

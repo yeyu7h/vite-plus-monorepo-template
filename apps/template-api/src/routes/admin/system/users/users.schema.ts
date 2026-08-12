@@ -50,6 +50,7 @@ export const systemUsersInfoResponseSchema = selectSystemUsersSchema
     id: true,
     username: true,
     avatar: true,
+    homePath: true,
     nickName: true,
   })
   .extend({

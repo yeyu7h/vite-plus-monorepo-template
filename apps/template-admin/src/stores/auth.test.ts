@@ -66,6 +66,7 @@ vi.mock('./access', () => ({
 
 const identity: CoreAuthApi.IdentityResult = {
   avatar: null,
+  homePath: '/system/role',
   id: 'empty',
   nickName: 'No Menu User',
   roles: [],
@@ -117,7 +118,7 @@ test('logs in, initializes access, and runs the success callback', async () => {
   await expect(store.authLogin({ captchaToken: 'captcha-token', password: 'password', username: 'empty' }, onSuccess)).resolves.toEqual({
     userInfo: {
       avatar: undefined,
-      home_path: '/dashboard/workbench',
+      homePath: '/system/role',
       real_name: 'No Menu User',
       roles: [],
       user_id: 'empty',
@@ -249,7 +250,7 @@ test('logs out by resetting session state and redirecting to login', async () =>
   mocks.accessStore.accessToken = 'access-token:active'
   const userStore = useAdminUserStore()
   userStore.setUserInfo({
-    home_path: '/dashboard/workbench',
+    homePath: '/dashboard/workbench',
     real_name: 'Admin',
     roles: ['admin'],
     user_id: 'admin',

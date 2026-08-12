@@ -7,7 +7,7 @@ export const useAdminUserStore = defineStore('admin-user', () => {
   const userInfo = ref<AdminUserInfo | null>(null)
 
   const roles = computed(() => userInfo.value?.roles ?? [])
-  const homePath = computed(() => normalizeAdminPath(userInfo.value?.home_path ?? DEFAULT_ADMIN_HOME_PATH))
+  const homePath = computed(() => normalizeAdminPath(userInfo.value?.homePath ?? DEFAULT_ADMIN_HOME_PATH))
 
   function setUserInfo(nextUserInfo: AdminUserInfo) {
     userInfo.value = nextUserInfo

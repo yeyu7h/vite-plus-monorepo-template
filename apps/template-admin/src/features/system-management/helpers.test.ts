@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vite-plus/test'
 
 import type { SystemMenuApi, SystemRoleApi } from '@/api/core/system'
-import { ALL_STATUS_VALUE, buildServerListQuery, countMenuSubtree, flattenMenuTree, getDirectRoleMenuIds, toggleRoleMenuSelection } from './helpers'
+import { ALL_STATUS_VALUE, buildServerListQuery, buildSystemUserUpdateBody, countMenuSubtree, flattenMenuTree, getDirectRoleMenuIds, toggleRoleMenuSelection } from './helpers'
 
 function menu(id: string, children?: SystemMenuApi.Node[]): SystemMenuApi.Node {
   return {
@@ -54,6 +54,24 @@ function authorization(id: string, options: Partial<SystemRoleApi.MenuAuthorizat
 }
 
 describe('system management helpers', () => {
+  test('only submits editable profile fields when updating a built-in user', () => {
+    const form = {
+      username: 'admin',
+      nickName: 'Administrator',
+      avatar: null,
+      homePath: '/system/user',
+      status: 'ENABLED' as const,
+      roleIds: ['admin'],
+    }
+
+    expect(buildSystemUserUpdateBody(form, true)).toEqual({
+      nickName: 'Administrator',
+      avatar: null,
+      homePath: '/system/user',
+    })
+    expect(buildSystemUserUpdateBody(form, false)).toEqual(form)
+  })
+
   test('flattens only expanded branches and counts deletion impact', () => {
     const tree = [menu('root', [menu('child', [menu('leaf')])])]
     expect(countMenuSubtree(tree[0]!)).toBe(3)

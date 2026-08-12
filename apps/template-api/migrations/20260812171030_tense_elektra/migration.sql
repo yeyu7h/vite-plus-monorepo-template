@@ -1,0 +1,1 @@
+ALTER TABLE "system_users" ADD COLUMN "home_path" varchar(255);

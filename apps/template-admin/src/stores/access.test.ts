@@ -94,6 +94,29 @@ test('resolves accessible and fallback paths from initialized routes', () => {
   expect(store.resolveAccessiblePath('/system/role')).toBe('/dashboard/workbench')
 })
 
+test('resolves fallback paths using the displayed menu group order', () => {
+  mocks.resolveAdminAccess.mockReturnValue({
+    accessibleRoutes: [],
+    menuGroups: [
+      {
+        id: 'group:system',
+        label: '系统管理',
+        order: 30,
+        children: [{ id: '/system', path: '/system', title: '系统', children: [{ id: '/system/role', path: '/system/role', title: '角色管理' }] }],
+      },
+      { id: 'default', children: [{ id: '/access', path: '/access', order: 1, title: '权限演示' }] },
+    ],
+    navigationRoutes: [],
+    routePathSet: new Set(['/access', '/system', '/system/role']),
+  })
+
+  const store = useAdminAccessStore()
+  store.initializeAccess([], ['admin'])
+
+  expect(store.resolveHomePath('/dashboard/workbench')).toBe('/system/role')
+  expect(store.resolveAccessiblePath('/dashboard/workbench')).toBe('/system/role')
+})
+
 test('stores backend permission codes and exposes permission checks', () => {
   const store = useAdminAccessStore()
   const accessPayload = {

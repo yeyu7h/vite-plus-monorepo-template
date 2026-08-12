@@ -350,6 +350,8 @@ export interface paths {
                                 username: string;
                                 /** @description 头像 */
                                 avatar: string | null;
+                                /** @description 默认首页路径 */
+                                homePath: string | null;
                                 /** @description 昵称 */
                                 nickName: string;
                                 /** @description 用户角色 */
@@ -3829,6 +3831,8 @@ export interface paths {
                                 builtIn: boolean | null;
                                 /** @description 头像 */
                                 avatar: string | null;
+                                /** @description 默认首页路径 */
+                                homePath: string | null;
                                 /** @description 昵称 */
                                 nickName: string;
                                 /**
@@ -4051,6 +4055,8 @@ export interface paths {
                         /** @description 用户名 */
                         username?: string;
                         avatar?: string | null;
+                        /** @description 默认首页路径 */
+                        homePath?: string | null;
                         /** @description 用户昵称 */
                         nickName?: string;
                         /** @enum {string} */
@@ -4084,6 +4090,8 @@ export interface paths {
                                 builtIn: boolean | null;
                                 /** @description 头像 */
                                 avatar: string | null;
+                                /** @description 默认首页路径 */
+                                homePath: string | null;
                                 /** @description 昵称 */
                                 nickName: string;
                                 /**
@@ -4277,6 +4285,8 @@ export interface paths {
                                 builtIn: boolean | null;
                                 /** @description 头像 */
                                 avatar: string | null;
+                                /** @description 默认首页路径 */
+                                homePath: string | null;
                                 /** @description 昵称 */
                                 nickName: string;
                                 /**
@@ -4375,6 +4385,8 @@ export interface paths {
                         /** @description 密码 */
                         password: string;
                         avatar?: string | null;
+                        /** @description 默认首页路径 */
+                        homePath?: string | null;
                         /** @description 用户昵称 */
                         nickName: string;
                         /** @enum {string} */
@@ -4411,6 +4423,8 @@ export interface paths {
                                 builtIn: boolean | null;
                                 /** @description 头像 */
                                 avatar: string | null;
+                                /** @description 默认首页路径 */
+                                homePath: string | null;
                                 /** @description 昵称 */
                                 nickName: string;
                                 /**

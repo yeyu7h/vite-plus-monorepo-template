@@ -73,14 +73,8 @@ describe('auth routes', () => {
 
   afterAll(async () => {
     // Clean up refresh tokens in Redis / 清理 Redis 中的 refresh token
-    const adminUser = await db.query.systemUsers.findFirst({
-      where: { username: 'admin' },
-      columns: { id: true },
-    })
-    const regularUser = await db.query.systemUsers.findFirst({
-      where: { username: 'user' },
-      columns: { id: true },
-    })
+    const [adminUser] = await db.select({ id: systemUsers.id }).from(systemUsers).where(eq(systemUsers.username, 'admin')).limit(1)
+    const [regularUser] = await db.select({ id: systemUsers.id }).from(systemUsers).where(eq(systemUsers.username, 'user')).limit(1)
     if (adminUser) await cleanupRefreshTokens(adminUser.id)
     if (regularUser) await cleanupRefreshTokens(regularUser.id)
 
@@ -282,6 +276,7 @@ describe('auth routes', () => {
       expect(data.username).toBe('admin')
       expect(data.id).toBeDefined()
       expect(data.nickName).toBeDefined()
+      expect(data).toHaveProperty('homePath')
       expect(data.roles).toBeDefined()
       expect(Array.isArray(data.roles)).toBe(true)
       expect(data.roles).toContain('admin')
@@ -377,7 +372,7 @@ describe('auth routes', () => {
       const menuIds = [rootMenuId, pageMenuId, buttonMenuId]
       const roleIds = [parentRoleId, childRoleId]
 
-      const adminUser = await db.query.systemUsers.findFirst({ where: { username: 'admin' }, columns: { id: true } })
+      const [adminUser] = await db.select({ id: systemUsers.id }).from(systemUsers).where(eq(systemUsers.username, 'admin')).limit(1)
       expect(adminUser).toBeDefined()
 
       await db.insert(systemRoles).values([

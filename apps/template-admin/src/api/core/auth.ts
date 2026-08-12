@@ -3,7 +3,7 @@ import type { paths } from '#/openapi/admin'
 
 export interface AdminUserInfo {
   avatar?: string
-  home_path: string
+  homePath?: string
   real_name: string
   roles: string[]
   user_id: string

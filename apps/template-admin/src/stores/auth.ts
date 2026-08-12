@@ -5,7 +5,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { coreAuthApi } from '@/api/core/auth'
-import { DEFAULT_ADMIN_HOME_PATH, LOGIN_ROUTE_PATH, resolveLoginRedirect } from '@/router/access'
+import { LOGIN_ROUTE_PATH, resolveLoginRedirect } from '@/router/access'
 import { ADMIN_TAB_STORAGE_KEY } from '../constants/storage'
 import { useAdminAccessStore } from './access'
 import { useAdminUserStore } from './user'
@@ -13,7 +13,7 @@ import { useAdminUserStore } from './user'
 function toAdminUserInfo(identity: CoreAuthApi.IdentityResult): AdminUserInfo {
   return {
     avatar: identity.avatar ?? undefined,
-    home_path: DEFAULT_ADMIN_HOME_PATH,
+    homePath: identity.homePath ?? undefined,
     real_name: identity.nickName,
     roles: identity.roles,
     user_id: identity.id,

@@ -19,9 +19,13 @@ type CreateUserInput = z.infer<typeof systemUsersCreateSchema>
  * 查询用户列表（包含角色信息）
  */
 export async function listUsers(queryParams: RefineQueryParams) {
+  const requestedSorters = (queryParams.sorters ?? []).filter(({ field }: { field: string }) => field !== 'builtIn')
   const result = await executeRefineQuery<typeof systemUsers.$inferSelect>({
     table: systemUsers,
-    queryParams,
+    queryParams: {
+      ...queryParams,
+      sorters: [{ field: 'builtIn', order: 'desc' }, ...requestedSorters],
+    },
   })
 
   if (result[0]) return result

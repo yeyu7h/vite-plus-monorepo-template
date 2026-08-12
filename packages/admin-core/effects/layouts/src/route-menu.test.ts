@@ -270,6 +270,16 @@ test('uses an unlabeled default group for routes without group', () => {
   ])
 })
 
+test('places routes without group after all explicit menu groups', () => {
+  const groups = buildAdminMenuGroups([
+    { path: '/ungrouped', meta: { title: 'Ungrouped', order: 1 } },
+    { path: '/last-group', meta: { title: 'Last group', group: { label: 'Last', order: 999 } } },
+    { path: '/first-group', meta: { title: 'First group', group: { label: 'First', order: 10 } } },
+  ])
+
+  expect(groups.map((group) => group.id)).toEqual(['group:First', 'group:Last', 'default'])
+})
+
 test('inherits grouped menu children from nearest parent group', () => {
   const groups = buildAdminMenuGroups([
     { path: '/monitor', meta: { title: '监控', group: { label: '运维', order: 10 } } },

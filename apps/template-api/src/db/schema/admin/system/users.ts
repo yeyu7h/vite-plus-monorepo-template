@@ -17,6 +17,7 @@ export const systemUsers = snakeCase.table(
     password: text().notNull(),
     builtIn: boolean().default(false),
     avatar: text(),
+    homePath: varchar({ length: 255 }),
     nickName: varchar({ length: 64 }).notNull(),
     status: varchar({ length: 16 }).$type<StatusType>().default(Status.ENABLED).notNull(),
   },
@@ -29,6 +30,7 @@ export const selectSystemUsersSchema = createSelectSchema(systemUsers, {
   password: (schema) => schema.meta({ description: '密码' }),
   builtIn: (schema) => schema.meta({ description: '是否内置用户' }),
   avatar: (schema) => schema.meta({ description: '头像' }),
+  homePath: (schema) => schema.meta({ description: '默认首页路径' }),
   nickName: (schema) => schema.meta({ description: '昵称' }),
   status: z.enum([Status.ENABLED, Status.DISABLED]).meta({ description: StatusDescriptions.SYSTEM }),
 })
@@ -36,6 +38,7 @@ export const selectSystemUsersSchema = createSelectSchema(systemUsers, {
 export const insertSystemUsersSchema = createInsertSchema(systemUsers, {
   username: () => usernameField,
   password: () => passwordField,
+  homePath: () => z.string().trim().startsWith('/', '默认首页路径必须以 / 开头').max(255, '默认首页路径最多 255 个字符').nullable().optional().meta({ description: '默认首页路径' }),
   nickName: () => nicknameField,
   status: z.enum([Status.ENABLED, Status.DISABLED]),
 }).omit({

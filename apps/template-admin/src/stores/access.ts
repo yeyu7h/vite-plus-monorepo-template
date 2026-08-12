@@ -33,7 +33,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     menuGroups.value = resolvedAccess.menuGroups
     navigationRoutes.value = resolvedAccess.navigationRoutes
     permissionCodes.value = [...nextPermissionCodes]
-    routePaths.value = [...resolvedAccess.routePathSet]
+    routePaths.value = prioritizeRoutePaths(resolvedAccess.menuGroups, resolvedAccess.routePathSet)
     isAccessInitialized.value = true
   }
 
@@ -118,3 +118,29 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     updateAccessToken,
   }
 })
+
+function prioritizeRoutePaths(menuGroups: readonly AdminMenuGroup[], routePathSet: ReadonlySet<string>) {
+  const prioritizedPaths: string[] = []
+  const visitedPaths = new Set<string>()
+
+  const appendPath = (path: string) => {
+    if (!routePathSet.has(path) || visitedPaths.has(path)) return
+    visitedPaths.add(path)
+    prioritizedPaths.push(path)
+  }
+
+  const appendMenuItems = (items: ReadonlyArray<AdminMenuGroup['children'][number]>) => {
+    for (const item of items) {
+      if (item.children?.length) {
+        appendMenuItems(item.children)
+      } else {
+        appendPath(item.path)
+      }
+    }
+  }
+
+  for (const group of menuGroups) appendMenuItems(group.children)
+  for (const path of routePathSet) appendPath(path)
+
+  return prioritizedPaths
+}

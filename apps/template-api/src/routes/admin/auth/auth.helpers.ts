@@ -3,9 +3,11 @@ import crypto from 'node:crypto'
 
 import { verify } from '@node-rs/argon2'
 import { addDays, addMinutes, differenceInSeconds, getUnixTime } from 'date-fns'
+import { and, eq } from 'drizzle-orm'
 import { sign } from 'hono/jwt'
 
 import db from '@/db'
+import { systemRoles, systemUserRoles, systemUsers } from '@/db/schema'
 import env from '@/env'
 
 import { ACCESS_TOKEN_EXPIRES_MINUTES, REFRESH_TOKEN_EXPIRES_DAYS } from '@/lib/constants'
@@ -13,7 +15,6 @@ import { Status } from '@/lib/enums'
 import cap from '@/lib/services/cap'
 import { enforcerPromise } from '@/lib/services/casbin'
 import redisClient from '@/lib/services/redis'
-import { toColumns } from '@/utils'
 
 import { resolveEffectiveAdminRoles } from './access.helpers'
 
@@ -161,10 +162,11 @@ export async function validateCaptcha(captchaToken: string): Promise<string | nu
  * 登录验证
  */
 export async function validateLogin(username: string, password: string): Promise<ValidateLoginResult> {
-  const user = await db.query.systemUsers.findFirst({
-    where: { username },
-    columns: toColumns(['id', 'username', 'password', 'status']),
-  })
+  const [user] = await db
+    .select({ id: systemUsers.id, username: systemUsers.username, password: systemUsers.password, status: systemUsers.status })
+    .from(systemUsers)
+    .where(eq(systemUsers.username, username))
+    .limit(1)
 
   if (!user) {
     return { success: false, error: '用户名或密码错误', status: 'unauthorized' }
@@ -179,17 +181,13 @@ export async function validateLogin(username: string, password: string): Promise
     return { success: false, error: '用户名或密码错误', status: 'unauthorized' }
   }
 
-  const userWithRoles = await db.query.systemUsers.findFirst({
-    where: { id: user.id },
-    columns: { id: true },
-    with: { enabledRoles: { columns: { id: true } } },
-  })
+  const enabledRoles = await getEnabledRoleIds(user.id)
 
   return {
     success: true,
     user: {
       id: user.id,
-      roles: userWithRoles?.enabledRoles.map(({ id }) => id) ?? [],
+      roles: enabledRoles,
     },
   }
 }
@@ -199,18 +197,27 @@ export async function validateLogin(username: string, password: string): Promise
  * 获取用户身份信息
  */
 export async function getIdentityById(userId: string) {
-  const user = await db.query.systemUsers.findFirst({
-    where: { id: userId },
-    columns: toColumns(['id', 'username', 'avatar', 'nickName']),
-    with: { enabledRoles: { columns: { id: true } } },
-  })
+  const [user] = await db
+    .select({ id: systemUsers.id, username: systemUsers.username, avatar: systemUsers.avatar, homePath: systemUsers.homePath, nickName: systemUsers.nickName })
+    .from(systemUsers)
+    .where(eq(systemUsers.id, userId))
+    .limit(1)
 
   if (!user) return null
 
-  const { enabledRoles, ...userWithoutRoles } = user
-  const roles = await resolveEffectiveAdminRoles(enabledRoles.map(({ id }) => id))
+  const roles = await resolveEffectiveAdminRoles(await getEnabledRoleIds(user.id))
 
-  return { ...userWithoutRoles, roles }
+  return { ...user, roles }
+}
+
+async function getEnabledRoleIds(userId: string) {
+  const roles = await db
+    .select({ id: systemRoles.id })
+    .from(systemUserRoles)
+    .innerJoin(systemRoles, eq(systemUserRoles.roleId, systemRoles.id))
+    .where(and(eq(systemUserRoles.userId, userId), eq(systemRoles.status, Status.ENABLED)))
+
+  return roles.map(({ id }) => id)
 }
 
 /**

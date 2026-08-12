@@ -1,7 +1,26 @@
-import type { SystemMenuApi, SystemRoleApi } from '@/api/core/system'
+import type { SystemMenuApi, SystemRoleApi, SystemUserApi } from '@/api/core/system'
 import type { ListQuery } from '@/api/core/system'
 
 export const ALL_STATUS_VALUE = 'ALL' as const
+
+type SystemUserUpdateForm = Required<Pick<SystemUserApi.UpdateBody, 'avatar' | 'homePath' | 'nickName' | 'roleIds' | 'status' | 'username'>>
+
+export function buildSystemUserUpdateBody(form: SystemUserUpdateForm, builtIn: boolean): SystemUserApi.UpdateBody {
+  const editableFields = {
+    nickName: form.nickName,
+    avatar: form.avatar,
+    homePath: form.homePath,
+  }
+
+  if (builtIn) return editableFields
+
+  return {
+    ...editableFields,
+    username: form.username,
+    status: form.status,
+    roleIds: form.roleIds,
+  }
+}
 
 export type FlatMenuRow = SystemMenuApi.Node & { depth: number; descendantCount: number }
 

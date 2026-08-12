@@ -244,6 +244,7 @@ async function seedUsers() {
       .values({
         username: 'admin',
         password: adminPasswordHash,
+        homePath: '/dashboard/workbench',
         nickName: '管理员',
         status: Status.ENABLED,
         builtIn: true,
@@ -261,6 +262,7 @@ async function seedUsers() {
       .values({
         username: 'user',
         password: userPasswordHash,
+        homePath: '/dashboard/workbench',
         nickName: '普通用户',
         status: Status.ENABLED,
         builtIn: false,

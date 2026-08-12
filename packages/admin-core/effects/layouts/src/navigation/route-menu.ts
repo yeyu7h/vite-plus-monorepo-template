@@ -81,6 +81,7 @@ export function buildAdminMenus(routes: readonly AdminNavigationRouteRecord[], o
  */
 export function buildAdminMenuGroups(routes: readonly AdminNavigationRouteRecord[], options: BuildAdminMenuGroupsOptions = {}): AdminMenuGroup[] {
   const maxDepth = resolveMenuMaxDepth(options.maxDepth ?? DEFAULT_GROUP_MAX_DEPTH)
+  const defaultGroupId = options.defaultGroup?.id ?? DEFAULT_MENU_GROUP_ID
   const buckets = new Map<string, MenuGroupBucket>()
   const visibleRoutes = routes
     .map((route) => ({
@@ -105,7 +106,7 @@ export function buildAdminMenuGroups(routes: readonly AdminNavigationRouteRecord
       order: bucket.meta.order,
     }))
     .filter((group) => group.children.length > 0)
-    .sort(compareMenuGroups)
+    .sort((a, b) => compareMenuGroups(a, b, defaultGroupId))
 }
 
 /**
@@ -257,7 +258,10 @@ function compareMenuItems(a: AdminMenuItem, b: AdminMenuItem) {
  * @param a 菜单分组 A
  * @param b 菜单分组 B
  */
-function compareMenuGroups(a: AdminMenuGroup, b: AdminMenuGroup) {
+function compareMenuGroups(a: AdminMenuGroup, b: AdminMenuGroup, defaultGroupId: string) {
+  if (a.id === defaultGroupId) return b.id === defaultGroupId ? 0 : 1
+  if (b.id === defaultGroupId) return -1
+
   return (a.order ?? 0) - (b.order ?? 0) || (a.label ?? '').localeCompare(b.label ?? '') || a.id.localeCompare(b.id)
 }
 

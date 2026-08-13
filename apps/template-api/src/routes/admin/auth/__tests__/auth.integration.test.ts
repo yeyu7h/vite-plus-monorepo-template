@@ -318,7 +318,7 @@ describe('auth routes', () => {
 
   // ===== GET /auth/access =====
   describe('GET /auth/access', () => {
-    it('should return the full menu tree and button permission codes for admin', async () => {
+    it('should return the full menu tree and permission wildcard for admin', async () => {
       const { accessToken } = await loginAs(ADMIN_CREDENTIALS)
 
       const response = await client.auth.access.$get({}, { headers: { Authorization: `Bearer ${accessToken}` } })
@@ -333,7 +333,7 @@ describe('auth routes', () => {
         expect(menuIds).toContain('system')
         expect(menuIds).toContain('docs-vite-plus')
         expect(menuIds).not.toContain('system-role-create')
-        expect(data.permissionCodes).toContain('system:role:create')
+        expect(data.permissionCodes).toEqual(['*:*:*'])
       }
     })
 

@@ -5,6 +5,9 @@ import { enforcerPromise } from '@/lib/services/casbin'
 import db from '@/db'
 import { systemMenuRoles, systemMenus } from '@/db/schema'
 
+const ADMIN_ROLE_ID = 'admin'
+const ADMIN_PERMISSION_CODE = '*:*:*'
+
 export interface AdminAccessMenuMeta {
   activePath?: string
   authority?: string[]
@@ -92,6 +95,7 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
   const enabledRows = rows.filter((row) => !hiddenIds.has(row.id))
   const rowsById = new Map(enabledRows.map((row) => [row.id, row]))
   const effectiveRoleSet = new Set(effectiveRoles)
+  const isAdmin = effectiveRoleSet.has(ADMIN_ROLE_ID)
   const selectedIds = new Set<string>()
   const permissionCodes = new Set<string>()
 
@@ -161,7 +165,7 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
 
   return {
     menus,
-    permissionCodes: [...permissionCodes].sort(),
+    permissionCodes: isAdmin ? [ADMIN_PERMISSION_CODE] : [...permissionCodes].sort(),
   }
 
   function toAccessMenu(row: AdminAccessMenuRecord): AdminAccessMenu {

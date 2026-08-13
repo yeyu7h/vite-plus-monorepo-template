@@ -42,7 +42,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
   }
 
   function hasPermission(code: string) {
-    return permissionCodes.value.includes(code)
+    return permissionCodes.value.some((permissionCode) => matchesPermissionCode(permissionCode, code))
   }
 
   function resolveHomePath(path: string) {
@@ -118,6 +118,13 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
     updateAccessToken,
   }
 })
+
+function matchesPermissionCode(pattern: string, code: string) {
+  const patternSegments = pattern.split(':')
+  const codeSegments = code.split(':')
+
+  return patternSegments.length === codeSegments.length && patternSegments.every((segment, index) => segment === '*' || segment === codeSegments[index])
+}
 
 function prioritizeRoutePaths(menuGroups: readonly AdminMenuGroup[], routePathSet: ReadonlySet<string>) {
   const prioritizedPaths: string[] = []

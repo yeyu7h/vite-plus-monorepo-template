@@ -76,13 +76,19 @@ describe('buildAdminAccessPayload', () => {
     expect(result.menus[0]?.children?.[1]?.meta).toMatchObject({ authority: ['admin'], menuVisibleWithForbidden: true })
   })
 
-  test('includes role-inherited routes, fills ancestors, and collects button permission codes', () => {
+  test('includes role-inherited routes, fills ancestors, and returns the admin permission wildcard', () => {
     const result = buildAdminAccessPayload(rows, ['operator', 'admin'])
 
-    expect(result.permissionCodes).toEqual(['admin:create'])
+    expect(result.permissionCodes).toEqual(['*:*:*'])
     expect(result.menus.map(({ id }) => id)).toEqual(['public', 'admin'])
     expect(result.menus[1]?.children?.map(({ id }) => id)).toEqual(['admin-page'])
     expect(result.menus[1]?.children?.[0]?.children).toBeUndefined()
+  })
+
+  test('collects explicit button permission codes for non-admin roles', () => {
+    const nonAdminRows = rows.map((row) => ({ ...row, roleIds: row.roleIds.map((roleId) => (roleId === 'admin' ? 'operator' : roleId)) }))
+
+    expect(buildAdminAccessPayload(nonAdminRows, ['operator']).permissionCodes).toEqual(['admin:create'])
   })
 
   test('hides complete subtrees when an ancestor menu or group node is disabled', () => {

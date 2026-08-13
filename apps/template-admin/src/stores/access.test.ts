@@ -137,6 +137,21 @@ test('stores backend permission codes and exposes permission checks', () => {
   expect(store.hasPermission('system:role:create')).toBe(false)
 })
 
+test('supports segmented permission wildcards', () => {
+  const store = useAdminAccessStore()
+
+  store.initializeAccess({ menus: [], permissionCodes: ['*:*:*'] }, ['admin'])
+
+  expect(store.hasPermission('system:role:create')).toBe(true)
+  expect(store.hasPermission('system:user:delete')).toBe(true)
+  expect(store.hasPermission('system:role')).toBe(false)
+
+  store.initializeAccess({ menus: [], permissionCodes: ['system:role:*'] }, ['operator'])
+
+  expect(store.hasPermission('system:role:create')).toBe(true)
+  expect(store.hasPermission('system:user:create')).toBe(false)
+})
+
 test('resets generated access when the token changes', () => {
   storage.set('template-admin:access-token', 'access-token:old')
   const store = useAdminAccessStore()

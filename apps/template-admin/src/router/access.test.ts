@@ -2,6 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import { expect, test, vi } from 'vite-plus/test'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { normalizeAdminPath, registerAdminAccessRoutes, resetAdminAccessRoutes, resolveAdminAccess } from './access'
+import { restoreAdminAccessRoutesForHmr } from './access/register'
 import { selectAccessFileRoutes, selectInitialFileRoutes } from './file-routes'
 
 vi.mock('virtual:generated-layouts', () => ({
@@ -209,7 +210,7 @@ test('creates an accessible iframe route without a matching file page', () => {
   expect(result.menuGroups[0]?.children[0]?.path).toBe('/vben/document')
 })
 
-test('adds and removes dynamic routes', () => {
+test('adds, restores and removes dynamic routes', () => {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [{ component, path: '/auth/login' }],
@@ -225,6 +226,11 @@ test('adds and removes dynamic routes', () => {
 
   expect(router.hasRoute('/dashboard/workbench')).toBe(false)
   expect(router.resolve('/dashboard/workbench').matched.some((route) => normalizeAdminPath(route.path) === '/dashboard/workbench')).toBe(true)
+  expect(router.resolve('/dashboard/workbench').matched.map((route) => route.path)).toEqual(['/dashboard', '/dashboard/workbench'])
+
+  router.clearRoutes()
+  restoreAdminAccessRoutesForHmr(router)
+
   expect(router.resolve('/dashboard/workbench').matched.map((route) => route.path)).toEqual(['/dashboard', '/dashboard/workbench'])
 
   resetAdminAccessRoutes()

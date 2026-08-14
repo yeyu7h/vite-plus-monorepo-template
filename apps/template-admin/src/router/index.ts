@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 import { setupLayouts } from 'virtual:generated-layouts'
 import { routes as fileRoutes, handleHotUpdate } from 'vue-router/auto-routes'
+import { restoreAdminAccessRoutesForHmr } from './access/register'
 import { selectAccessFileRoutes, selectInitialFileRoutes } from './file-routes'
 import { createRouterGuard } from './guard'
 
@@ -18,7 +19,18 @@ const router = createRouter({
   routes: setupLayouts(initialRoutes),
 })
 
-if (import.meta.hot) handleHotUpdate(router)
+if (import.meta.env.DEV && import.meta.hot) {
+  handleHotUpdate(router, (nextFileRoutes) => {
+    // 修复文件路由热更新使用原始路由替换路由表后，Layout 包装和已授权动态路由丢失的问题
+    router.clearRoutes()
+
+    for (const route of setupLayouts(selectInitialFileRoutes(nextFileRoutes))) {
+      router.addRoute(route)
+    }
+
+    restoreAdminAccessRoutesForHmr(router)
+  })
+}
 
 createRouterGuard(router, accessFileRoutes)
 

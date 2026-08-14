@@ -1,9 +1,9 @@
 packages:
   - apps/*
   - packages/*
-  - packages/admin-core/*
-  - packages/admin-core/ui/*
-  - packages/admin-core/effects/*
+  - packages/@admin-core/*
+  - packages/@admin-core/ui/*
+  - packages/@admin-core/effects/*
 
 catalogMode: prefer
 

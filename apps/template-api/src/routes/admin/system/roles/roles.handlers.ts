@@ -170,9 +170,9 @@ export const remove: SystemRolesRouteHandlerType<'remove'> = async (c) => {
 export const getPermissions: SystemRolesRouteHandlerType<'getPermissions'> = async (c) => {
   const { id } = c.req.valid('param')
 
-  const { permissions, groupings } = await getRolePermissionsAndGroupings(id)
+  const { permissions, catalog, groupings } = await getRolePermissionsAndGroupings(id)
 
-  return c.json(Resp.ok({ permissions, groupings }), HttpStatusCodes.OK)
+  return c.json(Resp.ok({ permissions, catalog, groupings }), HttpStatusCodes.OK)
 }
 
 export const savePermissions: SystemRolesRouteHandlerType<'savePermissions'> = async (c) => {

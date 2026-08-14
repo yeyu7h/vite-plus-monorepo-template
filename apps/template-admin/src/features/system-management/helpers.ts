@@ -3,6 +3,18 @@ import type { ListQuery } from '@/api/core/system'
 
 export const ALL_STATUS_VALUE = 'ALL' as const
 
+export type RolePermissionInput = { resource: string; action: string; summary?: string }
+export type RolePermissionGroup = { id: string; label: string; permissions: RolePermissionInput[] }
+
+const ROLE_PERMISSION_GROUP_LABELS: Record<string, string> = {
+  '/resources/object-storage': '对象存储',
+  '/system/dicts': '字典管理',
+  '/system/menus': '菜单管理',
+  '/system/params': '参数管理',
+  '/system/roles': '角色管理',
+  '/system/users': '用户管理',
+}
+
 type SystemUserUpdateForm = Required<Pick<SystemUserApi.UpdateBody, 'avatar' | 'homePath' | 'nickName' | 'roleIds' | 'status' | 'username'>>
 
 export function buildSystemUserUpdateBody(form: SystemUserUpdateForm, builtIn: boolean): SystemUserApi.UpdateBody {
@@ -87,6 +99,60 @@ export function getDirectRoleMenuIds(tree: readonly AuthorizationNode[], selecte
   }
   visit(tree)
   return result.sort()
+}
+
+function rolePermissionKey(permission: RolePermissionInput): string {
+  return `${permission.resource}\u0000${permission.action}`
+}
+
+export function normalizeRolePermission(permission: RolePermissionInput): RolePermissionInput {
+  const resource = permission.resource.trim()
+  const action = permission.action.trim().toUpperCase()
+  const summary = permission.summary?.trim()
+  return summary ? { resource, action, summary } : { resource, action }
+}
+
+export function getDirectRolePermissions(result: SystemRoleApi.PermissionResult): RolePermissionInput[] {
+  const permissions = result.permissions.filter(({ direct }) => direct).map(normalizeRolePermission)
+  return [...new Map(permissions.map((permission) => [rolePermissionKey(permission), permission])).values()].sort((a, b) => rolePermissionKey(a).localeCompare(rolePermissionKey(b)))
+}
+
+export function hasRolePermission(permissions: readonly RolePermissionInput[], candidate: RolePermissionInput): boolean {
+  const candidateKey = rolePermissionKey(normalizeRolePermission(candidate))
+  return permissions.some((permission) => rolePermissionKey(normalizeRolePermission(permission)) === candidateKey)
+}
+
+export function buildSaveRolePermissions(permissions: readonly RolePermissionInput[]): SystemRoleApi.SavePermissionsBody['permissions'] {
+  const normalized = permissions.map(normalizeRolePermission).filter(({ resource, action }) => resource && action)
+  return [...new Map(normalized.map((permission) => [rolePermissionKey(permission), [permission.resource, permission.action] as [string, string]])).values()].sort((a, b) =>
+    `${a[0]}\u0000${a[1]}`.localeCompare(`${b[0]}\u0000${b[1]}`),
+  )
+}
+
+export function mergeRolePermissions(current: readonly RolePermissionInput[], candidates: readonly RolePermissionInput[], blocked: readonly RolePermissionInput[] = []): RolePermissionInput[] {
+  const result = current.map(normalizeRolePermission)
+  for (const candidate of candidates.map(normalizeRolePermission)) {
+    if (!candidate.resource || !candidate.action || hasRolePermission([...result, ...blocked], candidate)) continue
+    result.push(candidate)
+  }
+  return result.sort((a, b) => rolePermissionKey(a).localeCompare(rolePermissionKey(b)))
+}
+
+export function removeRolePermissions(current: readonly RolePermissionInput[], candidates: readonly RolePermissionInput[]): RolePermissionInput[] {
+  return current.filter((permission) => !hasRolePermission(candidates, permission))
+}
+
+export function buildRolePermissionGroups(catalog: readonly RolePermissionInput[]): RolePermissionGroup[] {
+  const groups = new Map<string, RolePermissionInput[]>()
+  for (const permission of mergeRolePermissions([], catalog)) {
+    const segments = permission.resource.split('/').filter(Boolean)
+    const depth = segments[0] === 'system' ? 2 : Math.min(2, segments.length)
+    const id = `/${segments.slice(0, depth).join('/')}`
+    const permissions = groups.get(id) ?? []
+    permissions.push(permission)
+    groups.set(id, permissions)
+  }
+  return [...groups.entries()].map(([id, permissions]) => ({ id, label: ROLE_PERMISSION_GROUP_LABELS[id] ?? id, permissions })).sort((a, b) => a.label.localeCompare(b.label))
 }
 
 export function buildServerListQuery(options: { page: number; pageSize: number; search?: string; searchFields: string[]; status?: string; sortField?: string; sortOrder?: 'asc' | 'desc' }): ListQuery {

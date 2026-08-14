@@ -6,15 +6,7 @@ import { jsonContent, jsonContentRequired } from '@monorepo/server-core'
 import { IdUUIDParamsSchema } from '@monorepo/server-core'
 import { respErrSchema } from '@/utils'
 
-import {
-  saveRolesParamsSchema,
-  saveRolesResponseSchema,
-  saveRolesSchema,
-  systemUsersDetailResponseSchema,
-  systemUsersCreateSchema,
-  systemUsersListResponseSchema,
-  systemUsersPatchSchema,
-} from './users.schema'
+import { systemUsersDetailResponseSchema, systemUsersCreateSchema, systemUsersListResponseSchema, systemUsersPatchSchema } from './users.schema'
 
 const routePrefix = '/system/users'
 const tags = [`${routePrefix}（系统用户）`]
@@ -102,25 +94,5 @@ export const remove = createRoute({
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, 'ID参数错误'),
     [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '内置用户不允许删除'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '用户不存在'),
-  },
-})
-
-/** Save user roles (full update) / 保存用户角色（全量更新） */
-export const saveRoles = createRoute({
-  tags,
-  summary: '保存用户角色（全量更新）',
-  method: 'put',
-  path: `${routePrefix}/{userId}/roles`,
-  request: {
-    params: saveRolesParamsSchema,
-    body: jsonContentRequired(saveRolesSchema, '保存角色参数'),
-  },
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(saveRolesResponseSchema), '保存成功'),
-    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, 'The validation error(s)'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '用户或角色不存在'),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '角色已禁用'),
-    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '内置用户不允许修改角色'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(respErrSchema, '保存角色失败'),
   },
 })

@@ -25,6 +25,7 @@ type RolesUpdateOperation = paths['/api/admin/system/roles/{id}']['patch']
 type RolesMenusOperation = paths['/api/admin/system/roles/{id}/menus']['get']
 type RolesSaveMenusOperation = paths['/api/admin/system/roles/{id}/menus']['put']
 type RolesPermissionsOperation = paths['/api/admin/system/roles/{id}/permissions']['get']
+type RolesSavePermissionsOperation = paths['/api/admin/system/roles/{id}/permissions']['put']
 type UsersListOperation = paths['/api/admin/system/users']['get']
 type UsersCreateOperation = paths['/api/admin/system/users']['post']
 type UsersUpdateOperation = paths['/api/admin/system/users/{id}']['patch']
@@ -58,7 +59,10 @@ export namespace SystemRoleApi {
   export type UpdateBody = RequestBody<RolesUpdateOperation>
   export type MenuAuthorization = ResponseData<RolesMenusOperation, 200>
   export type SaveMenusBody = RequestBody<RolesSaveMenusOperation>
-  export type PermissionResult = ResponseData<RolesPermissionsOperation, 200>
+  export type PermissionCatalogItem = { resource: string; action: string; summary: string; group: string }
+  export type PermissionResult = ResponseData<RolesPermissionsOperation, 200> & { catalog: PermissionCatalogItem[] }
+  export type SavePermissionsBody = RequestBody<RolesSavePermissionsOperation>
+  export type SavePermissionsResult = ResponseData<RolesSavePermissionsOperation, 200>
 }
 
 export namespace SystemUserApi {
@@ -100,6 +104,7 @@ export const systemRoleApi = {
   getMenus: (id: string) => client.get<SystemRoleApi.MenuAuthorization>(`/admin/system/roles/${id}/menus`),
   saveMenus: (id: string, data: SystemRoleApi.SaveMenusBody) => client.put<{ total: number; menuIds: string[] }>(`/admin/system/roles/${id}/menus`, data),
   getPermissions: (id: string) => client.get<SystemRoleApi.PermissionResult>(`/admin/system/roles/${id}/permissions`),
+  savePermissions: (id: string, data: SystemRoleApi.SavePermissionsBody) => client.put<SystemRoleApi.SavePermissionsResult>(`/admin/system/roles/${id}/permissions`, data),
 }
 
 export const systemUserApi = {

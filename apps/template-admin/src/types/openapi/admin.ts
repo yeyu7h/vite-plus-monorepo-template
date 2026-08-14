@@ -3335,6 +3335,17 @@ export interface paths {
                                     /** @description 权限来源角色 ID */
                                     sourceRoleId: string;
                                 }[];
+                                /** @description 根据当前管理端路由生成的接口目录 */
+                                catalog: {
+                                    /** @description 资源路径 */
+                                    resource: string;
+                                    /** @description 操作 */
+                                    action: string;
+                                    /** @description 接口说明 */
+                                    summary: string;
+                                    /** @description 接口分组 */
+                                    group: string;
+                                }[];
                                 /** @description 角色继承关系列表 */
                                 groupings: {
                                     /** @description 子角色ID */
@@ -4565,212 +4576,6 @@ export interface paths {
                 };
             };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/system/users/{userId}/roles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** 保存用户角色（全量更新） */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description 用户ID */
-                    userId: string;
-                };
-                cookie?: never;
-            };
-            /** @description 保存角色参数 */
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** @description 角色列表（全量） */
-                        roleIds: string[];
-                    };
-                };
-            };
-            responses: {
-                /** @description 保存成功 */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data: {
-                                /** @description 新增角色数量 */
-                                added: number;
-                                /** @description 删除角色数量 */
-                                removed: number;
-                                /** @description 总角色数量 */
-                                total: number;
-                            };
-                        };
-                    };
-                };
-                /** @description 角色已禁用 */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description 内置用户不允许修改角色 */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description 用户或角色不存在 */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description The validation error(s) */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description 保存角色失败 */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description 错误信息 */
-                            message?: string;
-                            /** @description 错误堆栈 */
-                            stack?: string;
-                            /** @description 错误对象 */
-                            error?: {
-                                /** @description 错误名称 */
-                                name: string;
-                                /** @description 错误详情 */
-                                issues?: {
-                                    /** @description 错误码 */
-                                    code: string;
-                                    /** @description 错误路径 */
-                                    path: (string | number)[];
-                                    /** @description 错误信息 */
-                                    message: string;
-                                }[];
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;

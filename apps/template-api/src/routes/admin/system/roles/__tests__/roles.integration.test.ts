@@ -1069,6 +1069,12 @@ describe('system role routes', () => {
             expect(Array.isArray(permJson.data.groupings)).toBe(true)
             // Admin role should have permissions
             expect(permJson.data.permissions.length).toBeGreaterThan(0)
+            expect(permJson.data.permissions).toEqual(
+              expect.arrayContaining([
+                expect.objectContaining({ resource: '/resources/object-storage/upload', action: 'POST', direct: true }),
+                expect.objectContaining({ resource: '/resources/object-storage/download', action: 'POST', direct: true }),
+              ]),
+            )
 
             // Each permission should be an object with resource and action fields
             if (permJson.data.permissions.length > 0) {

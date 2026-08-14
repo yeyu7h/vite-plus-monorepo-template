@@ -7,7 +7,21 @@ import { z } from 'zod'
 import type { SystemRoleApi } from '@/api/core/system'
 import { systemRoleApi } from '@/api/core/system'
 import { useConfirm } from '@/composables/useConfirm'
-import { ALL_STATUS_VALUE, buildServerListQuery, getApiErrorMessage, getDirectRoleMenuIds, toggleRoleMenuSelection } from '@/features/system-management/helpers'
+import {
+  ALL_STATUS_VALUE,
+  buildRolePermissionGroups,
+  buildSaveRolePermissions,
+  buildServerListQuery,
+  getApiErrorMessage,
+  getDirectRoleMenuIds,
+  getDirectRolePermissions,
+  hasRolePermission,
+  mergeRolePermissions,
+  normalizeRolePermission,
+  removeRolePermissions,
+  toggleRoleMenuSelection,
+} from '@/features/system-management/helpers'
+import type { RolePermissionGroup, RolePermissionInput } from '@/features/system-management/helpers'
 import { useAdminAccessStore } from '@/stores/access'
 
 definePage({ meta: { title: '角色管理', icon: 'i-lucide-shield-check', order: 10, authority: ['admin'] } })
@@ -32,6 +46,12 @@ const menuAuthorization = ref<SystemRoleApi.MenuAuthorization | null>(null)
 const permissions = ref<SystemRoleApi.PermissionResult | null>(null)
 const editorLoading = ref(false)
 const selectedMenuIds = ref<string[]>([])
+const directPermissions = ref<RolePermissionInput[]>([])
+const permissionCatalog = ref<RolePermissionInput[]>([])
+const permissionSearch = ref('')
+const collapsedPermissionGroups = ref<Set<string>>(new Set())
+const copyRoleId = ref('')
+const copyingPermissions = ref(false)
 const roleForm = reactive({
   id: '',
   name: '',
@@ -56,12 +76,23 @@ const columns: TableColumn<SystemRoleApi.Item>[] = [
   { id: 'actions', header: '操作' },
 ]
 
-const permissionColumns: TableColumn<NonNullable<SystemRoleApi.PermissionResult>['permissions'][number]>[] = [
-  { accessorKey: 'resource', header: 'API 资源' },
-  { accessorKey: 'action', header: '方法' },
-  { accessorKey: 'sourceRoleId', header: '来源角色' },
-  { accessorKey: 'inherited', header: '来源类型' },
-]
+const canEditPermissions = computed(() => permissions.value !== null && !editorLoading.value && editingRole.value?.id !== 'admin' && accessStore.hasPermission('system:role:authorize'))
+const inheritedPermissions = computed(() => permissions.value?.permissions.filter(({ inherited }) => inherited).map(normalizeRolePermission) ?? [])
+const permissionGroups = computed(() => {
+  const keyword = permissionSearch.value.trim().toLowerCase()
+  return buildRolePermissionGroups(permissionCatalog.value)
+    .map((group) => ({
+      ...group,
+      permissions:
+        keyword && !`${group.label} ${group.id}`.toLowerCase().includes(keyword)
+          ? group.permissions.filter(({ resource, action, summary }) => `${resource} ${action} ${summary ?? ''}`.toLowerCase().includes(keyword))
+          : group.permissions,
+    }))
+    .filter(({ permissions: items }) => items.length > 0)
+})
+const isPermissionSearching = computed(() => Boolean(permissionSearch.value.trim()))
+const permissionSearchResults = computed(() => permissionGroups.value.flatMap(({ permissions }) => permissions))
+const copyRoleOptions = computed(() => allRoles.value.filter(({ id }) => id !== editingRole.value?.id).map((role) => ({ label: `${role.name} (${role.id})`, value: role.id })))
 
 const parentRoleOptions = computed(() => allRoles.value.filter(({ id }) => id !== editingRole.value?.id).map((role) => ({ label: `${role.name} (${role.id})`, value: role.id })))
 
@@ -113,6 +144,11 @@ async function openEditor(role?: SystemRoleApi.Item) {
   menuAuthorization.value = null
   permissions.value = null
   selectedMenuIds.value = []
+  directPermissions.value = []
+  permissionCatalog.value = []
+  permissionSearch.value = ''
+  collapsedPermissionGroups.value = new Set()
+  copyRoleId.value = ''
   slideoverOpen.value = true
 
   if (role) {
@@ -122,6 +158,9 @@ async function openEditor(role?: SystemRoleApi.Item) {
       menuAuthorization.value = menus
       permissions.value = apiPermissions
       selectedMenuIds.value = [...menus.menuIds]
+      permissionCatalog.value = apiPermissions.catalog.map(normalizeRolePermission)
+      collapsedPermissionGroups.value = new Set(buildRolePermissionGroups(permissionCatalog.value).map(({ id }) => id))
+      directPermissions.value = getDirectRolePermissions(apiPermissions).filter((permission) => hasRolePermission(permissionCatalog.value, permission))
     } catch (error) {
       if (accessStore.isLoggedIn && accessStore.sessionVersion === requestSessionVersion) {
         toast.add({ title: '加载角色授权失败', description: getApiErrorMessage(error), color: 'error' })
@@ -175,6 +214,74 @@ async function saveMenuAuthorization() {
   }
 }
 
+function permissionSelection(permission: RolePermissionInput) {
+  return hasRolePermission([...directPermissions.value, ...inheritedPermissions.value], permission)
+}
+
+function permissionGroupSelection(group: RolePermissionGroup): boolean | 'indeterminate' {
+  const selected = group.permissions.filter(permissionSelection).length
+  if (selected === 0) return false
+  if (selected === group.permissions.length) return true
+  return 'indeterminate'
+}
+
+function setPermissionGroupOpen(groupId: string, open: boolean) {
+  const collapsed = new Set(collapsedPermissionGroups.value)
+  if (open) collapsed.delete(groupId)
+  else collapsed.add(groupId)
+  collapsedPermissionGroups.value = collapsed
+}
+
+function toggleCatalogPermission(permission: RolePermissionInput, checked: boolean) {
+  if (!canEditPermissions.value || hasRolePermission(inheritedPermissions.value, permission)) return
+  directPermissions.value = checked ? mergeRolePermissions(directPermissions.value, [permission]) : removeRolePermissions(directPermissions.value, [permission])
+}
+
+function togglePermissionGroup(group: RolePermissionGroup, checked: boolean) {
+  if (!canEditPermissions.value) return
+  directPermissions.value = checked ? mergeRolePermissions(directPermissions.value, group.permissions, inheritedPermissions.value) : removeRolePermissions(directPermissions.value, group.permissions)
+}
+
+function selectAllCatalogPermissions() {
+  directPermissions.value = mergeRolePermissions(directPermissions.value, permissionCatalog.value, inheritedPermissions.value)
+}
+
+function clearDirectPermissions() {
+  directPermissions.value = []
+}
+
+async function copyRolePermissions() {
+  if (!copyRoleId.value || !canEditPermissions.value) return
+  copyingPermissions.value = true
+  try {
+    const source = await systemRoleApi.getPermissions(copyRoleId.value)
+    const sourcePermissions = source.permissions.map(normalizeRolePermission).filter((permission) => hasRolePermission(permissionCatalog.value, permission))
+    const before = directPermissions.value.length
+    directPermissions.value = mergeRolePermissions(directPermissions.value, sourcePermissions, inheritedPermissions.value)
+    toast.add({ title: '角色权限已复制', description: `新增 ${directPermissions.value.length - before} 条直接权限，保存后生效。`, color: 'success' })
+  } catch (error) {
+    toast.add({ title: '复制角色权限失败', description: getApiErrorMessage(error), color: 'error' })
+  } finally {
+    copyingPermissions.value = false
+  }
+}
+
+async function saveApiPermissions() {
+  if (!editingRole.value || !permissions.value || editorLoading.value) return
+  saving.value = true
+  try {
+    const result = await systemRoleApi.savePermissions(editingRole.value.id, { permissions: buildSaveRolePermissions(directPermissions.value) })
+    const refreshed = await systemRoleApi.getPermissions(editingRole.value.id)
+    permissions.value = refreshed
+    directPermissions.value = getDirectRolePermissions(refreshed)
+    toast.add({ title: 'API 权限已保存', description: `当前角色共有 ${result.total} 条直接权限。`, color: 'success' })
+  } catch (error) {
+    toast.add({ title: '保存 API 权限失败', description: getApiErrorMessage(error), color: 'error' })
+  } finally {
+    saving.value = false
+  }
+}
+
 async function requestDelete(role: SystemRoleApi.Item) {
   await confirm({
     title: '删除角色',
@@ -200,7 +307,7 @@ onMounted(() => Promise.all([loadRoles(), loadAllRoles()]))
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-default px-4 py-3">
       <div>
         <h1 class="text-lg font-semibold text-highlighted">角色管理</h1>
-        <p class="text-sm text-muted">管理角色继承和菜单授权；Casbin API 权限仅供查看。</p>
+        <p class="text-sm text-muted">管理角色继承、菜单授权和 Casbin API 权限。</p>
       </div>
       <UButton v-if="accessStore.hasPermission('system:role:create')" icon="i-lucide-plus" label="新建角色" @click="openEditor()" />
     </div>
@@ -232,8 +339,7 @@ onMounted(() => Promise.all([loadRoles(), loadAllRoles()]))
           <UBadge v-for="parent in row.original.parentRoles" :key="parent" :label="parent" color="info" variant="subtle" /><span v-if="!row.original.parentRoles?.length" class="text-muted">—</span>
         </div></template
       >
-      <template #status-cell="{ row }"
-        ><UBadge :label="row.original.status === 'ENABLED' ? '启用' : '禁用'" :color="row.original.status === 'ENABLED' ? 'success' : 'neutral'" variant="subtle"
+      <template #status-cell="{ row }"><UBadge :label="row.original.status === 'ENABLED' ? '启用' : '禁用'" :color="row.original.status === 'ENABLED' ? 'success' : 'neutral'" variant="subtle"
       /></template>
       <template #actions-cell="{ row }">
         <div class="flex justify-end gap-1">
@@ -306,12 +412,93 @@ onMounted(() => Promise.all([loadRoles(), loadAllRoles()]))
           </div>
 
           <div v-else class="pt-4">
-            <UAlert title="只读权限" description="本页面显示 Casbin 的直接和继承 API 规则，不在此处编辑。" color="info" variant="subtle" class="mb-4" />
-            <UTable :data="permissions?.permissions ?? []" :columns="permissionColumns" :loading="editorLoading">
-              <template #action-cell="{ row }"><UBadge :label="row.original.action" color="neutral" variant="subtle" /></template>
-              <template #inherited-cell="{ row }"><UBadge :label="row.original.inherited ? '继承' : '直接'" :color="row.original.inherited ? 'info' : 'primary'" variant="subtle" /></template>
-              <template #empty><UEmpty icon="i-lucide-code-xml" title="暂无 API 权限" /></template>
-            </UTable>
+            <USkeleton v-if="editorLoading" class="h-48 w-full" />
+            <UEmpty v-else-if="!permissions" icon="i-lucide-code-xml" title="无法加载 API 权限" />
+            <template v-else>
+              <UAlert v-if="editingRole?.id === 'admin'" title="管理员授权受保护" description="admin 的 API 权限不能修改。" color="warning" variant="subtle" class="mb-4" />
+              <UAlert
+                v-else-if="!accessStore.hasPermission('system:role:authorize')"
+                title="只读权限"
+                description="你可以查看直接和继承的 API 权限，但没有角色授权操作权限。"
+                color="info"
+                variant="subtle"
+                class="mb-4"
+              />
+              <UAlert v-else title="全量保存直接权限" description="新增和移除只影响当前角色的直接权限；从上级角色继承的规则保持只读。" color="info" variant="subtle" class="mb-4" />
+
+              <div v-if="canEditPermissions" class="mb-4 space-y-3 rounded-lg border border-default p-3">
+                <div class="text-sm font-medium text-default">快捷授权</div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <USelectMenu v-model="copyRoleId" :items="copyRoleOptions" value-key="value" placeholder="选择一个角色作为模板" class="min-w-56 flex-1" />
+                  <UButton label="复制权限" icon="i-lucide-copy" color="neutral" variant="outline" :disabled="!copyRoleId" :loading="copyingPermissions" @click="copyRolePermissions" />
+                  <UButton label="全选接口目录" icon="i-lucide-list-checks" color="neutral" variant="outline" @click="selectAllCatalogPermissions" />
+                  <UButton label="清空直接权限" icon="i-lucide-eraser" color="neutral" variant="ghost" @click="clearDirectPermissions" />
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <UInput v-model="permissionSearch" icon="i-lucide-search" placeholder="搜索资源路径或 HTTP 方法" class="w-full" />
+                <div v-if="isPermissionSearching && permissionSearchResults.length > 0" class="overflow-hidden rounded-lg border border-default">
+                  <div class="divide-y divide-default">
+                    <div v-for="permission in permissionSearchResults" :key="`${permission.resource}:${permission.action}`" class="flex items-center gap-3 px-3 py-2.5">
+                      <UCheckbox
+                        :model-value="permissionSelection(permission)"
+                        :disabled="!canEditPermissions || hasRolePermission(inheritedPermissions, permission)"
+                        :aria-label="`${permission.action} ${permission.resource}`"
+                        @update:model-value="toggleCatalogPermission(permission, Boolean($event))"
+                      />
+                      <UBadge :label="permission.action" color="neutral" variant="subtle" class="w-14 shrink-0 justify-center p-1 text-xs" />
+                      <div class="min-w-0 flex-1">
+                        <code class="block truncate text-xs text-default">{{ permission.resource }}</code>
+                        <p v-if="permission.summary" :title="permission.summary" class="truncate text-[11px] leading-4 text-muted">{{ permission.summary }}</p>
+                      </div>
+                      <UBadge v-if="hasRolePermission(inheritedPermissions, permission)" label="继承" color="info" variant="subtle" class="shrink-0" />
+                    </div>
+                  </div>
+                </div>
+                <template v-else>
+                  <div v-for="group in permissionGroups" :key="group.id" class="relative">
+                    <div class="absolute top-0 left-3 z-10 flex h-11 items-center">
+                      <UCheckbox
+                        :model-value="permissionGroupSelection(group)"
+                        :disabled="!canEditPermissions"
+                        :aria-label="`选择${group.label}全部接口`"
+                        @update:model-value="togglePermissionGroup(group, Boolean($event))"
+                      />
+                    </div>
+                    <UCollapsible :open="!collapsedPermissionGroups.has(group.id)" class="overflow-hidden rounded-lg border border-default" @update:open="setPermissionGroupOpen(group.id, $event)">
+                      <template #default="{ open }">
+                        <button type="button" class="flex h-11 w-full min-w-0 items-center gap-2 bg-elevated pr-3 pl-10 text-left">
+                          <span class="shrink-0 text-sm font-medium text-default">{{ group.label }}</span>
+                          <code class="min-w-0 truncate text-xs text-muted">{{ group.id }}</code>
+                          <UBadge :label="`${group.permissions.filter(permissionSelection).length}/${group.permissions.length}`" color="neutral" variant="subtle" class="ml-auto shrink-0" />
+                          <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-muted transition-transform duration-200" :class="open ? 'rotate-90' : 'rotate-0'" />
+                        </button>
+                      </template>
+                      <template #content>
+                        <div class="divide-y divide-default">
+                          <div v-for="permission in group.permissions" :key="`${permission.resource}:${permission.action}`" class="flex items-center gap-3 px-3 py-2.5">
+                            <UCheckbox
+                              :model-value="permissionSelection(permission)"
+                              :disabled="!canEditPermissions || hasRolePermission(inheritedPermissions, permission)"
+                              :aria-label="`${permission.action} ${permission.resource}`"
+                              @update:model-value="toggleCatalogPermission(permission, Boolean($event))"
+                            />
+                            <UBadge :label="permission.action" color="neutral" variant="subtle" class="w-14 shrink-0 justify-center p-1 text-xs" />
+                            <div class="min-w-0 flex-1">
+                              <code class="block truncate text-xs text-default">{{ permission.resource }}</code>
+                              <p v-if="permission.summary" :title="permission.summary" class="truncate text-[11px] leading-4 text-muted">{{ permission.summary }}</p>
+                            </div>
+                            <UBadge v-if="hasRolePermission(inheritedPermissions, permission)" label="继承" color="info" variant="subtle" class="shrink-0" />
+                          </div>
+                        </div>
+                      </template>
+                    </UCollapsible>
+                  </div>
+                </template>
+                <UEmpty v-if="permissionGroups.length === 0" icon="i-lucide-search-x" title="没有匹配的接口" />
+              </div>
+            </template>
           </div>
         </template>
       </UTabs>
@@ -331,6 +518,7 @@ onMounted(() => Promise.all([loadRoles(), loadAllRoles()]))
         :loading="saving"
         @click="saveMenuAuthorization"
       />
+      <UButton v-if="activeEditorTab === 'api' && editingRole && canEditPermissions" label="保存 API 权限" :loading="saving" @click="saveApiPermissions" />
     </template>
   </USlideover>
 </template>

@@ -450,6 +450,22 @@ describe('system user routes', () => {
       }
     })
 
+    it('should update user roles together with user fields', async () => {
+      const response = await client.system.users[':id'].$patch(
+        {
+          param: { id: userId },
+          json: { roleIds: ['user'] },
+        },
+        { headers: getAuthHeaders(adminToken) },
+      )
+
+      expect(response.status).toBe(HttpStatusCodes.OK)
+      if (response.status === HttpStatusCodes.OK) {
+        const json = await response.json()
+        expect(json.data.roles).toEqual([expect.objectContaining({ id: 'user' })])
+      }
+    })
+
     it('should reject a home path without a leading slash', async () => {
       const response = await client.system.users[':id'].$patch(
         {
@@ -591,176 +607,6 @@ describe('system user routes', () => {
       const verifyResponse = await client.system.users[':id'].$get({ param: { id: deleteTestUserId } }, { headers: getAuthHeaders(adminToken) })
 
       expect(verifyResponse.status).toBe(HttpStatusCodes.NOT_FOUND)
-    })
-  })
-
-  describe('put /system/user/{userId}/roles - save user roles', () => {
-    let userId: string
-
-    beforeAll(async () => {
-      // Create a user for role testing
-      const response = await client.system.users.$post(
-        {
-          json: {
-            ...testUser,
-            username: `${testUsername}_roles`,
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      expect(response.status).toBe(HttpStatusCodes.CREATED)
-
-      if (response.status === HttpStatusCodes.CREATED) {
-        const json = await response.json()
-        userId = json.data.id
-      }
-    })
-
-    it('should validate userId format', async () => {
-      const response = await client.system.users[':userId'].roles.$put(
-        {
-          param: { userId: 'invalid-uuid' },
-          json: {
-            roleIds: ['admin'],
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      expect(response.status).toBe(HttpStatusCodes.UNPROCESSABLE_ENTITY)
-    })
-
-    it('should validate roleIds array', async () => {
-      const response = await client.system.users[':userId'].roles.$put(
-        {
-          param: { userId },
-          json: {
-            roleIds: 'not-an-array' as unknown as string[],
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      expect(response.status).toBe(HttpStatusCodes.UNPROCESSABLE_ENTITY)
-
-      const response2 = await client.system.users[':userId'].roles.$put(
-        {
-          param: { userId },
-          json: {
-            roleIds: [''], // Empty string not allowed
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      expect(response2.status).toBe(HttpStatusCodes.UNPROCESSABLE_ENTITY)
-    })
-
-    it('should return 404 for non-existent user', async () => {
-      const nonExistentId = crypto.randomUUID()
-      const response = await client.system.users[':userId'].roles.$put(
-        {
-          param: { userId: nonExistentId },
-          json: {
-            roleIds: ['admin'],
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      expect(response.status).toBe(HttpStatusCodes.NOT_FOUND)
-    })
-
-    it('should save user roles successfully', async () => {
-      const response = await client.system.users[':userId'].roles.$put(
-        {
-          param: { userId },
-          json: {
-            roleIds: ['admin', 'user'],
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      expect(response.status).toBe(HttpStatusCodes.OK)
-
-      if (response.status === HttpStatusCodes.OK) {
-        const json = await response.json()
-
-        expect(json.data).toHaveProperty('added')
-        expect(json.data).toHaveProperty('removed')
-        expect(json.data).toHaveProperty('total')
-        expect(typeof json.data.added).toBe('number')
-        expect(typeof json.data.removed).toBe('number')
-        expect(typeof json.data.total).toBe('number')
-      }
-    })
-
-    it('should update roles (replace existing)', async () => {
-      // First set some roles
-      await client.system.users[':userId'].roles.$put(
-        {
-          param: { userId },
-          json: {
-            roleIds: ['admin', 'user'],
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      // Then replace with different roles
-      const response = await client.system.users[':userId'].roles.$put(
-        {
-          param: { userId },
-          json: {
-            roleIds: ['user'], // Use actually existing roles / 使用实际存在的角色
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      expect(response.status).toBe(HttpStatusCodes.OK)
-
-      if (response.status === HttpStatusCodes.OK) {
-        const json = await response.json()
-
-        expect(json.data.total).toBe(1)
-        expect(json.data.removed).toBeGreaterThan(0) // Should have removed previous roles
-      }
-    })
-
-    it('should clear all roles when empty array provided', async () => {
-      // First set some roles
-      await client.system.users[':userId'].roles.$put(
-        {
-          param: { userId },
-          json: {
-            roleIds: ['admin'],
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      // Then clear all roles
-      const response = await client.system.users[':userId'].roles.$put(
-        {
-          param: { userId },
-          json: {
-            roleIds: [],
-          },
-        },
-        { headers: getAuthHeaders(adminToken) },
-      )
-
-      expect(response.status).toBe(HttpStatusCodes.OK)
-
-      if (response.status === HttpStatusCodes.OK) {
-        const json = await response.json()
-
-        expect(json.data.total).toBe(0)
-        expect(json.data.removed).toBeGreaterThan(0)
-      }
     })
   })
 })

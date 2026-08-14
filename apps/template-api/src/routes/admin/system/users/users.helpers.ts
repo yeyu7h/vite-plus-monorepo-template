@@ -7,7 +7,7 @@ import type { systemUsersCreateSchema } from './users.schema'
 import type { RefineQueryParams } from '@/lib/core/refine-query'
 import { hash } from '@node-rs/argon2'
 
-import { and, eq, inArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import db from '@/db'
 import { systemRoles, systemUserRoles, systemUsers } from '@/db/schema'
 import { executeRefineQuery } from '@/lib/core/refine-query'
@@ -107,45 +107,4 @@ export class UserRoleValidationError extends Error {
     super(message)
     this.reason = reason
   }
-}
-
-/**
- * Save user roles (incremental update)
- * 保存用户角色（增量更新）
- */
-export async function saveUserRoles(userId: string, roleIds: string[], currentRoleIds: string[]): Promise<{ added: number; removed: number; total: number }> {
-  const uniqueRoleIds = [...new Set(roleIds)]
-  const currentRoleSet = new Set(currentRoleIds)
-  const newRoleSet = new Set(uniqueRoleIds)
-
-  // Calculate roles to remove (in current roles but not in new roles) / 计算需要删除的角色（在当前角色中但不在新角色中）
-  const rolesToRemove = currentRoleIds.filter((roleId) => !newRoleSet.has(roleId))
-
-  // Calculate roles to add (in new roles but not in current roles) / 计算需要添加的角色（在新角色中但不在当前角色中）
-  const rolesToAdd = uniqueRoleIds.filter((roleId) => !currentRoleSet.has(roleId))
-
-  let removedCount = 0
-  let addedCount = 0
-
-  // Use transaction to ensure data consistency / 使用事务确保数据一致性
-  await db.transaction(async (tx) => {
-    // Delete unnecessary roles / 删除不需要的角色
-    if (rolesToRemove.length > 0) {
-      const deleteResult = await tx
-        .delete(systemUserRoles)
-        .where(and(eq(systemUserRoles.userId, userId), inArray(systemUserRoles.roleId, rolesToRemove)))
-        .returning({ roleId: systemUserRoles.roleId })
-
-      removedCount = deleteResult.length
-    }
-
-    // Add new roles / 添加新的角色
-    if (rolesToAdd.length > 0) {
-      const valuesToInsert = rolesToAdd.map((roleId) => ({ userId, roleId }))
-      const insertResult = await tx.insert(systemUserRoles).values(valuesToInsert).returning()
-      addedCount = insertResult.length
-    }
-  })
-
-  return { added: addedCount, removed: removedCount, total: uniqueRoleIds.length }
 }

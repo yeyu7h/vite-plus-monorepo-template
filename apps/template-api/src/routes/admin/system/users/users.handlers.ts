@@ -9,7 +9,7 @@ import { HttpStatusCodes } from '@monorepo/server-core'
 import { HttpStatusPhrases } from '@monorepo/server-core'
 import { omit, Resp } from '@/utils'
 
-import { createUser, getAssignableRoles, listUsers, saveUserRoles, UserRoleValidationError } from './users.helpers'
+import { createUser, getAssignableRoles, listUsers, UserRoleValidationError } from './users.helpers'
 
 export const list: SystemUsersRouteHandlerType<'list'> = async (c) => {
   const query = c.req.query()
@@ -90,7 +90,8 @@ export const update: SystemUsersRouteHandlerType<'update'> = async (c) => {
   if (user.builtIn && body.username !== undefined && body.username !== user.username) return c.json(Resp.fail('内置用户不允许修改用户名'), HttpStatusCodes.FORBIDDEN)
   if (user.builtIn && body.roleIds !== undefined) return c.json(Resp.fail('内置用户不允许修改角色'), HttpStatusCodes.FORBIDDEN)
 
-  const { roleIds, ...updateData } = body
+  const { roleIds: requestedRoleIds, ...updateData } = body
+  const roleIds = requestedRoleIds as string[] | undefined
   let roles = user.roles
   try {
     if (roleIds !== undefined) roles = (await getAssignableRoles(roleIds)).map(({ id: roleId, name }) => ({ id: roleId, name }))
@@ -148,43 +149,4 @@ export const remove: SystemUsersRouteHandlerType<'remove'> = async (c) => {
   }
 
   return c.json(Resp.ok(deleted), HttpStatusCodes.OK)
-}
-
-export const saveRoles: SystemUsersRouteHandlerType<'saveRoles'> = async (c) => {
-  const { userId } = c.req.valid('param')
-  const { roleIds } = c.req.valid('json')
-
-  // Get user and their current roles / 获取用户及其当前角色
-  const userWithRoles = await db.query.systemUsers.findFirst({
-    where: { id: userId },
-    columns: { id: true, builtIn: true },
-    with: {
-      roles: {
-        columns: { id: true },
-      },
-    },
-  })
-
-  if (!userWithRoles) {
-    return c.json(Resp.fail('用户不存在'), HttpStatusCodes.NOT_FOUND)
-  }
-
-  if (userWithRoles.builtIn) return c.json(Resp.fail('内置用户不允许修改角色'), HttpStatusCodes.FORBIDDEN)
-
-  // Validate role existence / 验证角色存在性
-  try {
-    await getAssignableRoles(roleIds)
-  } catch (error) {
-    if (error instanceof UserRoleValidationError) {
-      const status = error.reason === 'not_found' ? HttpStatusCodes.NOT_FOUND : HttpStatusCodes.BAD_REQUEST
-      return c.json(Resp.fail(error.message), status)
-    }
-    throw error
-  }
-
-  // Save user roles / 保存用户角色
-  const currentRoleIds = userWithRoles.roles.map((r) => r.id)
-  const result = await saveUserRoles(userId, roleIds, currentRoleIds)
-
-  return c.json(Resp.ok(result), HttpStatusCodes.OK)
 }

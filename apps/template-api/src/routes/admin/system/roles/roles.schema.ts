@@ -34,8 +34,14 @@ export const rolePermissionItemSchema = permissionItemSchema.extend({
   sourceRoleId: z.string().meta({ description: '权限来源角色 ID' }),
 })
 
+export const rolePermissionCatalogItemSchema = permissionItemSchema.extend({
+  summary: z.string().meta({ description: '接口说明' }),
+  group: z.string().meta({ description: '接口分组' }),
+})
+
 export const savePermissionsSchema = z.object({
   permissions: z.array(rolePermissionItemSchema).meta({ description: '权限列表' }),
+  catalog: z.array(rolePermissionCatalogItemSchema).meta({ description: '根据当前管理端路由生成的接口目录' }),
   groupings: z
     .array(
       z.object({

@@ -57,25 +57,8 @@ export const systemUsersInfoResponseSchema = selectSystemUsersSchema
     roles: z.array(z.string()).meta({ description: '用户角色' }),
   })
 
-/** Save user roles Schema / 保存用户角色 Schema */
-export const saveRolesSchema = z.object({
-  roleIds: z.array(z.string().min(1).max(64).meta({ example: 'admin', description: '角色编码' })).meta({ description: '角色列表（全量）' }),
-})
-
 export const assignableRoleSchema = z.object({
   id: z.string(),
   name: z.string(),
   status: z.enum([Status.ENABLED, Status.DISABLED]),
-})
-
-/** Save user roles params Schema / 保存用户角色参数 Schema */
-export const saveRolesParamsSchema = z.object({
-  userId: z.uuid().meta({ description: '用户ID' }),
-})
-
-/** Save user roles response Schema / 保存用户角色响应 Schema */
-export const saveRolesResponseSchema = z.object({
-  added: z.number().int().meta({ description: '新增角色数量' }),
-  removed: z.number().int().meta({ description: '删除角色数量' }),
-  total: z.number().int().meta({ description: '总角色数量' }),
 })

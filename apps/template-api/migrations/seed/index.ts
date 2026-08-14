@@ -1,7 +1,7 @@
 import { hash } from '@node-rs/argon2'
 import type { InferInsertModel } from 'drizzle-orm'
 
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import db from '@/db'
 import { systemMenuRoles, systemMenus, systemUsers, systemRoles, casbinRule, systemUserRoles } from '@/db/schema'
 import type { AdminMenuIcon, AdminMenuType } from '@/db/schema'
@@ -438,7 +438,6 @@ async function seedCasbinRules(roles: any) {
       { v1: '/system/users/{id}', v2: 'DELETE' },
       { v1: '/system/users/{id}', v2: 'GET' },
       { v1: '/system/users/{id}', v2: 'PATCH' },
-      { v1: '/system/users/{id}/roles', v2: 'PUT' },
       { v1: '/system/dicts', v2: 'GET' },
       { v1: '/system/dicts', v2: 'POST' },
       { v1: '/system/dicts/{id}', v2: 'DELETE' },
@@ -449,11 +448,13 @@ async function seedCasbinRules(roles: any) {
       { v1: '/system/params/{id}', v2: 'DELETE' },
       { v1: '/system/params/{id}', v2: 'GET' },
       { v1: '/system/params/{id}', v2: 'PATCH' },
+      { v1: '/resources/object-storage/upload', v2: 'POST' },
+      { v1: '/resources/object-storage/download', v2: 'POST' },
     ]
 
-    await db
-      .insert(casbinRule)
-      .values(
+    await db.transaction(async (tx) => {
+      await tx.delete(casbinRule).where(and(eq(casbinRule.ptype, 'p'), eq(casbinRule.v0, 'admin')))
+      await tx.insert(casbinRule).values(
         adminRules.map((rule) => ({
           ptype: 'p',
           v0: 'admin',
@@ -464,7 +465,7 @@ async function seedCasbinRules(roles: any) {
           v5: '',
         })),
       )
-      .onConflictDoNothing()
+    })
 
     console.info(`${logPrefix} 已为 admin 角色创建 ${adminRules.length} 条 Casbin 规则`)
   } catch (error) {

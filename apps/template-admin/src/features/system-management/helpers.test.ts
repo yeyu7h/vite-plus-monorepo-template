@@ -1,7 +1,21 @@
 import { describe, expect, test } from 'vite-plus/test'
 
 import type { SystemMenuApi, SystemRoleApi } from '@/api/core/system'
-import { ALL_STATUS_VALUE, buildServerListQuery, buildSystemUserUpdateBody, countMenuSubtree, flattenMenuTree, getDirectRoleMenuIds, toggleRoleMenuSelection } from './helpers'
+import {
+  ALL_STATUS_VALUE,
+  buildRolePermissionGroups,
+  buildSaveRolePermissions,
+  buildServerListQuery,
+  buildSystemUserUpdateBody,
+  countMenuSubtree,
+  flattenMenuTree,
+  getDirectRoleMenuIds,
+  getDirectRolePermissions,
+  hasRolePermission,
+  mergeRolePermissions,
+  removeRolePermissions,
+  toggleRoleMenuSelection,
+} from './helpers'
 
 function menu(id: string, children?: SystemMenuApi.Node[]): SystemMenuApi.Node {
   return {
@@ -87,6 +101,49 @@ describe('system management helpers', () => {
     expect(selected).toEqual(['child', 'inherited', 'root'])
     expect(toggleRoleMenuSelection(tree, selected, 'root', false)).toEqual(['inherited'])
     expect(getDirectRoleMenuIds(tree, selected)).toEqual(['child', 'root'])
+  })
+
+  test('edits only direct API permissions and builds the full save payload', () => {
+    const result: SystemRoleApi.PermissionResult = {
+      permissions: [
+        { resource: '/system/users', action: 'get', sourceRoleId: 'operator', direct: true, inherited: false },
+        { resource: '/system/roles', action: 'GET', sourceRoleId: 'viewer', direct: false, inherited: true },
+        { resource: '/system/users', action: 'GET', sourceRoleId: 'operator', direct: true, inherited: false },
+      ],
+      catalog: [],
+      groupings: [{ child: 'operator', parent: 'viewer' }],
+    }
+
+    expect(getDirectRolePermissions(result)).toEqual([{ resource: '/system/users', action: 'GET' }])
+    expect(hasRolePermission(result.permissions, { resource: ' /system/roles ', action: 'get' })).toBe(true)
+    expect(
+      buildSaveRolePermissions([
+        { resource: ' /system/users ', action: 'post' },
+        { resource: '/system/users', action: 'POST' },
+      ]),
+    ).toEqual([['/system/users', 'POST']])
+  })
+
+  test('groups the permission catalog and supports batch merge and removal', () => {
+    const catalog = [
+      { resource: '/system/users', action: 'GET', summary: '获取用户列表' },
+      { resource: '/system/users/{id}', action: 'PATCH' },
+      { resource: '/system/roles', action: 'GET' },
+    ]
+    const groups = buildRolePermissionGroups(catalog)
+    expect(groups.map(({ id, label, permissions }) => ({ id, label, count: permissions.length }))).toEqual([
+      { id: '/system/users', label: '用户管理', count: 2 },
+      { id: '/system/roles', label: '角色管理', count: 1 },
+    ])
+    expect(groups.flatMap(({ permissions }) => permissions).find(({ resource }) => resource === '/system/users')).toMatchObject({ summary: '获取用户列表' })
+
+    const inherited = [{ resource: '/system/users', action: 'GET' }]
+    const merged = mergeRolePermissions([], catalog, inherited)
+    expect(merged).toEqual([
+      { resource: '/system/roles', action: 'GET' },
+      { resource: '/system/users/{id}', action: 'PATCH' },
+    ])
+    expect(removeRolePermissions(merged, groups[0]!.permissions)).toEqual([{ resource: '/system/roles', action: 'GET' }])
   })
 
   test('builds serializable server pagination and filter parameters', () => {

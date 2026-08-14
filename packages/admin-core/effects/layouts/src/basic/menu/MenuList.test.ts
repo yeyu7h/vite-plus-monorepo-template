@@ -262,6 +262,15 @@ test('closes all opened siblings when selecting a leaf item', async () => {
   expect(wrapper.text()).not.toContain('第二个子菜单')
 })
 
+test('keeps opened branches when selecting an external link', async () => {
+  const wrapper = mountMenuList([directory('/first', '第一个目录', '第一个子菜单'), { externalLink: 'https://example.com', id: '/external', path: '/external', title: '外部链接' }])
+
+  await buttonByText(wrapper, '第一个目录').trigger('click')
+  await linkByText(wrapper, '外部链接').trigger('click')
+
+  expect(wrapper.text()).toContain('第一个子菜单')
+})
+
 test('collapses every other branch while keeping the selected leaf ancestor open', async () => {
   const wrapper = mountMenuList([directory('/first', '第一个目录', '第一个子菜单'), directory('/second', '第二个目录', '第二个子菜单')])
 

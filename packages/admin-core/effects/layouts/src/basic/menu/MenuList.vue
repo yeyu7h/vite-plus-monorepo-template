@@ -138,7 +138,6 @@ function isMenuImageIcon(icon: unknown): icon is AdminMenuImageIcon {
         rel="noreferrer"
         :title="isRootCollapsed ? item.title : undefined"
         :class="itemClass(item)"
-        @click="selectLeafItem"
       >
         <UIcon v-if="depth < 3 && typeof item.icon === 'string' && item.icon.startsWith('i-')" :name="item.icon" :class="leadingIconClass(item)" />
         <picture v-else-if="depth < 3 && isMenuImageIcon(item.icon)" class="relative z-10 size-5 shrink-0">

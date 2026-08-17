@@ -364,18 +364,6 @@ export interface PlatformInfo {
    */
   webkit: boolean
   /**
-   * Whether the page is running inside the WeChat browser or WebView.
-   *
-   * 页面是否运行在微信浏览器或微信 WebView 中
-   */
-  wechat: boolean
-  /**
-   * Detected WeChat client version when available.
-   *
-   * 检测到的微信客户端版本（如果可用）
-   */
-  wechatVersion?: string
-  /**
    * Whether the operating system is Windows.
    *
    * 操作系统是否为 Windows
@@ -396,7 +384,19 @@ export interface PlatformSnapshot {
   userAgent: string
   within: {
     iframe: boolean
+    /**
+     * Whether the page is running inside the WeChat browser or WebView.
+     *
+     * 页面是否运行在微信浏览器或微信 WebView 中
+     */
+    wechat: boolean
     wechatMiniProgram: boolean
+    /**
+     * Detected WeChat client version when available.
+     *
+     * 检测到的微信客户端版本（如果可用）
+     */
+    wechatVersion?: string
   }
 }
 
@@ -508,7 +508,6 @@ function createEmptyPlatformInfo(): PlatformInfo {
     versionNumber: 0,
     vivaldi: false,
     webkit: false,
-    wechat: false,
     win: false,
   }
 }
@@ -684,16 +683,6 @@ export function parsePlatform(userAgentInput: unknown, environment: PlatformEnvi
   else if (info.safari && info.kindle) info.name = 'kindle'
   else if (info.safari && info.silk) info.name = 'silk'
 
-  // WeChat is an embedding shell. Detect it independently so consumers retain
-  // the underlying Chrome/Safari information as well.
-  //
-  // 微信属于浏览器嵌入容器，需要独立检测，以便同时保留底层 Chrome 或 Safari 信息
-  const wechatMatch = WECHAT_RE.exec(userAgent)
-  if (wechatMatch) {
-    info.wechat = true
-    info.wechatVersion = wechatMatch[1] ?? '0'
-  }
-
   // Prefer an explicitly injected marker and fall back to the NativeApp UA token.
   //
   // 优先使用明确注入的标识，未注入时回退到 NativeApp 用户代理标识
@@ -752,6 +741,7 @@ export function createPlatform(userAgent?: string, environment?: PlatformEnviron
   const resolvedEnvironment = environment ?? runtime?.environment ?? {}
   const resolvedUserAgent = userAgent ?? runtime?.userAgent ?? resolvedEnvironment.vendor ?? resolvedEnvironment.opera ?? ''
   const normalizedUserAgent = normalizeUserAgent(resolvedUserAgent)
+  const wechatMatch = WECHAT_RE.exec(normalizedUserAgent)
 
   return {
     has: {
@@ -761,7 +751,9 @@ export function createPlatform(userAgent?: string, environment?: PlatformEnviron
     userAgent: resolvedUserAgent,
     within: {
       iframe: resolvedEnvironment.iframe === true,
+      wechat: wechatMatch !== null,
       wechatMiniProgram: normalizedUserAgent.includes('miniprogram') || resolvedEnvironment.wechatJsEnvironment === 'miniprogram',
+      ...(wechatMatch ? { wechatVersion: wechatMatch[1] ?? '0' } : {}),
     },
   }
 }

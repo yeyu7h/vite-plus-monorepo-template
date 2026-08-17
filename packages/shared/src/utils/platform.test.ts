@@ -23,20 +23,6 @@ describe('parsePlatform', () => {
     })
   })
 
-  it('detects WeChat independently from its Chromium browser engine', () => {
-    const platform = parsePlatform(WECHAT_ANDROID_UA)
-
-    expect(platform).toMatchObject({
-      android: true,
-      chrome: true,
-      mobile: true,
-      name: 'chrome',
-      version: '110.0.0.0',
-      wechat: true,
-      wechatVersion: '8.0.47',
-    })
-  })
-
   it.each([
     ['Chrome', 'CriOS/120.0.0.0'],
     ['Firefox', 'FxiOS/121.0'],
@@ -90,6 +76,22 @@ describe('parsePlatform', () => {
 })
 
 describe('createPlatform', () => {
+  it('detects WeChat independently from its Chromium browser engine', () => {
+    const platform = createPlatform(WECHAT_ANDROID_UA)
+
+    expect(platform.is).toMatchObject({
+      android: true,
+      chrome: true,
+      mobile: true,
+      name: 'chrome',
+      version: '110.0.0.0',
+    })
+    expect(platform.within).toMatchObject({
+      wechat: true,
+      wechatVersion: '8.0.47',
+    })
+  })
+
   it('detects WeChat Mini Program from the user agent', () => {
     const platform = createPlatform(`${WECHAT_ANDROID_UA} miniProgram`)
 

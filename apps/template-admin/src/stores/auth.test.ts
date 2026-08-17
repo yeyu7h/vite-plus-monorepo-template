@@ -38,7 +38,7 @@ vi.mock('vue-router', () => ({
   }),
 }))
 
-vi.mock('@monorepo-admin-core/layout-effect', () => ({
+vi.mock('@monorepo-admin-core/stores', () => ({
   useAdminTabStore: () => ({
     reset: mocks.tabReset,
   }),

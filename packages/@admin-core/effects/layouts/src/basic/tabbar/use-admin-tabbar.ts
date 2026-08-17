@@ -4,9 +4,8 @@ import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { AdminRouteMeta } from '@monorepo-admin-core/types'
-import { createAdminTabRecord } from '../../navigation/route-tab'
+import { createAdminTabRecord, DEFAULT_ADMIN_TAB_STORAGE_KEY, useAdminTabStore } from '@monorepo-admin-core/stores'
 import { normalizeAdminNavigationPath } from '../../navigation/shared'
-import { DEFAULT_ADMIN_TAB_STORAGE_KEY, useAdminTabStore } from '../../stores'
 
 export interface UseAdminTabbarOptions {
   storageKey?: string

@@ -1,6 +1,6 @@
 import type { CoreAuthApi } from '@/api/core/auth'
 import type { AdminUserInfo } from '@/api/core/auth'
-import { useAdminTabStore } from '@monorepo-admin-core/layout-effect'
+import { useAdminTabStore } from '@monorepo-admin-core/stores'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'

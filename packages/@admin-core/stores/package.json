@@ -1,0 +1,45 @@
+{
+  "name": "@monorepo-admin-core/stores",
+  "version": "0.0.0",
+  "description": "Core admin Pinia stores and tab state helpers.",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "production": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test --passWithNoTests",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "dependencies": {
+    "@monorepo-admin-core/types": "workspace:*",
+    "@monorepo/shared": "workspace:*",
+    "pinia": "catalog:vue3",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vue": "catalog:vue3"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "happy-dom": "catalog:testing",
+    "typescript": "catalog:"
+  }
+}

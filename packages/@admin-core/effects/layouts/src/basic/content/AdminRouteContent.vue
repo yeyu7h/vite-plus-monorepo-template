@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { IFrameRouterView } from '../../iframe'
-import { useAdminTabStore } from '../../stores'
+import { useAdminTabStore } from '@monorepo-admin-core/stores'
 
 defineOptions({ name: 'AdminRouteContent' })
 

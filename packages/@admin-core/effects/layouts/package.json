@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@monorepo-admin-core/layout-ui": "workspace:*",
+    "@monorepo-admin-core/stores": "workspace:*",
     "@monorepo-admin-core/tabs-ui": "workspace:*",
     "@monorepo-admin-core/types": "workspace:*",
     "@monorepo/shared": "workspace:*",

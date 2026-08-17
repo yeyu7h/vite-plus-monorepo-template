@@ -163,6 +163,7 @@ test('keeps the final tab render state when close is rejected', () => {
   expect(store.getRenderKey('/docs')).toBe('/docs:1')
 })
 
+/** 创建测试用的 `AdminTabRecord` */
 function createRecord(path: string, options: Partial<AdminTabRecord> = {}): AdminTabRecord {
   return {
     keepAlive: false,

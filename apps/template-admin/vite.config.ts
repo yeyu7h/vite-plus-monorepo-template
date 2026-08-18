@@ -33,7 +33,7 @@ export default defineConfig({
           },
         },
       },
-      scanPackages: ['@monorepo-admin-core/layout-ui', '@monorepo-admin-core/tabs-ui', '@monorepo-admin-core/layout-effect'],
+      scanPackages: ['@monorepo-admin-core/common-ui', '@monorepo-admin-core/layout-ui', '@monorepo-admin-core/tabs-ui', '@monorepo-admin-core/layout-effect'],
     }),
     VueDevTools(),
   ],

@@ -30,6 +30,7 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
+    "@nuxt/ui": "catalog:vue3",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vue": "catalog:vue3"

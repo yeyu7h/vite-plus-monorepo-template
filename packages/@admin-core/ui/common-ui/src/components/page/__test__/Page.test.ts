@@ -3,7 +3,7 @@
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref, vShow, withDirectives } from 'vue'
 import { expect, test } from 'vite-plus/test'
-import Page from './Page.vue'
+import Page from '../Page.vue'
 
 test('uses the normal page layout by default and renders its slot directly', () => {
   const wrapper = mount(Page, {

@@ -19,7 +19,7 @@ export {
 export type { ResolvedAdminAccess } from '@monorepo-admin-core/access-effect'
 export { registerAdminAccessRoutes, resetAdminAccessRoutes } from './register'
 
-const forbiddenComponent = () => import('@/pages/403.vue')
+const forbiddenComponent = () => import('@/pages/fallback/403.vue')
 const iframeComponent = { name: 'IFrameView', render: () => null }
 const externalLinkComponent = { name: 'ExternalLinkView', render: () => null }
 

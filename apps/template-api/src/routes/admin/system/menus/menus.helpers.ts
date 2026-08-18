@@ -13,7 +13,6 @@ type MenuValidationInput = Pick<MenuRow, 'id' | 'path' | 'type'> &
     Pick<
       MenuRow,
       | 'activePath'
-      | 'contentMode'
       | 'externalLink'
       | 'hideInBreadcrumb'
       | 'hideInMenu'
@@ -233,7 +232,6 @@ function groupRoleIdsByMenu(roleLinks: readonly { menuId: string; roleId: string
 function hasGroupRouteConfig(menu: MenuValidationInput) {
   return Boolean(
     menu.activePath ||
-    menu.contentMode ||
     menu.externalLink ||
     menu.hideInBreadcrumb ||
     menu.hideInMenu ||

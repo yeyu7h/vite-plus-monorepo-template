@@ -30,12 +30,11 @@ const routeRecords = computed<AdminNavigationRouteRecord[]>(() => props.routeRec
 const activeMenuPath = computed(() => (route.meta as AdminRouteMeta).activePath ?? route.path)
 const breadcrumbPrefix = computed(() => buildAdminBreadcrumbPrefix(adminRoute))
 const breadcrumbs = computed(() => buildAdminBreadcrumbs(adminRoute, routeRecords.value))
-const contentMode = computed(() => (route.meta as AdminRouteMeta).contentMode ?? 'default')
 const menuGroups = computed(() => markActiveAdminMenuGroups(props.menuGroups ?? buildAdminMenuGroups(routeRecords.value), activeMenuPath.value))
 </script>
 
 <template>
-  <Layout :breadcrumb-prefix="breadcrumbPrefix" :breadcrumbs="breadcrumbs" :content-mode="contentMode" :tabbar-enable="true">
+  <Layout :breadcrumb-prefix="breadcrumbPrefix" :breadcrumbs="breadcrumbs" :tabbar-enable="true">
     <slot>
       <AdminRouteContent />
     </slot>

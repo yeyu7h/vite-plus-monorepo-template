@@ -11,7 +11,6 @@ const ADMIN_PERMISSION_CODE = '*:*:*'
 export interface AdminAccessMenuMeta {
   activePath?: string
   authority?: string[]
-  contentMode?: 'default' | 'full'
   description?: string
   externalLink?: string
   hideInBreadcrumb?: boolean
@@ -45,7 +44,6 @@ export interface AdminAccessPayload {
 /** Access helper input kept independent from Drizzle query results for unit testing. */
 export interface AdminAccessMenuRecord {
   activePath?: string | null
-  contentMode?: 'default' | 'full' | null
   description?: string | null
   externalLink?: string | null
   hideInBreadcrumb?: boolean
@@ -173,7 +171,6 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
     const meta: AdminAccessMenuMeta = {
       ...(row.activePath ? { activePath: row.activePath } : {}),
       ...(row.roleIds.length > 0 ? { authority: [...row.roleIds].sort() } : {}),
-      ...(row.contentMode ? { contentMode: row.contentMode } : {}),
       ...(row.description ? { description: row.description } : {}),
       ...(row.externalLink ? { externalLink: row.externalLink } : {}),
       ...(row.hideInBreadcrumb ? { hideInBreadcrumb: true } : {}),

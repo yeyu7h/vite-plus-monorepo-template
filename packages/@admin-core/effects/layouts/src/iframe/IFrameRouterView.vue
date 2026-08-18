@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Page } from '@monorepo-admin-core/common-ui'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 defineOptions({ name: 'IFrameRouterView' })
@@ -53,24 +54,26 @@ onBeforeUnmount(clearLoadTimeout)
 </script>
 
 <template>
-  <div v-if="iframeSrc" class="absolute inset-0 overflow-hidden bg-default">
-    <div v-if="loading" class="absolute inset-0 z-10 grid place-items-center bg-default">
-      <div v-if="loadTimedOut" class="mx-6 max-w-lg text-center" role="alert">
-        <UIcon name="i-lucide-triangle-alert" class="mx-auto size-8 text-warning" aria-hidden="true" />
-        <h2 class="mt-3 text-base font-semibold text-highlighted">页面暂未完成加载</h2>
-        <p class="mt-2 text-sm text-muted">目标页面可能加载较慢，或不允许在当前系统中内嵌显示。</p>
-        <div class="mt-5 flex flex-wrap justify-center gap-2">
-          <UButton icon="i-lucide-refresh-cw" @click="reloadIframe">重新加载</UButton>
-          <UButton :to="iframeSrc" target="_blank" rel="noopener noreferrer" color="neutral" variant="outline" trailing-icon="i-lucide-external-link"> 在新窗口打开 </UButton>
+  <Page fill-height>
+    <div v-if="iframeSrc" class="relative min-h-0 flex-1 overflow-hidden bg-default">
+      <div v-if="loading" class="absolute inset-0 z-10 grid place-items-center bg-default">
+        <div v-if="loadTimedOut" class="mx-6 max-w-lg text-center" role="alert">
+          <UIcon name="i-lucide-triangle-alert" class="mx-auto size-8 text-warning" aria-hidden="true" />
+          <h2 class="mt-3 text-base font-semibold text-highlighted">页面暂未完成加载</h2>
+          <p class="mt-2 text-sm text-muted">目标页面可能加载较慢，或不允许在当前系统中内嵌显示。</p>
+          <div class="mt-5 flex flex-wrap justify-center gap-2">
+            <UButton icon="i-lucide-refresh-cw" @click="reloadIframe">重新加载</UButton>
+            <UButton :to="iframeSrc" target="_blank" rel="noopener noreferrer" color="neutral" variant="outline" trailing-icon="i-lucide-external-link"> 在新窗口打开 </UButton>
+          </div>
+        </div>
+
+        <div v-else role="status" aria-live="polite">
+          <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" aria-hidden="true" />
+          <span class="sr-only">正在加载{{ iframeTitle }}</span>
         </div>
       </div>
 
-      <div v-else role="status" aria-live="polite">
-        <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" aria-hidden="true" />
-        <span class="sr-only">正在加载{{ iframeTitle }}</span>
-      </div>
+      <iframe :key="reloadKey" :src="iframeSrc" :title="iframeTitle" class="size-full border-0 bg-default" @load="handleLoad" />
     </div>
-
-    <iframe :key="reloadKey" :src="iframeSrc" :title="iframeTitle" class="size-full border-0 bg-default" @load="handleLoad" />
-  </div>
+  </Page>
 </template>

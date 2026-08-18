@@ -10,6 +10,7 @@ import Input from '@nuxt/ui/components/Input.vue'
 import Table from '@nuxt/ui/components/Table.vue'
 import { getPaginationRowModel } from '@tanstack/vue-table'
 import { platform } from '@monorepo/shared/utils'
+import { Page } from '@monorepo-admin-core/common-ui'
 
 definePage({
   meta: {
@@ -20,7 +21,6 @@ definePage({
       order: 20,
     },
     order: 30,
-    contentMode: !platform.is.mobile ? 'full' : 'default',
   },
 })
 
@@ -330,7 +330,7 @@ function randomize() {
 </script>
 
 <template>
-  <div class="flex-1 w-full flex flex-col h-full">
+  <Page :fill-height="!platform.is.mobile">
     <div class="flex items-center gap-2 border-b border-default px-4 py-3.5 overflow-x-auto">
       <Input
         :model-value="table?.tableApi?.getColumn('email')?.getFilterValue() as string"
@@ -366,5 +366,5 @@ function randomize() {
         @update:page="(page: number) => table?.tableApi?.setPageIndex(page - 1)"
       />
     </div>
-  </div>
+  </Page>
 </template>

@@ -1,0 +1,42 @@
+{
+  "name": "@monorepo-admin-core/common-ui",
+  "version": "0.0.0",
+  "description": "Shared UI entry point for admin applications.",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "production": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test --passWithNoTests",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "dependencies": {
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vue": "catalog:vue3"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "catalog:testing",
+    "happy-dom": "catalog:testing",
+    "unplugin-vue": "catalog:"
+  }
+}

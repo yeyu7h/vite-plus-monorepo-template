@@ -31,7 +31,6 @@ export const systemMenus = snakeCase.table(
     activePath: varchar({ length: 255 }),
     externalLink: text(),
     iframeSrc: text(),
-    contentMode: varchar({ length: 16 }).$type<'default' | 'full'>(),
     hideInBreadcrumb: boolean().default(false).notNull(),
     hideInMenu: boolean().default(false).notNull(),
     hideInTab: boolean().default(false).notNull(),
@@ -58,7 +57,6 @@ export const selectSystemMenusSchema = createSelectSchema(systemMenus, {
   path: (schema) => schema.meta({ description: '路由或按钮路径' }),
   title: (schema) => schema.meta({ description: '菜单标题' }),
   icon: (schema) => schema.meta({ description: '菜单图标' }),
-  contentMode: z.enum(['default', 'full']).nullable().meta({ description: '页面内容布局' }),
   status: z.enum([Status.ENABLED, Status.DISABLED]).meta({ description: StatusDescriptions.SYSTEM }),
 })
 
@@ -67,7 +65,6 @@ export const insertSystemMenusSchema = createInsertSchema(systemMenus, {
   type: z.enum(adminMenuTypes),
   path: (schema) => schema.min(1).max(255),
   title: (schema) => schema.min(1).max(128),
-  contentMode: z.enum(['default', 'full']).optional(),
   status: z.enum([Status.ENABLED, Status.DISABLED]),
 }).omit({
   createdAt: true,

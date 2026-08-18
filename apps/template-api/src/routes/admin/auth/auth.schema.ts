@@ -19,7 +19,6 @@ const adminGroupSchema = z.object({
 export const adminAccessMenuMetaSchema = z.object({
   activePath: z.string().optional(),
   authority: z.array(z.string()).optional(),
-  contentMode: z.enum(['default', 'full']).optional(),
   description: z.string().optional(),
   externalLink: z.string().optional(),
   hideInBreadcrumb: z.boolean().optional(),

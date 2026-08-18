@@ -276,6 +276,9 @@ importers:
       '@monorepo-admin-core/access-effect':
         specifier: workspace:*
         version: link:../../packages/@admin-core/effects/access
+      '@monorepo-admin-core/common-ui':
+        specifier: workspace:*
+        version: link:../../packages/@admin-core/ui/common-ui
       '@monorepo-admin-core/layout-effect':
         specifier: workspace:*
         version: link:../../packages/@admin-core/effects/layouts
@@ -524,6 +527,9 @@ importers:
 
   packages/@admin-core/effects/layouts:
     dependencies:
+      '@monorepo-admin-core/common-ui':
+        specifier: workspace:*
+        version: link:../../ui/common-ui
       '@monorepo-admin-core/layout-ui':
         specifier: workspace:*
         version: link:../../ui/layout-ui
@@ -620,6 +626,28 @@ importers:
       vite-plus:
         specifier: 'catalog:'
         version: 0.2.9(@types/node@25.9.5)(@vitest/coverage-v8@4.1.10)(@voidzero-dev/vite-plus-core@0.2.8(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.12)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.28.1)(happy-dom@20.11.2)(jiti@2.7.0)(tsx@4.23.12)(typescript@6.0.3)(yaml@2.9.0)
+
+  packages/@admin-core/ui/common-ui:
+    dependencies:
+      vite:
+        specifier: npm:@voidzero-dev/vite-plus-core@0.2.8
+        version: '@voidzero-dev/vite-plus-core@0.2.8(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.12)(typescript@6.0.3)(yaml@2.9.0)'
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.2.9(@types/node@25.9.5)(@vitest/coverage-v8@4.1.10)(@voidzero-dev/vite-plus-core@0.2.8(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.12)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.28.1)(happy-dom@20.11.2)(jiti@2.7.0)(tsx@4.23.12)(typescript@6.0.3)(yaml@2.9.0)
+      vue:
+        specifier: catalog:vue3
+        version: 3.5.41(typescript@6.0.3)
+    devDependencies:
+      '@vue/test-utils':
+        specifier: catalog:testing
+        version: 2.4.11(@vue/compiler-dom@3.5.41)(@vue/server-renderer@3.5.41)(vue@3.5.41(typescript@6.0.3))
+      happy-dom:
+        specifier: catalog:testing
+        version: 20.11.2
+      unplugin-vue:
+        specifier: 'catalog:'
+        version: 7.2.0(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(rolldown@1.1.4)(tsx@4.23.12)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))(yaml@2.9.0)
 
   packages/@admin-core/ui/layout-ui:
     dependencies:

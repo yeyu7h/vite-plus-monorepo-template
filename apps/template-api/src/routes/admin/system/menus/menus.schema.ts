@@ -25,7 +25,6 @@ const menuFields = {
   activePath: zod.string().max(255).nullable().optional(),
   externalLink: zod.string().max(2000).nullable().optional(),
   iframeSrc: zod.string().max(2000).nullable().optional(),
-  contentMode: zod.enum(['default', 'full']).nullable().optional(),
   hideInBreadcrumb: zod.boolean().optional(),
   hideInMenu: zod.boolean().optional(),
   hideInTab: zod.boolean().optional(),

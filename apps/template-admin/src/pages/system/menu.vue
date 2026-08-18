@@ -6,6 +6,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { z } from 'zod'
 
 import type { SystemMenuApi } from '@/api/core/system'
+import { Page } from '@monorepo-admin-core/common-ui'
 import { systemMenuApi } from '@/api/core/system'
 import { useConfirm } from '@/composables/useConfirm'
 import { countMenuSubtree, flattenMenuTree, getApiErrorMessage } from '@/features/system-management/helpers'
@@ -25,7 +26,7 @@ import type { MenuAccessScope, MenuNodeType, MenuStatus } from '@/features/syste
 import { useAdminAccessStore } from '@/stores/access'
 
 definePage({
-  meta: { title: '菜单管理', icon: 'i-lucide-list-tree', order: 20, authority: ['admin'], contentMode: 'full' },
+  meta: { title: '菜单管理', icon: 'i-lucide-list-tree', order: 20, authority: ['admin'] },
 })
 
 const accessStore = useAdminAccessStore()
@@ -317,7 +318,6 @@ async function saveMenu(event: FormSubmitEvent<z.output<typeof menuSchema>>) {
     activePath: hasRoute ? menuForm.activePath.trim() || null : null,
     externalLink: hasRoute ? menuForm.externalLink.trim() || null : null,
     iframeSrc: hasRoute ? menuForm.iframeSrc.trim() || null : null,
-    contentMode: hasRoute ? (editingMenu.value?.contentMode ?? null) : null,
     hideInBreadcrumb: hasRoute && menuForm.hideInBreadcrumb,
     hideInMenu: hasRoute && menuForm.hideInMenu,
     hideInTab: hasRoute && menuForm.hideInTab,
@@ -366,7 +366,7 @@ onMounted(loadData)
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col">
+  <Page fill-height>
     <div v-if="accessStore.hasPermission('system:menu:create')" class="flex shrink-0 items-center justify-end gap-2 border-b border-default px-4 py-3">
       <UButton icon="i-lucide-panels-top-left" label="新建分组" color="neutral" variant="outline" @click="openMenuForm(undefined, undefined, 'group')" />
       <UButton icon="i-lucide-plus" label="新建菜单" @click="openMenuForm()" />
@@ -449,7 +449,7 @@ onMounted(loadData)
       </template>
       <template #empty><UEmpty icon="i-lucide-list-tree" title="暂无菜单" description="创建第一个分组或菜单节点。" /></template>
     </UTable>
-  </div>
+  </Page>
 
   <USlideover
     v-model:open="menuSlideoverOpen"

@@ -1602,8 +1602,6 @@ export interface paths {
                         activePath?: string | null;
                         externalLink?: string | null;
                         iframeSrc?: string | null;
-                        /** @enum {string|null} */
-                        contentMode?: "default" | "full" | null;
                         hideInBreadcrumb?: boolean;
                         hideInMenu?: boolean;
                         hideInTab?: boolean;
@@ -1897,8 +1895,6 @@ export interface paths {
                         activePath?: string | null;
                         externalLink?: string | null;
                         iframeSrc?: string | null;
-                        /** @enum {string|null} */
-                        contentMode?: "default" | "full" | null;
                         hideInBreadcrumb?: boolean;
                         hideInMenu?: boolean;
                         hideInTab?: boolean;
@@ -4592,8 +4588,6 @@ export interface components {
             meta: {
                 activePath?: string;
                 authority?: string[];
-                /** @enum {string} */
-                contentMode?: "default" | "full";
                 description?: string;
                 externalLink?: string;
                 hideInBreadcrumb?: boolean;
@@ -4647,11 +4641,6 @@ export interface components {
             activePath: string | null;
             externalLink: string | null;
             iframeSrc: string | null;
-            /**
-             * @description 页面内容布局
-             * @enum {string|null}
-             */
-            contentMode: "default" | "full" | null;
             hideInBreadcrumb: boolean;
             hideInMenu: boolean;
             hideInTab: boolean;

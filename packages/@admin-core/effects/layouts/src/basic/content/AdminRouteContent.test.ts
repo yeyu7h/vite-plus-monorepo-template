@@ -142,7 +142,7 @@ test('lazily mounts restored iframes, keeps opted-in instances and refreshes onl
 
   await activate(store, router, '/plain')
   expect(wrapper.get('iframe').element).toBe(refreshedPersistentElement)
-  expect(wrapper.get('iframe').element.closest('div')?.style.display).toBe('none')
+  expect(wrapper.get('iframe').element.parentElement?.parentElement?.style.display).toBe('none')
 
   await activate(store, router, '/transient-frame')
   expect(wrapper.findAll('iframe')).toHaveLength(2)

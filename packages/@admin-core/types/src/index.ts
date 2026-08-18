@@ -1,5 +1,4 @@
 export type * from './breadcrumb'
-export type * from './content'
 export type * from './layout'
 export type * from './menu'
 export type * from './route'

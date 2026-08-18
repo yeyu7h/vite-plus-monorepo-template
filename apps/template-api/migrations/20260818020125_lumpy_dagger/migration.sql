@@ -1,0 +1,1 @@
+ALTER TABLE "system_menus" DROP COLUMN "content_mode";

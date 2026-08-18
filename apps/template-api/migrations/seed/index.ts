@@ -13,7 +13,6 @@ const logPrefix = '[数据种子]'
 type MenuSeed = {
   activePath?: string
   children?: MenuSeed[]
-  contentMode?: 'default' | 'full'
   description?: string
   externalLink?: string
   hideInBreadcrumb?: boolean
@@ -89,7 +88,7 @@ const menuTreeSeed: MenuSeed[] = [
     ],
   },
   { id: 'user', path: '/user', parentId: 'group_workspace', icon: 'i-lucide-users', keepAlive: true, order: 40, title: '用户列表', type: 'menu' },
-  { id: 'map', path: '/map', parentId: 'group_ops', icon: 'i-lucide-map', order: 35, showActiveTabBorder: true, title: '地图', type: 'menu', contentMode: 'full' },
+  { id: 'map', path: '/map', parentId: 'group_ops', icon: 'i-lucide-map', order: 35, showActiveTabBorder: true, title: '地图', type: 'menu' },
   {
     id: 'access',
     path: '/access',

@@ -10,14 +10,11 @@ import LayoutHeader from './components/LayoutHeader.vue'
 
 import { useLayout } from './hooks/use-layout'
 
-const props = withDefaults(defineProps<LayoutProps>(), {
-  contentMode: 'default',
-  tabbarEnable: true,
-})
+const props = withDefaults(defineProps<LayoutProps>(), { tabbarEnable: true })
 
 const { tabbar } = useLayout(props)
 
-const bodyClass = computed(() => cn('isolate relative min-w-0 p-0 sm:gap-0 sm:p-0', props.contentMode === 'full' ? 'min-h-0 overflow-hidden ' : platform.is.mobile ? 'overflow-y-visible' : void 0))
+const bodyClass = computed(() => cn('isolate relative min-h-0 min-w-0 p-0 sm:gap-0 sm:p-0', platform.is.mobile ? 'overflow-y-visible' : void 0))
 </script>
 
 <template>

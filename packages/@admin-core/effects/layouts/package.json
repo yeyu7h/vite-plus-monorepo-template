@@ -45,6 +45,7 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
+    "@monorepo-admin-core/common-ui": "workspace:*",
     "@monorepo-admin-core/layout-ui": "workspace:*",
     "@monorepo-admin-core/stores": "workspace:*",
     "@monorepo-admin-core/tabs-ui": "workspace:*",

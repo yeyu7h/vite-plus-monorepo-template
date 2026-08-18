@@ -16,7 +16,6 @@ function menu(id: string, parentId: string | null, order: number, roleIds: strin
     activePath: null,
     externalLink: null,
     iframeSrc: null,
-    contentMode: null,
     hideInBreadcrumb: false,
     hideInMenu: false,
     hideInTab: false,

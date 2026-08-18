@@ -29,7 +29,6 @@ function menu(id: string, children?: SystemMenuApi.Node[]): SystemMenuApi.Node {
     activePath: null,
     externalLink: null,
     iframeSrc: null,
-    contentMode: null,
     hideInBreadcrumb: false,
     hideInMenu: false,
     hideInTab: false,

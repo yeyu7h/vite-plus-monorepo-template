@@ -45,7 +45,10 @@ function setOpen(value: boolean) {
 }
 
 const user = computed(() => {
-  const name = userStore.userInfo?.real_name ?? userStore.userInfo?.username ?? 'User'
+  const userInfo = userStore.userInfo
+  if (!userInfo) return null
+
+  const name = userInfo.real_name ?? userInfo.username
 
   return {
     name,
@@ -56,30 +59,35 @@ const user = computed(() => {
   }
 })
 
-const items = computed<DropdownMenuItem[][]>(() => [
-  [
-    {
-      label: user.value.name,
-      avatar: user.value.avatar,
-      onSelect: markSelection,
-      ui: {
-        item: 'items-center ps-1',
-        itemLabel: 'font-semibold',
+const items = computed<DropdownMenuItem[][]>(() => {
+  if (!user.value) return []
+
+  return [
+    [
+      {
+        label: user.value.name,
+        avatar: user.value.avatar,
+        onSelect: markSelection,
+        ui: {
+          item: 'items-center ps-1',
+          itemLabel: 'font-semibold',
+        },
       },
-    },
-  ],
-  [
-    {
-      label: '退出登录',
-      icon: 'i-lucide-log-out',
-      onSelect: selectLogout,
-    },
-  ],
-])
+    ],
+    [
+      {
+        label: '退出登录',
+        icon: 'i-lucide-log-out',
+        onSelect: selectLogout,
+      },
+    ],
+  ]
+})
 </script>
 
 <template>
   <UDropdownMenu
+    v-if="user"
     :open="open"
     :items="items"
     :content="{ align: 'center', collisionPadding: 12 }"

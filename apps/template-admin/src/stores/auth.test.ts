@@ -246,8 +246,14 @@ test('fetches and stores user information', async () => {
   })
 })
 
-test('logs out by resetting session state and redirecting to login', async () => {
+test('keeps user information until logout navigation finishes', async () => {
   mocks.accessStore.accessToken = 'access-token:active'
+  let resolveReplace: (() => void) | undefined
+  mocks.routerReplace.mockReturnValue(
+    new Promise((resolve) => {
+      resolveReplace = resolve
+    }),
+  )
   const userStore = useAdminUserStore()
   userStore.setUserInfo({
     homePath: '/dashboard/workbench',
@@ -258,15 +264,24 @@ test('logs out by resetting session state and redirecting to login', async () =>
   })
   const store = useAdminAuthStore()
 
-  await store.logout()
+  const logoutPromise = store.logout()
+
+  await vi.waitFor(() => {
+    expect(mocks.routerReplace).toHaveBeenCalledExactlyOnceWith('/auth/login')
+  })
 
   expect(mocks.logout).toHaveBeenCalledOnce()
   expect(mocks.accessStore.invalidateSession).toHaveBeenCalledOnce()
+  expect(mocks.accessStore.resetAccessState).not.toHaveBeenCalled()
+  expect(userStore.userInfo?.real_name).toBe('Admin')
+
+  resolveReplace?.()
+  await logoutPromise
+
   expect(mocks.accessStore.resetAccessState).toHaveBeenCalledOnce()
   expect(mocks.accessStore.resetAccess).not.toHaveBeenCalled()
   expect(mocks.tabReset).toHaveBeenCalledExactlyOnceWith({ storageKey: 'template-admin:open-tabs' })
   expect(userStore.userInfo).toBeNull()
-  expect(mocks.routerReplace).toHaveBeenCalledExactlyOnceWith('/auth/login')
   expect(mocks.accessStore.invalidateSession.mock.invocationCallOrder[0]).toBeLessThan(mocks.routerReplace.mock.invocationCallOrder[0]!)
   expect(mocks.routerReplace.mock.invocationCallOrder[0]).toBeLessThan(mocks.accessStore.resetAccessState.mock.invocationCallOrder[0]!)
 })

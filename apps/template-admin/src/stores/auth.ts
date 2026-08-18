@@ -157,11 +157,11 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     accessSetupPromise = void 0
     accessStore.invalidateSession()
     tabStore.reset({ storageKey: ADMIN_TAB_STORAGE_KEY })
-    userStore.clearUser()
   }
 
   function finishSessionReset() {
     accessStore.resetAccessState()
+    userStore.clearUser()
   }
 
   return {

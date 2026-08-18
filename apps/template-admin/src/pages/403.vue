@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useAdminAuthStore } from '@/stores/auth'
-
 definePage({
   meta: {
     initial: true,
@@ -10,8 +8,6 @@ definePage({
     title: '无权限',
   },
 })
-
-const authStore = useAdminAuthStore()
 </script>
 
 <template>
@@ -20,10 +16,6 @@ const authStore = useAdminAuthStore()
       <p class="text-6xl font-semibold text-warning">403</p>
       <h1 class="mt-4 text-xl font-semibold text-highlighted">无访问权限</h1>
       <p class="mt-2 text-sm text-muted">当前账号没有访问该页面的权限。</p>
-      <div class="mt-6 flex justify-center gap-3">
-        <UButton to="/dashboard/workbench">返回首页</UButton>
-        <UButton color="neutral" variant="ghost" @click="authStore.logout()">退出登录</UButton>
-      </div>
     </UCard>
   </main>
 </template>

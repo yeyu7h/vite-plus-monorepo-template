@@ -1,7 +1,7 @@
 import type { RouteLocationNormalized } from 'vue-router'
 import { expect, test, vi } from 'vite-plus/test'
 import type { AdminAccessGuardState } from './guard'
-import { DEFAULT_ADMIN_HOME_PATH, FORBIDDEN_ROUTE_PATH, LOGIN_ROUTE_PATH, resolveAdminAccessGuard, resolveLoginRedirect, resolvePostLoginPath } from './guard'
+import { DEFAULT_ADMIN_HOME_PATH, LOGIN_ROUTE_PATH, resolveAdminAccessGuard, resolveLoginRedirect, resolvePostLoginPath } from './guard'
 
 test('creates login redirect for protected local targets only', () => {
   expect(resolveLoginRedirect('/system/role?tab=users#top')).toBe(encodeURIComponent('/system/role?tab=users#top'))
@@ -153,7 +153,7 @@ test('keeps root navigation behavior when the route is marked with ignoreAccess'
   expect(loggedInResult).toBe(DEFAULT_ADMIN_HOME_PATH)
 })
 
-test('redirects logged-in user to forbidden when target exists but is not accessible', async () => {
+test('allows known but inaccessible logged-in targets to fall through to fallback routes', async () => {
   const result = await resolveAdminAccessGuard(
     createRoute('/system/role'),
     createAccessState({
@@ -166,10 +166,7 @@ test('redirects logged-in user to forbidden when target exists but is not access
     },
   )
 
-  expect(result).toEqual({
-    path: FORBIDDEN_ROUTE_PATH,
-    replace: true,
-  })
+  expect(result).toBe(true)
 })
 
 test('allows unknown logged-in targets to fall through to fallback routes', async () => {

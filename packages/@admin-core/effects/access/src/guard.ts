@@ -78,14 +78,8 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
   }
 
   if (!isAccessibleRoutePath(normalizedPath, accessState.canAccessPath)) {
-    // 已知权限路由但当前用户不可访问时进入 403；未知路径继续放行给 404 兜底
-    if (isKnownAccessRoutePath(normalizedPath, options.matchesAccessPath)) {
-      return {
-        path: FORBIDDEN_ROUTE_PATH,
-        replace: true,
-      }
-    }
-
+    // 未注册到当前用户路由表的页面统一交给 404 兜底。
+    // menuVisibleWithForbidden 路由会保留在可访问路由中，并在权限解析阶段替换成 403 组件。
     return true
   }
 

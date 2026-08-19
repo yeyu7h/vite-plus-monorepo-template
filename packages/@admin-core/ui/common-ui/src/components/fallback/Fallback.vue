@@ -13,7 +13,6 @@ interface FallbackState {
   action?: FallbackAction
   code?: string
   description: string
-  glowClass: string
   icon?: string
   iconClass: string
   title: string
@@ -21,7 +20,6 @@ interface FallbackState {
 
 const props = withDefaults(defineProps<FallbackProps>(), {
   homePath: '/',
-  imageAlt: '',
   showAction: true,
   status: 'coming-soon',
 })
@@ -33,7 +31,6 @@ const FALLBACK_STATES: Record<FallbackStatus, FallbackState> = {
     action: { icon: 'i-lucide-arrow-left', kind: 'home', label: '返回首页' },
     code: '403',
     description: '当前账号暂无权限访问此页面，请联系管理员。',
-    glowClass: 'bg-warning/5',
     iconClass: 'text-warning',
     title: '无访问权限',
   },
@@ -41,7 +38,6 @@ const FALLBACK_STATES: Record<FallbackStatus, FallbackState> = {
     action: { icon: 'i-lucide-arrow-left', kind: 'home', label: '返回首页' },
     code: '404',
     description: '你访问的页面不存在，可能已被移动或删除。',
-    glowClass: 'bg-muted/10 dark:bg-muted/20',
     iconClass: 'text-muted',
     title: '页面不存在',
   },
@@ -49,13 +45,11 @@ const FALLBACK_STATES: Record<FallbackStatus, FallbackState> = {
     action: { icon: 'i-lucide-refresh-cw', kind: 'reload', label: '重新加载' },
     code: '500',
     description: '页面加载失败，请稍后重试。',
-    glowClass: 'bg-muted/10 dark:bg-muted/20',
     iconClass: 'text-muted',
     title: '页面发生错误',
   },
   'coming-soon': {
     description: '此功能正在建设中，敬请期待。',
-    glowClass: 'bg-primary/5',
     icon: 'i-lucide-rocket',
     iconClass: 'text-highlighted',
     title: '敬请期待',
@@ -63,7 +57,6 @@ const FALLBACK_STATES: Record<FallbackStatus, FallbackState> = {
   offline: {
     action: { icon: 'i-lucide-refresh-cw', kind: 'reload', label: '重新加载' },
     description: '请检查网络连接后重试。',
-    glowClass: 'bg-info/5',
     icon: 'i-lucide-wifi-off',
     iconClass: 'text-highlighted',
     title: '网络连接已断开',
@@ -77,10 +70,6 @@ const description = computed(() => props.description ?? state.value.description)
 
 <template>
   <main class="relative flex min-h-svh w-full items-center justify-center overflow-hidden bg-default px-4 py-12 sm:px-6" :data-status="props.status">
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
-      <div data-fallback-glow class="absolute top-20 inset-s-1/2 size-80 -translate-x-1/2 rounded-full blur-3xl" :class="state.glowClass" />
-    </div>
-
     <UEmpty class="relative z-10 w-full max-w-xl" size="xl" variant="naked" :ui="{ root: 'gap-8 p-0' }">
       <template #header>
         <div class="flex max-w-xl flex-col items-center gap-4 text-center">

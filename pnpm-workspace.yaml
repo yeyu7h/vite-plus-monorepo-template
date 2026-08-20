@@ -46,8 +46,8 @@ catalog:
   tailwindcss: ^4.3.3
   tsx: ^4.23.12
   type-fest: ^5.7.0
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.8
-  vite-plus: latest
+  vite: npm:@voidzero-dev/vite-plus-core@0.2.9
+  vite-plus: 0.2.9
   unplugin-vue: ^7.2.0
   tailwind-merge: ^3.6.0
   cap-widget: ^0.1.56

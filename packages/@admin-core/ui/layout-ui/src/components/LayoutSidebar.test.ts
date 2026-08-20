@@ -48,17 +48,42 @@ test('keeps a fixed desktop sidebar and reserves its expanded or collapsed width
   const wrapper = mountSidebar()
   const sidebar = wrapper.get('aside')
   const sidebarSpace = wrapper.get('[data-sidebar-space]')
+  const header = wrapper.get('[data-slot="header"]')
   const body = wrapper.get('[data-slot="body"]')
   const footer = wrapper.get('[data-slot="footer"]')
 
   expect(sidebar.attributes()).toMatchObject({ id: 'primary-navigation', 'data-collapsed': 'false' })
   expect(sidebar.classes()).toEqual(
-    expect.arrayContaining(['fixed', 'start-0', 'top-0', 'hidden', 'h-svh', 'lg:flex', 'w-60', 'after:w-60', 'after:shadow-none', 'after:bg-[#FCFCFC]', 'dark:after:bg-[#1A1A1A]']),
+    expect.arrayContaining([
+      'fixed',
+      'start-0',
+      'top-0',
+      'hidden',
+      'h-svh',
+      'lg:flex',
+      'w-60',
+      'after:w-60',
+      'after:shadow-none',
+      '[--layout-sidebar-bg:#FCFCFC]',
+      'after:bg-(--layout-sidebar-bg)',
+      'dark:[--layout-sidebar-bg:#1A1A1A]',
+    ]),
   )
   expect(sidebarSpace.classes()).toEqual(expect.arrayContaining(['hidden', 'h-svh', 'lg:block', 'w-60']))
-  expect(body.classes()).toEqual(expect.arrayContaining(['flex-1', 'overflow-y-auto', 'overflow-x-hidden', 'w-60']))
+  expect(header.classes()).toEqual(expect.arrayContaining(['z-10', 'w-60']))
+  expect(body.classes()).toEqual(
+    expect.arrayContaining([
+      'flex-1',
+      'overflow-y-auto',
+      'overflow-x-hidden',
+      'px-4',
+      'py-2',
+      '[mask-image:linear-gradient(to_bottom,transparent_0,black_0.75rem,black_calc(100%_-_0.75rem),transparent_100%)]',
+      'w-60',
+    ]),
+  )
   expect(body.classes()).toContain('[scrollbar-width:thin]')
-  expect(footer.classes()).toEqual(expect.arrayContaining(['border-t', 'w-60']))
+  expect(footer.classes()).toEqual(expect.arrayContaining(['z-10', 'border-t', 'w-60']))
   expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'false', 'data-opened': 'true' })
   expect(wrapper.get('[data-sidebar-logo]').text()).toBe('Logo')
   expect(wrapper.get('[data-sidebar-logo-icon]').attributes()).toMatchObject({
@@ -73,6 +98,7 @@ test('keeps a fixed desktop sidebar and reserves its expanded or collapsed width
   expect(sidebar.attributes('data-collapsed')).toBe('true')
   expect(sidebar.classes()).toEqual(expect.arrayContaining(['w-16', 'after:w-full', 'after:shadow-none']))
   expect(sidebarSpace.classes()).toContain('w-16')
+  expect(header.classes()).toContain('w-16')
   expect(body.classes()).toContain('w-16')
   expect(footer.classes()).toContain('w-16')
   expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'false' })

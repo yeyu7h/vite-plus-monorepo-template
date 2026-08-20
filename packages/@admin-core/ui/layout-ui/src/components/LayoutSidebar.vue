@@ -127,7 +127,7 @@ function toggleCollapsed() {
   <aside
     id="primary-navigation"
     :data-collapsed="collapsed"
-    class="group/sidebar fixed start-0 top-0 z-20 hidden h-svh shrink-0 flex-col overflow-visible bg-transparent transition-[width] duration-200 ease-out after:pointer-events-none after:absolute after:inset-y-0 after:start-0 after:z-0 after:content-[''] after:border-e after:border-default after:bg-[#FCFCFC] after:transition-[width,box-shadow] after:duration-200 after:ease-out dark:after:bg-[#1A1A1A] lg:flex"
+    class="group/sidebar fixed start-0 top-0 z-20 hidden h-svh shrink-0 flex-col overflow-visible bg-transparent [--layout-sidebar-bg:#FCFCFC] transition-[width] duration-200 ease-out after:pointer-events-none after:absolute after:inset-y-0 after:start-0 after:z-0 after:content-[''] after:border-e after:border-default after:bg-(--layout-sidebar-bg) after:transition-[width,box-shadow] after:duration-200 after:ease-out dark:[--layout-sidebar-bg:#1A1A1A] lg:flex"
     :class="[collapsed ? 'w-16' : 'w-60', visuallyExpanded ? 'after:w-60' : 'after:w-full', temporarilyExpanded ? 'after:shadow-xl' : 'after:shadow-none']"
     @mouseenter="expandTemporarily"
     @mouseleave="collapseTemporarily"
@@ -135,6 +135,7 @@ function toggleCollapsed() {
     <div
       class="relative z-10 flex h-(--ui-header-height) shrink-0 items-center overflow-hidden bg-transparent px-4 transition-[width] duration-200 ease-out"
       :class="visuallyExpanded ? 'w-60' : 'w-16'"
+      data-slot="header"
     >
       <div data-sidebar-header class="relative flex h-8 w-52 shrink-0 items-center">
         <span data-sidebar-logo class="flex min-w-0 items-center whitespace-nowrap text-highlighted">
@@ -161,7 +162,7 @@ function toggleCollapsed() {
     </div>
 
     <div
-      class="relative z-10 flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden bg-transparent px-4 py-2 transition-[width] duration-200 ease-out [scrollbar-color:var(--ui-border-accented)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-corner]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--ui-border-accented)]"
+      class="relative z-10 flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden bg-transparent px-4 py-2 transition-[width] duration-200 ease-out [mask-image:linear-gradient(to_bottom,transparent_0,black_0.75rem,black_calc(100%_-_0.75rem),transparent_100%)] [scrollbar-color:var(--ui-border-accented)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-corner]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--ui-border-accented)]"
       :class="visuallyExpanded ? 'w-60' : 'w-16'"
       data-slot="body"
     >

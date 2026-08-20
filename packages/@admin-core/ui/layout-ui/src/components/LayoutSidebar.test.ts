@@ -52,7 +52,9 @@ test('keeps a fixed desktop sidebar and reserves its expanded or collapsed width
   const footer = wrapper.get('[data-slot="footer"]')
 
   expect(sidebar.attributes()).toMatchObject({ id: 'primary-navigation', 'data-collapsed': 'false' })
-  expect(sidebar.classes()).toEqual(expect.arrayContaining(['fixed', 'start-0', 'top-0', 'hidden', 'h-svh', 'lg:flex', 'w-60', 'after:w-60', 'after:shadow-none']))
+  expect(sidebar.classes()).toEqual(
+    expect.arrayContaining(['fixed', 'start-0', 'top-0', 'hidden', 'h-svh', 'lg:flex', 'w-60', 'after:w-60', 'after:shadow-none', 'after:bg-[#FCFCFC]', 'dark:after:bg-[#1A1A1A]']),
+  )
   expect(sidebarSpace.classes()).toEqual(expect.arrayContaining(['hidden', 'h-svh', 'lg:block', 'w-60']))
   expect(body.classes()).toEqual(expect.arrayContaining(['flex-1', 'overflow-y-auto', 'overflow-x-hidden', 'w-60']))
   expect(body.classes()).toContain('[scrollbar-width:thin]')

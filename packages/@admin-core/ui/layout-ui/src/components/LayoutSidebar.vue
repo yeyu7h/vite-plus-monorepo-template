@@ -127,7 +127,7 @@ function toggleCollapsed() {
   <aside
     id="primary-navigation"
     :data-collapsed="collapsed"
-    class="group/sidebar fixed start-0 top-0 z-20 hidden h-svh shrink-0 flex-col overflow-visible bg-transparent transition-[width] duration-200 ease-out after:pointer-events-none after:absolute after:inset-y-0 after:start-0 after:z-0 after:content-[''] after:border-e after:border-default after:bg-default after:transition-[width,box-shadow] after:duration-200 after:ease-out lg:flex"
+    class="group/sidebar fixed start-0 top-0 z-20 hidden h-svh shrink-0 flex-col overflow-visible bg-transparent transition-[width] duration-200 ease-out after:pointer-events-none after:absolute after:inset-y-0 after:start-0 after:z-0 after:content-[''] after:border-e after:border-default after:bg-[#FCFCFC] after:transition-[width,box-shadow] after:duration-200 after:ease-out dark:after:bg-[#1A1A1A] lg:flex"
     :class="[collapsed ? 'w-16' : 'w-60', visuallyExpanded ? 'after:w-60' : 'after:w-full', temporarilyExpanded ? 'after:shadow-xl' : 'after:shadow-none']"
     @mouseenter="expandTemporarily"
     @mouseleave="collapseTemporarily"

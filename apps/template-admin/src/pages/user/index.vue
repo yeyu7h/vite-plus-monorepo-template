@@ -357,14 +357,18 @@ function randomize() {
       </template>
     </Table>
 
-    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-default px-4 py-3">
-      <span class="text-sm text-muted"> {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0 }} of {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} row(s) selected. </span>
-      <UPagination
-        :page="(table?.tableApi?.getState().pagination.pageIndex || 0) + 1"
-        :items-per-page="table?.tableApi?.getState().pagination.pageSize"
-        :total="table?.tableApi?.getFilteredRowModel().rows.length"
-        @update:page="(page: number) => table?.tableApi?.setPageIndex(page - 1)"
-      />
-    </div>
+    <template #footer>
+      <div class="flex flex-wrap items-center justify-between gap-3 border-t border-default px-4 py-3">
+        <span class="text-sm text-muted">
+          {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0 }} of {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} row(s) selected.
+        </span>
+        <UPagination
+          :page="(table?.tableApi?.getState().pagination.pageIndex || 0) + 1"
+          :items-per-page="table?.tableApi?.getState().pagination.pageSize"
+          :total="table?.tableApi?.getFilteredRowModel().rows.length"
+          @update:page="(page: number) => table?.tableApi?.setPageIndex(page - 1)"
+        />
+      </div>
+    </template>
   </Page>
 </template>

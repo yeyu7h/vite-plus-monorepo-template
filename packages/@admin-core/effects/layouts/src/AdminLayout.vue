@@ -3,6 +3,7 @@ import { Layout } from '@monorepo-admin-core/layout-ui'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AdminRouteContent } from './basic/content'
+import { LayoutHeader } from './basic/header'
 import { LayoutTabbar } from './basic/tabbar'
 import { LayoutMenu } from './basic/menu'
 import { buildAdminBreadcrumbPrefix, buildAdminBreadcrumbs } from './navigation/route-breadcrumb'
@@ -34,10 +35,26 @@ const menuGroups = computed(() => markActiveAdminMenuGroups(props.menuGroups ?? 
 </script>
 
 <template>
-  <Layout :breadcrumb-prefix="breadcrumbPrefix" :breadcrumbs="breadcrumbs" :tabbar-enable="true">
+  <Layout :tabbar-enable="true">
     <slot>
       <AdminRouteContent />
     </slot>
+
+    <template #header>
+      <LayoutHeader :breadcrumb-prefix="breadcrumbPrefix" :breadcrumbs="breadcrumbs">
+        <template v-if="$slots['header-toggle']" #toggle="slotProps">
+          <slot name="header-toggle" v-bind="slotProps" />
+        </template>
+
+        <template v-if="$slots['header-left']" #left="slotProps">
+          <slot name="header-left" v-bind="slotProps" />
+        </template>
+
+        <template v-if="$slots['header-right']" #right="slotProps">
+          <slot name="header-right" v-bind="slotProps" />
+        </template>
+      </LayoutHeader>
+    </template>
 
     <template #menu="{ collapsed, opened, setOverlayOpen }">
       <slot name="sidebar-top" :collapsed="collapsed" :opened="opened" :set-overlay-open="setOverlayOpen" />
@@ -50,10 +67,6 @@ const menuGroups = computed(() => markActiveAdminMenuGroups(props.menuGroups ?? 
 
     <template #tabbar>
       <LayoutTabbar :storage-key="tabStorageKey" :width-transition="tabWidthTransition ?? true" />
-    </template>
-
-    <template #header-right>
-      <slot name="header-right" />
     </template>
   </Layout>
 </template>

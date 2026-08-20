@@ -10,29 +10,6 @@ const STORAGE_KEY = 'test:layout-sidebar-collapsed'
 
 beforeEach(() => localStorage.clear())
 
-const DashboardSidebarStub = defineComponent({
-  inheritAttrs: false,
-  props: {
-    collapsed: Boolean,
-    collapsedSize: Number,
-    defaultSize: Number,
-    maxSize: Number,
-    minSize: Number,
-    resizable: Boolean,
-    ui: Object as PropType<Record<string, unknown>>,
-  },
-  emits: ['update:collapsed', 'update:open'],
-  setup(props, { attrs, emit, slots }) {
-    const slotProps = () => ({ collapsed: props.collapsed, collapse: (value: boolean) => emit('update:collapsed', value) })
-    return () =>
-      h('aside', { ...attrs, 'data-collapsed': String(props.collapsed) }, [
-        slots.header?.(slotProps()),
-        h('div', { 'data-slot': 'body' }, slots.default?.(slotProps())),
-        h('div', { 'data-slot': 'footer' }, slots.footer?.(slotProps())),
-      ])
-  },
-})
-
 const ButtonStub = defineComponent({
   inheritAttrs: false,
   props: {
@@ -44,15 +21,14 @@ const ButtonStub = defineComponent({
   },
 })
 
-test('uses fixed widths and temporarily expands without changing collapsed state', async () => {
-  const wrapper = mount(LayoutSidebar, {
+function mountSidebar() {
+  return mount(LayoutSidebar, {
     props: {
       storageKey: STORAGE_KEY,
     },
     global: {
       stubs: {
         UButton: ButtonStub,
-        UDashboardSidebar: DashboardSidebarStub,
       },
     },
     slots: {
@@ -66,106 +42,76 @@ test('uses fixed widths and temporarily expands without changing collapsed state
         ]),
     },
   })
-  const sidebar = wrapper.getComponent(DashboardSidebarStub)
-  const rootUi = sidebar.props('ui')?.root as string[]
+}
 
-  expect(sidebar.props()).toMatchObject({ collapsedSize: 64, defaultSize: 240, maxSize: 240, minSize: 240, resizable: false })
+test('keeps a fixed desktop sidebar and reserves its expanded or collapsed width', async () => {
+  const wrapper = mountSidebar()
+  const sidebar = wrapper.get('aside')
+  const sidebarSpace = wrapper.get('[data-sidebar-space]')
+  const body = wrapper.get('[data-slot="body"]')
+  const footer = wrapper.get('[data-slot="footer"]')
+
+  expect(sidebar.attributes()).toMatchObject({ id: 'primary-navigation', 'data-collapsed': 'false' })
+  expect(sidebar.classes()).toEqual(expect.arrayContaining(['fixed', 'start-0', 'top-0', 'hidden', 'h-svh', 'lg:flex', 'w-60', 'after:w-60', 'after:shadow-none']))
+  expect(sidebarSpace.classes()).toEqual(expect.arrayContaining(['hidden', 'h-svh', 'lg:block', 'w-60']))
+  expect(body.classes()).toEqual(expect.arrayContaining(['flex-1', 'overflow-y-auto', 'overflow-x-hidden', 'w-60']))
+  expect(body.classes()).toContain('[scrollbar-width:thin]')
+  expect(footer.classes()).toEqual(expect.arrayContaining(['border-t', 'w-60']))
+  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'false', 'data-opened': 'true' })
   expect(wrapper.get('[data-sidebar-logo]').text()).toBe('Logo')
   expect(wrapper.get('[data-sidebar-logo-icon]').attributes()).toMatchObject({
     src: 'https://raw.githubusercontent.com/Koolson/Qure/refs/heads/master/IconSet/Color/Apple.png',
     alt: '',
   })
-  expect(wrapper.get('[data-sidebar-logo-text]').classes()).toContain('opacity-100')
-  expect(rootUi[0]).toContain('transition-[width]')
-  expect(rootUi[1]).toContain('after:transition-[width,box-shadow]')
-  expect(rootUi).toContain('after:w-60')
-  expect(sidebar.props('ui')?.header).toContain('relative z-10 overflow-hidden bg-transparent px-4 transition-[width] duration-200 ease-out')
-  expect(sidebar.props('ui')?.body).toContain('relative z-10 overflow-x-hidden bg-transparent px-4 transition-[width] duration-200 ease-out')
-  expect(sidebar.props('ui')?.body).toContain(
-    '[scrollbar-color:var(--ui-border-accented)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-corner]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--ui-border-accented)]',
-  )
-  expect(sidebar.props('ui')?.footer).toEqual(
-    expect.arrayContaining(['relative z-10 overflow-hidden border-t border-default bg-transparent px-3 py-2.5 transition-[width] duration-200 ease-out', 'w-60']),
-  )
-  expect(wrapper.get('[data-sidebar-footer-state]').attributes()).toMatchObject({ 'data-collapsed': 'false', 'data-opened': 'true' })
-  expect(wrapper.find('[data-sidebar-collapse]').exists()).toBe(true)
   expect(wrapper.getComponent(ButtonStub).props('ui')).toEqual({ leadingIcon: 'size-4' })
   expect(wrapper.get('[data-sidebar-collapse]').attributes()).toMatchObject({ 'aria-label': '取消固定侧边栏', icon: 'i-lucide-pin-off', title: '取消固定侧边栏' })
-  expect(wrapper.get('[data-sidebar-collapse]').classes()).toEqual(expect.arrayContaining(['absolute', 'inset-e-0', 'opacity-100', 'transition-opacity', 'duration-200']))
 
-  await wrapper.get('aside').trigger('mouseenter')
   await wrapper.get('[data-sidebar-collapse]').trigger('click')
-  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
-  expect(localStorage.getItem(STORAGE_KEY)).toBe('true')
-  expect(sidebar.props('ui')?.root).toEqual(expect.arrayContaining(['after:w-60', 'after:shadow-xl']))
-  expect(wrapper.get('[data-sidebar-logo]').element.tagName).toBe('SPAN')
-  expect(wrapper.get('[data-sidebar-logo]').text()).toBe('Logo')
-  expect(wrapper.get('[data-sidebar-logo-text]').classes()).toEqual(expect.arrayContaining(['opacity-100', 'transition-opacity', 'duration-200']))
-  expect(wrapper.get('[data-sidebar-collapse]').classes()).toEqual(expect.arrayContaining(['opacity-100', 'transition-opacity', 'duration-200']))
-  expect(wrapper.get('[data-sidebar-collapse]').attributes()).toMatchObject({ 'aria-label': '固定侧边栏', icon: 'i-lucide-pin', title: '固定侧边栏' })
 
-  await wrapper.get('[data-menu-overlay-open]').trigger('click')
-  const sidebarElement = wrapper.get('aside')
-  await sidebarElement.trigger('mouseleave')
-  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
-  expect(wrapper.get('[data-sidebar-footer-state]').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
-  expect(sidebar.props('ui')?.footer).toContain('w-60')
-
-  const matchesHover = vi.spyOn(sidebarElement.element, 'matches').mockImplementation((selector) => selector === ':hover')
-  vi.useFakeTimers()
-  await wrapper.get('[data-footer-overlay-close]').trigger('click')
-  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
-  await vi.advanceTimersByTimeAsync(120)
-  await wrapper.vm.$nextTick()
-  vi.useRealTimers()
-  matchesHover.mockRestore()
-  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
-  expect(wrapper.get('[data-sidebar-footer-state]').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
-
-  await sidebarElement.trigger('mouseleave')
+  expect(sidebar.attributes('data-collapsed')).toBe('true')
+  expect(sidebar.classes()).toEqual(expect.arrayContaining(['w-16', 'after:w-full', 'after:shadow-none']))
+  expect(sidebarSpace.classes()).toContain('w-16')
+  expect(body.classes()).toContain('w-16')
+  expect(footer.classes()).toContain('w-16')
   expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'false' })
-  expect(wrapper.get('[data-sidebar-footer-state]').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'false' })
-  expect(sidebar.props('ui')?.footer).toContain('w-16')
-  expect(sidebar.props('ui')?.root).toEqual(expect.arrayContaining(['after:w-full', 'after:shadow-none']))
   expect(wrapper.get('[data-sidebar-logo-text]').classes()).toContain('opacity-0')
-  expect(wrapper.get('[data-sidebar-collapse]').classes()).toEqual(expect.arrayContaining(['pointer-events-none', 'opacity-0', 'transition-opacity', 'duration-200']))
   expect(wrapper.get('[data-sidebar-collapse]').attributes()).toMatchObject({ 'aria-hidden': 'true', tabindex: '-1' })
-
-  await wrapper.get('aside').trigger('mouseenter')
-  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
-  expect(wrapper.get('[data-sidebar-footer-state]').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
-  expect(sidebar.props('ui')?.footer).toContain('w-60')
   expect(localStorage.getItem(STORAGE_KEY)).toBe('true')
+  expect(wrapper.emitted('update:collapsed')).toEqual([[false], [true]])
+})
+
+test('temporarily expands a collapsed sidebar for hover and menu overlays', async () => {
+  const wrapper = mountSidebar()
+  const sidebar = wrapper.get('aside')
+  const body = wrapper.get('[data-slot="body"]')
+  const footer = wrapper.get('[data-slot="footer"]')
+
+  await wrapper.get('[data-sidebar-collapse]').trigger('click')
+  await sidebar.trigger('mouseenter')
+
+  expect(sidebar.classes()).toEqual(expect.arrayContaining(['w-16', 'after:w-60', 'after:shadow-xl']))
+  expect(body.classes()).toContain('w-60')
+  expect(footer.classes()).toContain('w-60')
+  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
   expect(wrapper.get('[data-sidebar-logo-text]').classes()).toContain('opacity-100')
-  expect(wrapper.get('[data-sidebar-collapse]').attributes()).toMatchObject({ 'aria-label': '固定侧边栏', icon: 'i-lucide-pin', title: '固定侧边栏' })
-  expect(wrapper.get('[data-sidebar-collapse]').classes()).toContain('opacity-100')
-  expect(sidebar.props('ui')?.root).toEqual(expect.arrayContaining(['after:w-60', 'after:shadow-xl']))
+  expect(wrapper.get('[data-sidebar-collapse]').attributes()).toMatchObject({ 'aria-label': '固定侧边栏', icon: 'i-lucide-pin' })
 
-  await wrapper.get('aside').trigger('mouseleave')
-  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'false' })
-
-  await wrapper.get('aside').trigger('mouseenter')
   await wrapper.get('[data-menu-overlay-open]').trigger('click')
-  await wrapper.get('aside').trigger('mouseleave')
-  const matchesOutside = vi.spyOn(sidebarElement.element, 'matches').mockReturnValue(false)
+  await sidebar.trigger('mouseleave')
+  expect(wrapper.get('output').attributes('data-opened')).toBe('true')
+
+  const matchesOutside = vi.spyOn(sidebar.element, 'matches').mockReturnValue(false)
   vi.useFakeTimers()
   await wrapper.get('[data-footer-overlay-select]').trigger('click')
   await vi.advanceTimersByTimeAsync(120)
   await wrapper.vm.$nextTick()
   vi.useRealTimers()
-  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'true' })
+  expect(wrapper.get('output').attributes('data-opened')).toBe('true')
 
   document.dispatchEvent(new Event('pointermove'))
   await wrapper.vm.$nextTick()
   matchesOutside.mockRestore()
-  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'false' })
-
-  await wrapper.get('aside').trigger('mouseenter')
-  await wrapper.get('[data-sidebar-collapse]').trigger('click')
-  expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'false', 'data-opened': 'true' })
-  expect(localStorage.getItem(STORAGE_KEY)).toBe('false')
-  expect(sidebar.props('ui')?.root).toEqual(expect.arrayContaining(['after:w-60', 'after:shadow-none']))
-  expect(wrapper.get('[data-sidebar-collapse]').attributes()).toMatchObject({ 'aria-label': '取消固定侧边栏', icon: 'i-lucide-pin-off', title: '取消固定侧边栏' })
+  expect(wrapper.get('output').attributes('data-opened')).toBe('false')
 })
 
 test('restores the persisted collapsed state when remounted', () => {
@@ -178,7 +124,6 @@ test('restores the persisted collapsed state when remounted', () => {
     global: {
       stubs: {
         UButton: ButtonStub,
-        UDashboardSidebar: DashboardSidebarStub,
       },
     },
     slots: {
@@ -186,6 +131,7 @@ test('restores the persisted collapsed state when remounted', () => {
     },
   })
 
+  expect(wrapper.get('aside').classes()).toContain('w-16')
   expect(wrapper.get('output').attributes()).toMatchObject({ 'data-collapsed': 'true', 'data-opened': 'false' })
   expect(wrapper.get('[data-sidebar-logo-text]').classes()).toContain('opacity-0')
   expect(wrapper.get('[data-sidebar-collapse]').attributes()).toMatchObject({ 'aria-hidden': 'true', tabindex: '-1' })

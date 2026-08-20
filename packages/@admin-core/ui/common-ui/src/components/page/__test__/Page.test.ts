@@ -20,6 +20,28 @@ test('adds the fill-height layout when requested', () => {
   expect(wrapper.classes()).toEqual(['relative', 'min-w-0', 'w-full', 'flex', 'min-h-0', 'flex-1', 'flex-col', 'overflow-hidden'])
 })
 
+test('renders an optional non-shrinking footer after the page content', () => {
+  const wrapper = mount(Page, {
+    props: { fillHeight: true },
+    slots: {
+      default: '<div data-testid="content">页面内容</div>',
+      footer: '<div data-testid="pagination">分页</div>',
+    },
+  })
+
+  const footer = wrapper.get('[data-slot="footer"]')
+
+  expect(footer.classes()).toEqual(['shrink-0'])
+  expect(footer.get('[data-testid="pagination"]').text()).toBe('分页')
+  expect(wrapper.get('[data-testid="content"]').element.nextElementSibling).toBe(footer.element)
+})
+
+test('does not render an empty footer container', () => {
+  const wrapper = mount(Page)
+
+  expect(wrapper.find('[data-slot="footer"]').exists()).toBe(false)
+})
+
 test('forwards class, style, and v-show attributes to the root element', async () => {
   const visible = ref(false)
   const Host = defineComponent({

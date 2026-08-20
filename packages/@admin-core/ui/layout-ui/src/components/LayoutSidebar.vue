@@ -13,6 +13,10 @@ const props = withDefaults(
   },
 )
 
+const emit = defineEmits<{
+  'update:collapsed': [value: boolean]
+}>()
+
 function readPersistedCollapsed() {
   try {
     return typeof localStorage !== 'undefined' && localStorage.getItem(props.storageKey) === 'true'
@@ -30,7 +34,6 @@ function persistCollapsed(value: boolean) {
 }
 
 const collapsed = ref(readPersistedCollapsed())
-const opened = ref(false)
 const hovered = ref(false)
 const overlayOpen = ref(false)
 let sidebarElement: HTMLElement | undefined
@@ -39,25 +42,15 @@ let overlayCloseTimer: ReturnType<typeof setTimeout> | undefined
 
 const temporarilyExpanded = computed(() => collapsed.value && (hovered.value || overlayOpen.value))
 const visuallyExpanded = computed(() => !collapsed.value || temporarilyExpanded.value)
-const sidebarUi = computed(() => ({
-  root: [
-    'group/sidebar isolate z-20 overflow-visible border-e-0 bg-transparent transition-[width] duration-200 ease-out',
-    "after:pointer-events-none after:absolute after:inset-y-0 after:start-0 after:z-0 after:content-[''] after:border-e after:border-default after:bg-default after:transition-[width,box-shadow] after:duration-200 after:ease-out",
-    visuallyExpanded.value ? 'after:w-60' : 'after:w-full',
-    temporarilyExpanded.value ? 'after:shadow-xl' : 'after:shadow-none',
-  ],
-  header: ['relative z-10 overflow-hidden bg-transparent px-4 transition-[width] duration-200 ease-out', visuallyExpanded.value ? 'w-60' : 'w-16'],
-  body: [
-    'relative z-10 overflow-x-hidden bg-transparent px-4 transition-[width] duration-200 ease-out',
-    '[scrollbar-color:var(--ui-border-accented)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-corner]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--ui-border-accented)]',
-    visuallyExpanded.value ? 'w-60' : 'w-16',
-  ],
-  footer: ['relative z-10 overflow-hidden border-t border-default bg-transparent px-3 py-2.5 transition-[width] duration-200 ease-out', visuallyExpanded.value ? 'w-60' : 'w-16'],
-  content: 'z-30',
-  overlay: 'z-30',
-}))
 
-watch(collapsed, persistCollapsed)
+watch(
+  collapsed,
+  (value) => {
+    persistCollapsed(value)
+    emit('update:collapsed', value)
+  },
+  { immediate: true },
+)
 
 onBeforeUnmount(() => {
   cancelPendingOverlayClose()
@@ -129,21 +122,20 @@ function toggleCollapsed() {
 </script>
 
 <template>
-  <UDashboardSidebar
-    v-model:collapsed="collapsed"
-    v-model:open="opened"
+  <div data-sidebar-space aria-hidden="true" class="hidden h-svh shrink-0 transition-[width] duration-200 ease-out lg:block" :class="collapsed ? 'w-16' : 'w-60'" />
+
+  <aside
     id="primary-navigation"
-    collapsible
-    :resizable="false"
-    :collapsed-size="64"
-    :default-size="240"
-    :max-size="240"
-    :min-size="240"
-    :ui="sidebarUi"
+    :data-collapsed="collapsed"
+    class="group/sidebar fixed start-0 top-0 z-20 hidden h-svh shrink-0 flex-col overflow-visible bg-transparent transition-[width] duration-200 ease-out after:pointer-events-none after:absolute after:inset-y-0 after:start-0 after:z-0 after:content-[''] after:border-e after:border-default after:bg-default after:transition-[width,box-shadow] after:duration-200 after:ease-out lg:flex"
+    :class="[collapsed ? 'w-16' : 'w-60', visuallyExpanded ? 'after:w-60' : 'after:w-full', temporarilyExpanded ? 'after:shadow-xl' : 'after:shadow-none']"
     @mouseenter="expandTemporarily"
     @mouseleave="collapseTemporarily"
   >
-    <template #header>
+    <div
+      class="relative z-10 flex h-(--ui-header-height) shrink-0 items-center overflow-hidden bg-transparent px-4 transition-[width] duration-200 ease-out"
+      :class="visuallyExpanded ? 'w-60' : 'w-16'"
+    >
       <div data-sidebar-header class="relative flex h-8 w-52 shrink-0 items-center">
         <span data-sidebar-logo class="flex min-w-0 items-center whitespace-nowrap text-highlighted">
           <span class="flex size-8 shrink-0 items-center justify-center">
@@ -166,12 +158,23 @@ function toggleCollapsed() {
           @click="toggleCollapsed"
         />
       </div>
-    </template>
+    </div>
 
-    <slot name="menu" :collapsed="collapsed" :opened="opened || visuallyExpanded" :set-overlay-open="setOverlayOpen" />
+    <div
+      class="relative z-10 flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden bg-transparent px-4 py-2 transition-[width] duration-200 ease-out [scrollbar-color:var(--ui-border-accented)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-corner]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--ui-border-accented)]"
+      :class="visuallyExpanded ? 'w-60' : 'w-16'"
+      data-slot="body"
+    >
+      <slot name="menu" :collapsed="collapsed" :opened="visuallyExpanded" :set-overlay-open="setOverlayOpen" />
+    </div>
 
-    <template #footer>
-      <slot name="footer" :collapsed="collapsed" :opened="opened || visuallyExpanded" :set-overlay-open="setOverlayOpen" />
-    </template>
-  </UDashboardSidebar>
+    <div
+      v-if="$slots.footer"
+      class="relative z-10 shrink-0 overflow-hidden border-t border-default bg-transparent px-3 py-2.5 transition-[width] duration-200 ease-out"
+      :class="visuallyExpanded ? 'w-60' : 'w-16'"
+      data-slot="footer"
+    >
+      <slot name="footer" :collapsed="collapsed" :opened="visuallyExpanded" :set-overlay-open="setOverlayOpen" />
+    </div>
+  </aside>
 </template>

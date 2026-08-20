@@ -1,57 +1,17 @@
-<script setup lang="ts">
-import type { AdminMenuImageIcon, LayoutBreadcrumbItem } from '@monorepo-admin-core/types'
-import type { BreadcrumbItem } from '@nuxt/ui'
-import { computed } from 'vue'
-import { cn, platform } from '@monorepo/shared/utils'
-
-interface LayoutBreadcrumbNavigationItem extends BreadcrumbItem {
-  menuIcon?: LayoutBreadcrumbItem['icon']
-}
-
-const props = defineProps<{
-  breadcrumbPrefix?: LayoutBreadcrumbItem[]
-  breadcrumbs?: LayoutBreadcrumbItem[]
-}>()
-
-const items = computed<LayoutBreadcrumbNavigationItem[]>(() =>
-  [...(props.breadcrumbPrefix ?? []), ...(props.breadcrumbs ?? [])].map((item) => ({
-    icon: typeof item.icon === 'string' ? item.icon : undefined,
-    label: item.title,
-    menuIcon: item.icon,
-    to: item.path,
-  })),
-)
-
-function getBreadcrumbImageIcon(icon: unknown, theme: 'light' | 'dark' = 'light'): string {
-  const imageIcon = icon as AdminMenuImageIcon
-  return theme === 'light' ? imageIcon.light : (imageIcon.dark ?? imageIcon.light)
-}
-
-function isBreadcrumbImageIcon(icon: unknown): icon is AdminMenuImageIcon {
-  return typeof icon === 'object' && icon !== null && 'light' in icon
-}
-</script>
+<script setup lang="ts"></script>
 
 <template>
-  <UDashboardNavbar :ui="{ root: cn('bg-[#FCFCFC] dark:bg-[#1A1A1A]', { 'sticky top-0 z-10 w-full': platform.is.mobile }) }">
-    <template #left>
-      <UBreadcrumb v-if="items.length" class="hidden sm:block" :items="items">
-        <template #item-leading="{ active, item }">
-          <UIcon v-if="typeof item.menuIcon === 'string' && item.menuIcon.startsWith('i-')" :class="{ 'text-default': active }" :name="item.menuIcon" size="18" />
-          <picture v-else-if="isBreadcrumbImageIcon(item.menuIcon)" class="flex size-4.5 shrink-0 items-center justify-center">
-            <source media="(prefers-color-scheme: dark)" :srcset="getBreadcrumbImageIcon(item.menuIcon, 'dark')" />
-            <img class="size-4.5 object-contain" :src="getBreadcrumbImageIcon(item.menuIcon)" />
-          </picture>
-        </template>
-
-        <template #item-label="{ active, item }">
-          <span :class="{ 'text-default': active }">{{ item.label }}</span>
-        </template>
-      </UBreadcrumb>
+  <UDashboardNavbar :toggle="false" :ui="{ root: 'bg-default' }">
+    <template v-if="$slots.toggle" #toggle="slotProps">
+      <slot name="toggle" v-bind="slotProps" />
     </template>
 
-    <template #right>
-      <slot name="right" />
+    <template v-if="$slots.left" #left="slotProps">
+      <slot name="left" v-bind="slotProps" />
+    </template>
+
+    <template v-if="$slots.right" #right="slotProps">
+      <slot name="right" v-bind="slotProps" />
     </template>
   </UDashboardNavbar>
 </template>

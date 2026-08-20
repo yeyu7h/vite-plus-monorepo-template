@@ -297,6 +297,9 @@ importers:
       '@monorepo/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@monorepo/vite-plugin-app-loading':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin-app-loading
       '@nuxt/ui':
         specifier: catalog:vue3
         version: 4.10.0(98dc4072a98413aa71fbb0bbd56fe354)
@@ -839,6 +842,18 @@ importers:
       zod:
         specifier: catalog:utils
         version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.2.9(@types/node@24.13.2)(@vitest/coverage-v8@4.1.10)(esbuild@0.28.1)(happy-dom@20.11.2)(jiti@2.7.0)(tsx@4.23.12)(typescript@6.0.3)(vite@8.1.3(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))(yaml@2.9.0)
+
+  packages/vite-plugin-app-loading:
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

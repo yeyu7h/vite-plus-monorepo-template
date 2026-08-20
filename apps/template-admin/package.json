@@ -26,6 +26,7 @@
     "@monorepo-admin-core/types": "workspace:*",
     "@monorepo/request": "workspace:*",
     "@monorepo/shared": "workspace:*",
+    "@monorepo/vite-plugin-app-loading": "workspace:*",
     "@nuxt/ui": "catalog:vue3",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/vue-query": "catalog:tanstack",

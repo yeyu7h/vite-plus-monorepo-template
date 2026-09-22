@@ -1,4 +1,5 @@
 packages:
+  - internal/*
   - apps/*
   - packages/*
   - packages/@admin-core/*

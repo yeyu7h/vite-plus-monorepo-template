@@ -43,6 +43,7 @@
     "zod": "catalog:utils"
   },
   "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:vue3",
     "@vitejs/plugin-vue-jsx": "catalog:vue3",

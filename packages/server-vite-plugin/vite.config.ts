@@ -1,8 +1,7 @@
-import { defineConfig } from 'vite-plus'
+import { defineNodeLibraryConfig } from '@monorepo/vite-config'
 
-export default defineConfig({
+export default defineNodeLibraryConfig({
   pack: {
-    dts: { tsgo: false },
     entry: {
       index: 'src/index.ts',
       build: 'src/vite-plugin-build/index.ts',
@@ -11,8 +10,5 @@ export default defineConfig({
       'resource-monitor': 'src/vite-plugin-resource-monitor/index.ts',
       'zod-hoist': 'src/vite-plugin-zod-hoist/index.ts',
     },
-    format: 'esm',
-    outExtensions: () => ({ dts: '.d.ts', js: '.mjs' }),
-    platform: 'node',
   },
 })

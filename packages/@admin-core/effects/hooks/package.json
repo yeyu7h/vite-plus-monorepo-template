@@ -33,5 +33,9 @@
     "@monorepo-admin-core/types": "workspace:*",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
+    "@monorepo/vite-config": "workspace:*"
   }
 }

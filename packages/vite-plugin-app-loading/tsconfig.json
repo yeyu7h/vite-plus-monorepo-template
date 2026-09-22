@@ -1,17 +1,7 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "lib": ["es2023", "DOM", "DOM.Iterable"],
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "declaration": true,
-    "noEmit": true,
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true,
-    "types": ["node"]
+    "lib": ["es2023", "DOM", "DOM.Iterable"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "extends": "@monorepo/tsconfig/node-bundler.json"
 }

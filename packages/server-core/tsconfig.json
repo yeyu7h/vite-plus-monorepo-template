@@ -1,18 +1,7 @@
 {
+  "include": ["src"],
+  "extends": "@monorepo/tsconfig/node-bundler.json",
   "compilerOptions": {
-    "target": "esnext",
-    "lib": ["es2023"],
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "declaration": true,
-    "noEmit": true,
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true,
-    "types": ["node"]
-  },
-  "include": ["src"]
+    "allowImportingTsExtensions": true
+  }
 }

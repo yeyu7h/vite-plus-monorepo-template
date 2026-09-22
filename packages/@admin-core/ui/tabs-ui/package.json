@@ -44,6 +44,8 @@
     "vue": "catalog:vue3"
   },
   "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
+    "@monorepo/vite-config": "workspace:*",
     "sass": "catalog:",
     "unplugin-vue": "catalog:"
   }

@@ -33,6 +33,8 @@
     "prepublishOnly": "vp run build"
   },
   "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
+    "@monorepo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

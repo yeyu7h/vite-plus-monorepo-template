@@ -43,6 +43,8 @@
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
+    "@monorepo/vite-config": "workspace:*",
     "@types/node": "^25.9.5",
     "bumpp": "^11.1.0",
     "typescript": "^6.0.3",

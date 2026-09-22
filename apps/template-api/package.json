@@ -63,6 +63,7 @@
     "@bull-board/ui": "catalog:",
     "@hono/vite-dev-server": "catalog:hono",
     "@monorepo/server-vite-plugin": "workspace:*",
+    "@monorepo/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
     "@vitest/coverage-v8": "catalog:",

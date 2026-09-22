@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig.web.json",
+  "extends": "@monorepo/tsconfig/vue.json",
   "include": ["src"],
   "exclude": ["node_modules"]
 }

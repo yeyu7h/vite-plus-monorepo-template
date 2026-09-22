@@ -35,5 +35,9 @@
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vue-router": "catalog:vue3"
+  },
+  "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
+    "@monorepo/vite-config": "workspace:*"
   }
 }

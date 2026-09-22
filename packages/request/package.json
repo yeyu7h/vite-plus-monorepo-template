@@ -44,6 +44,8 @@
     "vite-plus": "catalog:"
   },
   "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
+    "@monorepo/vite-config": "workspace:*",
     "@types/qs": "catalog:testing"
   }
 }

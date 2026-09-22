@@ -1,0 +1,4 @@
+{
+  "extends": "@monorepo/tsconfig/node-bundler.json",
+  "include": ["src"]
+}

@@ -1,14 +1,10 @@
-import { defineConfig } from 'vite-plus'
+import { defineNodeLibraryConfig } from '@monorepo/vite-config'
 
-export default defineConfig({
+export default defineNodeLibraryConfig({
   pack: {
-    dts: { tsgo: false },
     entry: {
       index: 'src/index.ts',
       runtime: 'src/runtime.ts',
     },
-    format: 'esm',
-    outExtensions: () => ({ dts: '.d.ts', js: '.mjs' }),
-    platform: 'node',
   },
 })

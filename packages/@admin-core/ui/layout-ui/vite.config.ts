@@ -1,15 +1,3 @@
-import { defineConfig } from 'vite-plus'
-import Vue from 'unplugin-vue/rolldown'
+import { defineVueLibraryConfig } from '@monorepo/vite-config'
 
-export default defineConfig({
-  plugins: [Vue()],
-  pack: {
-    dts: { tsgo: false, vue: true },
-    entry: 'src/index.ts',
-    unbundle: true,
-    platform: 'neutral',
-    format: 'esm',
-    plugins: [Vue({ isProduction: true })],
-    outExtensions: () => ({ dts: '.d.ts', js: '.mjs' }),
-  },
-})
+export default defineVueLibraryConfig()

@@ -1,13 +1,8 @@
-import { defineConfig } from 'vite-plus'
+import { defineLibraryConfig } from '@monorepo/vite-config'
 
-export default defineConfig({
+export default defineLibraryConfig({
   pack: {
-    dts: {
-      tsgo: false,
-    },
     entry: ['src/index.ts', 'src/node.ts'],
-    format: 'esm',
-    outExtensions: () => ({ dts: '.d.ts', js: '.mjs' }),
   },
   lint: {
     options: {

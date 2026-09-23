@@ -6,9 +6,19 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "test": "vp test"
+  },
   "dependencies": {
-    "unplugin-vue": "catalog:",
-    "vite-plus": "catalog:"
+    "@monorepo/vite-plugin-app-config": "workspace:*",
+    "@monorepo/vite-plugin-app-loading": "workspace:*",
+    "@nuxt/ui": "catalog:vue3",
+    "@tailwindcss/vite": "catalog:",
+    "@vitejs/plugin-vue": "catalog:vue3",
+    "@vitejs/plugin-vue-jsx": "catalog:vue3",
+    "vite-plugin-vue-layouts-next": "catalog:vue3",
+    "vite-plus": "catalog:",
+    "vue-router": "catalog:vue3"
   },
   "devDependencies": {
     "@monorepo/tsconfig": "workspace:*",

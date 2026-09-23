@@ -1,3 +1,3 @@
-import { defineVueLibraryConfig } from '@monorepo/vite-config'
+import { defineVueLibraryConfig } from '@monorepo/build-config'
 
 export default defineVueLibraryConfig()

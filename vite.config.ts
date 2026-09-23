@@ -7,7 +7,7 @@ export default defineConfig({
     '*': 'vp check --fix',
   },
   test: {
-    projects: ['apps/*/vite.config.ts', 'packages/**/vite.config.ts'],
+    projects: ['apps/*/vite.config.ts', 'packages/**/vite.config.ts', 'internal/*/vite.config.ts'],
   },
   fmt: {
     semi: false,

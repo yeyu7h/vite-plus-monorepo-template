@@ -1,4 +1,4 @@
-import { defineNodeLibraryConfig } from '@monorepo/vite-config'
+import { defineNodeLibraryConfig } from '@monorepo/build-config'
 
 export default defineNodeLibraryConfig({
   pack: {

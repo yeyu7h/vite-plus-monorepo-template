@@ -1,37 +1,63 @@
-import { defineConfig, type UserConfig } from 'vite-plus'
-import type { PackUserConfig } from 'vite-plus/pack'
-import Vue from 'unplugin-vue/rolldown'
+import { isAbsolute, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig, loadEnv, mergeConfig, type ConfigEnv, type UserConfig } from 'vite-plus'
+import Vue from '@vitejs/plugin-vue'
+import VueJsx from '@vitejs/plugin-vue-jsx'
+import VueRouter from 'vue-router/vite'
+import NuxtUI from '@nuxt/ui/vite'
+import Tailwindcss from '@tailwindcss/vite'
+import Layouts from 'vite-plugin-vue-layouts-next'
+import { viteInjectAppConfigPlugin } from '@monorepo/vite-plugin-app-config'
+import { viteInjectAppLoadingPlugin, type InjectAppLoadingPluginOptions } from '@monorepo/vite-plugin-app-loading'
 
-type LibraryConfig = Omit<UserConfig, 'pack'> & { pack?: PackUserConfig }
-
-/** Overrides replace individual pack fields, including arrays and nested options. */
-export function defineLibraryConfig({ pack, ...config }: LibraryConfig = {}): UserConfig {
-  return defineConfig({
-    ...config,
-    pack: {
-      dts: { tsgo: false },
-      format: 'esm',
-      outExtensions: () => ({ dts: '.d.ts', js: '.mjs' }),
-      ...pack,
-    },
-  })
+export interface AdminConfigContext extends ConfigEnv {
+  root: string
+  env: Record<string, string>
 }
 
-export function defineNodeLibraryConfig({ pack, ...config }: LibraryConfig = {}): UserConfig {
-  return defineLibraryConfig({ ...config, pack: { platform: 'node', ...pack } })
+type AdminViteOverrides = Omit<UserConfig, 'root' | 'envDir'>
+
+export interface AdminConfigOptions {
+  /** Absolute application directory or a file URL, normally new URL('.', import.meta.url). */
+  root: string | URL
+  nuxtUI?: Parameters<typeof NuxtUI>[0]
+  layouts?: Parameters<typeof Layouts>[0]
+  loading?: Omit<InjectAppLoadingPluginOptions, 'env' | 'isBuild' | 'root'>
+  vite?: AdminViteOverrides | ((context: AdminConfigContext) => AdminViteOverrides | Promise<AdminViteOverrides>)
 }
 
-export function defineVueLibraryConfig({ pack, plugins, ...config }: LibraryConfig = {}): UserConfig {
-  return defineLibraryConfig({
-    ...config,
-    plugins: plugins ?? [Vue()],
-    pack: {
-      dts: { tsgo: false, vue: true },
-      entry: 'src/index.ts',
-      unbundle: true,
-      platform: 'neutral',
-      plugins: [Vue({ isProduction: true })],
-      ...pack,
-    },
+/** Compose the admin plugins while keeping application choices at the call site. */
+export function defineAdminConfig(options: AdminConfigOptions) {
+  const root = options.root instanceof URL ? fileURLToPath(options.root) : options.root
+  if (!isAbsolute(root)) throw new Error('defineAdminConfig requires an absolute application root')
+
+  return defineConfig(async (context) => {
+    const env = loadEnv(context.mode, root)
+    const isBuild = context.command === 'build'
+    const overrides = typeof options.vite === 'function' ? await options.vite({ ...context, root, env }) : options.vite
+
+    const config: UserConfig = {
+      root,
+      plugins: [
+        await viteInjectAppConfigPlugin({ env, isBuild, root }),
+        await viteInjectAppLoadingPlugin({ ...options.loading, env, isBuild, root }),
+        VueRouter(),
+        Vue(),
+        VueJsx(),
+        Layouts({ layoutsDirs: 'src/layouts', defaultLayout: 'Basic', ...options.layouts }),
+        Tailwindcss(),
+        NuxtUI(options.nuxtUI),
+      ],
+      resolve: {
+        alias: {
+          '@': resolve(root, 'src'),
+          '#': resolve(root, 'src/types'),
+        },
+        dedupe: ['vue', 'vue-router'],
+      },
+      server: { host: '0.0.0.0' },
+    }
+
+    return mergeConfig(config, overrides ?? {})
   })
 }

@@ -35,7 +35,7 @@
     "vite-plus": "catalog:"
   },
   "devDependencies": {
-    "@monorepo/tsconfig": "workspace:*",
-    "@monorepo/vite-config": "workspace:*"
+    "@monorepo/build-config": "workspace:*",
+    "@monorepo/tsconfig": "workspace:*"
   }
 }

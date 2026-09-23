@@ -59,8 +59,8 @@
     "vue-router": "catalog:vue3"
   },
   "devDependencies": {
+    "@monorepo/build-config": "workspace:*",
     "@monorepo/tsconfig": "workspace:*",
-    "@monorepo/vite-config": "workspace:*",
     "@vue/test-utils": "catalog:testing",
     "happy-dom": "catalog:testing",
     "unplugin-vue": "catalog:"

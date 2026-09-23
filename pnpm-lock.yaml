@@ -313,18 +313,12 @@ importers:
       '@monorepo/utils':
         specifier: workspace:*
         version: link:../../packages/utils
-      '@monorepo/vite-plugin-app-config':
-        specifier: workspace:*
-        version: link:../../packages/vite-plugin-app-config
       '@monorepo/vite-plugin-app-loading':
         specifier: workspace:*
         version: link:../../packages/vite-plugin-app-loading
       '@nuxt/ui':
         specifier: catalog:vue3
         version: 4.11.0(43e860afe21dfcf95a2461140acc153e)
-      '@tailwindcss/vite':
-        specifier: 'catalog:'
-        version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))
       '@tanstack/vue-query':
         specifier: catalog:tanstack
         version: 5.102.8(vue@3.5.42(typescript@6.0.3))
@@ -356,15 +350,12 @@ importers:
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../internal/tsconfig
+      '@monorepo/vite-config':
+        specifier: workspace:*
+        version: link:../../internal/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
-      '@vitejs/plugin-vue':
-        specifier: catalog:vue3
-        version: 6.0.8(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
-      '@vitejs/plugin-vue-jsx':
-        specifier: catalog:vue3
-        version: 5.1.6(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
       openapi-typescript:
         specifier: catalog:openapi
         version: 7.13.0(typescript@6.0.3)
@@ -538,9 +529,7 @@ importers:
         specifier: 'catalog:'
         version: 0.3.0(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.28.1)(happy-dom@20.12.0)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0)
 
-  internal/tsconfig: {}
-
-  internal/vite-config:
+  internal/build-config:
     dependencies:
       unplugin-vue:
         specifier: 'catalog:'
@@ -548,6 +537,45 @@ importers:
       vite-plus:
         specifier: 'catalog:'
         version: 0.3.0(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.28.1)(happy-dom@20.12.0)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0)
+    devDependencies:
+      '@monorepo/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+
+  internal/tsconfig: {}
+
+  internal/vite-config:
+    dependencies:
+      '@monorepo/vite-plugin-app-config':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin-app-config
+      '@monorepo/vite-plugin-app-loading':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin-app-loading
+      '@nuxt/ui':
+        specifier: catalog:vue3
+        version: 4.11.0(43e860afe21dfcf95a2461140acc153e)
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))
+      '@vitejs/plugin-vue':
+        specifier: catalog:vue3
+        version: 6.0.8(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
+      '@vitejs/plugin-vue-jsx':
+        specifier: catalog:vue3
+        version: 5.1.6(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
+      vite-plugin-vue-layouts-next:
+        specifier: catalog:vue3
+        version: 2.1.0(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(vue-router@5.3.0(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(@vue/compiler-sfc@3.5.42)(esbuild@0.28.1)(pinia@3.0.4(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(rolldown@1.2.5)(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.3.0(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.28.1)(happy-dom@20.12.0)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0)
+      vue-router:
+        specifier: catalog:vue3
+        version: 5.3.0(@voidzero-dev/vite-plus-core@0.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(@vue/compiler-sfc@3.5.42)(esbuild@0.28.1)(pinia@3.0.4(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(rolldown@1.2.5)(vue@3.5.42(typescript@6.0.3))
     devDependencies:
       '@monorepo/tsconfig':
         specifier: workspace:*
@@ -574,12 +602,12 @@ importers:
         specifier: catalog:vue3
         version: 5.3.0(@voidzero-dev/vite-plus-core@0.3.0(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(@vue/compiler-sfc@3.5.42)(esbuild@0.28.1)(pinia@3.0.4(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(rolldown@1.2.5)(vue@3.5.42(typescript@6.0.3))
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../../../internal/vite-config
 
   packages/@admin-core/effects/hooks:
     dependencies:
@@ -593,12 +621,12 @@ importers:
         specifier: 'catalog:'
         version: 0.3.0(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@voidzero-dev/vite-plus-core@0.3.0(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.28.1)(happy-dom@20.12.0)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0)
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../../../internal/vite-config
 
   packages/@admin-core/effects/layouts:
     dependencies:
@@ -639,12 +667,12 @@ importers:
         specifier: catalog:vue3
         version: 5.3.0(@voidzero-dev/vite-plus-core@0.3.0(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(@vue/compiler-sfc@3.5.42)(esbuild@0.28.1)(pinia@3.0.4(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(rolldown@1.2.5)(vue@3.5.42(typescript@6.0.3))
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../../../internal/vite-config
       '@vue/test-utils':
         specifier: catalog:testing
         version: 2.5.0(@vue/compiler-dom@3.5.42)(@vue/server-renderer@3.5.42)(vue@3.5.42(typescript@6.0.3))
@@ -676,12 +704,12 @@ importers:
         specifier: catalog:vue3
         version: 3.5.42(typescript@6.0.3)
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../../internal/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -732,12 +760,12 @@ importers:
         specifier: catalog:vue3
         version: 3.5.42(typescript@6.0.3)
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../../../internal/vite-config
       '@vue/test-utils':
         specifier: catalog:testing
         version: 2.5.0(@vue/compiler-dom@3.5.42)(@vue/server-renderer@3.5.42)(vue@3.5.42(typescript@6.0.3))
@@ -769,12 +797,12 @@ importers:
         specifier: catalog:vue3
         version: 3.5.42(typescript@6.0.3)
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../../../internal/vite-config
       '@vue/test-utils':
         specifier: catalog:testing
         version: 2.5.0(@vue/compiler-dom@3.5.42)(@vue/server-renderer@3.5.42)(vue@3.5.42(typescript@6.0.3))
@@ -806,12 +834,12 @@ importers:
         specifier: catalog:vue3
         version: 3.5.42(typescript@6.0.3)
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../../../internal/vite-config
       sass:
         specifier: 'catalog:'
         version: 1.103.1
@@ -837,12 +865,12 @@ importers:
         specifier: 'catalog:'
         version: 0.3.0(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@voidzero-dev/vite-plus-core@0.3.0(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0))(esbuild@0.28.1)(happy-dom@20.12.0)(jiti@2.7.0)(sass@1.103.1)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0)
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../internal/vite-config
       '@types/qs':
         specifier: catalog:testing
         version: 6.15.1
@@ -871,12 +899,12 @@ importers:
         specifier: catalog:utils
         version: 4.5.4
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../internal/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -902,12 +930,12 @@ importers:
         specifier: 'catalog:'
         version: 5.9.0
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../internal/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -930,12 +958,12 @@ importers:
         specifier: 'catalog:'
         version: 0.146.0
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../internal/vite-config
       '@oxc-project/types':
         specifier: 'catalog:'
         version: 0.146.0
@@ -961,12 +989,12 @@ importers:
         specifier: 'catalog:'
         version: 3.6.0
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../internal/vite-config
       '@types/node':
         specifier: ^25.9.5
         version: 25.9.5
@@ -989,12 +1017,12 @@ importers:
         specifier: catalog:utils
         version: 4.5.4
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../internal/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -1010,12 +1038,12 @@ importers:
 
   packages/vite-plugin-app-config:
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../internal/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -1031,12 +1059,12 @@ importers:
 
   packages/vite-plugin-app-loading:
     devDependencies:
+      '@monorepo/build-config':
+        specifier: workspace:*
+        version: link:../../internal/build-config
       '@monorepo/tsconfig':
         specifier: workspace:*
         version: link:../../internal/tsconfig
-      '@monorepo/vite-config':
-        specifier: workspace:*
-        version: link:../../internal/vite-config
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -6845,10 +6873,10 @@ snapshots:
       '@babel/helper-compilation-targets': 7.29.7
       '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7)
       '@babel/helpers': 7.29.7
-      '@babel/parser': 7.29.7
+      '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
       '@babel/traverse': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/types': 7.29.8
       '@jridgewell/remapping': 2.3.5
       convert-source-map: 2.0.0
       debug: 4.4.3(supports-color@10.2.2)
@@ -6860,15 +6888,15 @@ snapshots:
 
   '@babel/generator@7.29.7':
     dependencies:
-      '@babel/parser': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/parser': 7.29.8
+      '@babel/types': 7.29.8
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
       jsesc: 3.1.0
 
   '@babel/helper-annotate-as-pure@7.29.7':
     dependencies:
-      '@babel/types': 7.29.7
+      '@babel/types': 7.29.8
 
   '@babel/helper-compilation-targets@7.29.7':
     dependencies:
@@ -6934,7 +6962,7 @@ snapshots:
   '@babel/helper-skip-transparent-expression-wrappers@7.29.7':
     dependencies:
       '@babel/traverse': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/types': 7.29.8
     transitivePeerDependencies:
       - supports-color
 
@@ -6947,11 +6975,11 @@ snapshots:
   '@babel/helpers@7.29.7':
     dependencies:
       '@babel/template': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/types': 7.29.8
 
   '@babel/parser@7.29.7':
     dependencies:
-      '@babel/types': 7.29.7
+      '@babel/types': 7.29.8
 
   '@babel/parser@7.29.8':
     dependencies:
@@ -7015,9 +7043,9 @@ snapshots:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.7
       '@babel/helper-globals': 7.29.7
-      '@babel/parser': 7.29.7
+      '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/types': 7.29.8
       debug: 4.4.3(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
@@ -9401,10 +9429,10 @@ snapshots:
       '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7)
       '@babel/template': 7.29.7
       '@babel/traverse': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/types': 7.29.8
       '@vue/babel-helper-vue-transform-on': 2.0.1
       '@vue/babel-plugin-resolve-type': 2.0.1(@babel/core@7.29.7)
-      '@vue/shared': 3.5.39
+      '@vue/shared': 3.5.42
     optionalDependencies:
       '@babel/core': 7.29.7
     transitivePeerDependencies:
@@ -9427,8 +9455,8 @@ snapshots:
       '@babel/core': 7.29.7
       '@babel/helper-module-imports': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
-      '@babel/parser': 7.29.7
-      '@vue/compiler-sfc': 3.5.41
+      '@babel/parser': 7.29.8
+      '@vue/compiler-sfc': 3.5.42
     transitivePeerDependencies:
       - supports-color
 

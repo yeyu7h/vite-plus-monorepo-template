@@ -88,8 +88,8 @@
     "oxc-parser": "catalog:"
   },
   "devDependencies": {
+    "@monorepo/build-config": "workspace:*",
     "@monorepo/tsconfig": "workspace:*",
-    "@monorepo/vite-config": "workspace:*",
     "@oxc-project/types": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",

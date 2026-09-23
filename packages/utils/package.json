@@ -45,8 +45,8 @@
     "zod": "catalog:utils"
   },
   "devDependencies": {
+    "@monorepo/build-config": "workspace:*",
     "@monorepo/tsconfig": "workspace:*",
-    "@monorepo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

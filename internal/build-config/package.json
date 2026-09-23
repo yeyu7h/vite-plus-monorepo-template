@@ -1,0 +1,17 @@
+{
+  "name": "@monorepo/build-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "unplugin-vue": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
+    "@types/node": "catalog:"
+  }
+}

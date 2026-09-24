@@ -46,6 +46,8 @@
   "devDependencies": {
     "@monorepo/build-config": "workspace:*",
     "@monorepo/tsconfig": "workspace:*",
+    "@vue/test-utils": "catalog:testing",
+    "happy-dom": "catalog:testing",
     "sass": "catalog:",
     "unplugin-vue": "catalog:"
   }

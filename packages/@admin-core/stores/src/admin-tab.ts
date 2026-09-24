@@ -69,8 +69,11 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
     iframeTabs: (state) => state.records.filter((item) => Boolean(item.iframeSrc)),
     /** 返回允许缓存的普通页面标签页记录 */
     keepAlivePageTabs: (state) => state.records.filter((item) => item.keepAlive && !item.iframeSrc),
-    /** 返回带有当前激活状态的标签页列表 */
-    tabs: (state) => markActiveAdminTabs(state.records, state.activeKey),
+    /** 返回带有当前激活状态的标签页列表，唯一标签仅在展示时视为固定 */
+    tabs: (state) => {
+      const tabs = markActiveAdminTabs(state.records, state.activeKey)
+      return tabs.length === 1 ? tabs.map((tab) => ({ ...tab, pinned: true })) : tabs
+    },
   },
 
   actions: {
@@ -138,6 +141,18 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
       }
       this.records = nextRecords
       if (evictedActive) this.activeKey = record.key
+      persistTabs(this)
+    },
+
+    /** 固定或取消固定标签页，并将固定标签排列在前方
+     * @param key 标签页标识
+     * @param pinned 是否固定
+     */
+    setPinned(key: string, pinned: boolean) {
+      const record = this.records.find((item) => item.key === key)
+      if (!record || (this.records.length === 1 && !pinned) || Boolean(record.pinned) === pinned) return
+
+      this.records = orderPinnedRecords(this.records.map((item) => (item.key === key ? { ...item, pinned } : item)))
       persistTabs(this)
     },
 
@@ -238,20 +253,37 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
  * @returns 去重后的标签页记录
  */
 function dedupeRecords(records: readonly AdminTabRecord[]) {
-  return records.reduce<AdminTabRecord[]>((result, record) => upsertRecord(result, record), [])
+  return orderPinnedRecords(records.reduce<AdminTabRecord[]>((result, record) => upsertRecord(result, record), []))
 }
 
+/** 更新运行时记录，保留用户设置的固定状态并遵守路由标签数量限制
+ * @param records 当前标签页记录
+ * @param record 待写入的完整记录
+ * @returns 更新后的标签页记录
+ */
 function upsertRecord(records: readonly AdminTabRecord[], record: AdminTabRecord): AdminTabRecord[] {
-  // 运行时记录是完整快照；复用 key 时替换，避免遗留上一页的 iframeSrc 或 routeName。
+  // 复用 key 时替换完整快照，避免遗留上一页的 iframeSrc 或 routeName
   const existingIndex = records.findIndex((item) => item.key === record.key)
-  if (existingIndex !== -1) return records.map((item, index) => (index === existingIndex ? record : item))
+  if (existingIndex !== -1) return records.map((item, index) => (index === existingIndex ? { ...record, pinned: records[index]?.pinned ?? record.pinned } : item))
   const limit = record.meta.maxNumOfOpenTab ?? -1
   let remaining = [...records]
   if (limit > 0) {
     const siblings = records.filter((item) => item.routeName === record.routeName)
-    if (siblings.length >= limit) remaining = remaining.filter((item) => item.key !== siblings[0]?.key)
+    if (siblings.length >= limit) {
+      // 固定标签不参与自动回收，优先淘汰最早的普通同路由标签
+      const evictable = siblings.find((item) => !item.pinned)
+      if (evictable) remaining = remaining.filter((item) => item.key !== evictable.key)
+    }
   }
-  return [...remaining, record]
+  return orderPinnedRecords([...remaining, record])
+}
+
+/** 将固定标签稳定地排列在普通标签之前
+ * @param records 当前标签页记录
+ * @returns 调整顺序后的记录
+ */
+function orderPinnedRecords(records: readonly AdminTabRecord[]): AdminTabRecord[] {
+  return [...records.filter((item) => item.pinned), ...records.filter((item) => !item.pinned)]
 }
 
 /** 将当前标签页写入最小化的持久化快照
@@ -260,8 +292,9 @@ function upsertRecord(records: readonly AdminTabRecord[], record: AdminTabRecord
 function persistTabs(storeState: Pick<AdminTabStoreState, 'initialized' | 'records' | 'storageKey'>) {
   if (!storeState.initialized || typeof sessionStorage === 'undefined') return
 
+  // 仅持久化用户设置的固定状态，唯一标签的强制固定由 tabs getter 计算
   const state: PersistedAdminTabState = {
-    tabs: storeState.records.map(({ to, viewPath }) => ({ to, viewPath })),
+    tabs: storeState.records.map(({ pinned, to, viewPath }) => ({ ...(pinned ? { pinned: true } : {}), to, viewPath })),
     version: PERSISTENCE_VERSION,
   }
 
@@ -291,7 +324,15 @@ function clearScrollPositions(storeState: Pick<AdminTabStoreState, 'scrollPositi
 function isPersistedState(value: unknown): value is PersistedAdminTabState {
   if (!isRecord(value) || value.version !== PERSISTENCE_VERSION || !Array.isArray(value.tabs)) return false
 
-  return value.tabs.every((item) => isRecord(item) && typeof item.to === 'string' && Boolean(item.to) && typeof item.viewPath === 'string' && Boolean(item.viewPath))
+  return value.tabs.every(
+    (item) =>
+      isRecord(item) &&
+      typeof item.to === 'string' &&
+      Boolean(item.to) &&
+      typeof item.viewPath === 'string' &&
+      Boolean(item.viewPath) &&
+      (item.pinned === undefined || typeof item.pinned === 'boolean'),
+  )
 }
 
 /** 判断未知值是否为非空对象

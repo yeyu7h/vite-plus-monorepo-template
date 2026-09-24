@@ -1,4 +1,4 @@
-import type { AdminTabRecord } from '@monorepo-admin-core/types'
+import type { AdminTabRecord, PersistedAdminTab } from '@monorepo-admin-core/types'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
@@ -13,6 +13,8 @@ export interface UseAdminTabbarOptions {
 
 /**
  * 管理布局层 Tabbar 的路由驱动状态
+ * @param options 标签页持久化配置
+ * @returns 标签栏的状态和操作
  */
 export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
   const router = useRouter()
@@ -24,7 +26,7 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
   if (!tabStore.initialized || tabStore.storageKey !== storageKey) {
     const restoredRecords = tabStore
       .readPersistedTabs(storageKey)
-      .map((item) => createTabRecordFromPath(item.viewPath, router))
+      .map((item) => createTabRecordFromPath(item, router))
       .filter((item): item is AdminTabRecord => Boolean(item))
 
     tabStore.initialize(storageKey, restoredRecords)
@@ -69,6 +71,14 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
     }
   }
 
+  /** 更新指定标签页的固定状态
+   * @param key 标签页标识
+   * @param pinned 是否固定
+   */
+  function pinTab(key: string, pinned: boolean) {
+    tabStore.setPinned(key, pinned)
+  }
+
   /**
    * 刷新当前激活标签页
    * @param key 待刷新标签标识
@@ -80,6 +90,7 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
 
   /**
    * 将当前路由解析为标签页结构
+   * @returns 当前路由对应的标签页记录
    */
   function createCurrentRouteTab() {
     return createAdminTabRecord(
@@ -108,19 +119,25 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
   return {
     activeKey,
     closeTab,
+    pinTab,
     refreshTab,
     selectTab,
     tabs,
   }
 }
 
-function createTabRecordFromPath(path: string, router: Router) {
-  const resolved = router.resolve(path)
+/** 从持久化快照恢复当前账号仍可访问的标签页
+ * @param snapshot 保存的标签页地址与固定状态
+ * @param router 当前路由实例
+ * @returns 可恢复的标签页记录
+ */
+function createTabRecordFromPath(snapshot: PersistedAdminTab, router: Router): AdminTabRecord | undefined {
+  const resolved = router.resolve(snapshot.viewPath)
 
   // 只恢复当前账号重新注册后的权限路由，未知地址会落到 fallback，不能变成旧 Tab
   if (!resolved.matched.some((record) => record.meta.source === 'access')) return void 0
 
-  return createAdminTabRecord(
+  const record = createAdminTabRecord(
     {
       meta: resolved.meta as AdminRouteMeta,
       name: resolved.name,
@@ -141,8 +158,13 @@ function createTabRecordFromPath(path: string, router: Router) {
       },
     },
   )
+  return record ? { ...record, pinned: snapshot.pinned } : undefined
 }
 
+/** 规范化路由元信息中的标签页目标地址
+ * @param route 当前路由
+ * @returns 规范化地址，未配置时返回 undefined
+ */
 function resolveRouteTabPath(route: Pick<RouteLocationNormalizedLoaded, 'fullPath' | 'meta'>) {
   if (typeof route.meta.tabPath === 'string') {
     return normalizeAdminNavigationPath(route.meta.tabPath)

@@ -27,6 +27,23 @@ test('stores, deduplicates and marks route tabs active', () => {
   ])
 })
 
+test('treats the only tab as fixed and refuses to unpin it', () => {
+  const store = useAdminTabStore()
+  store.initialize(STORAGE_KEY, [])
+  store.upsert(createRecord('/home'))
+
+  expect(store.tabs[0]?.pinned).toBe(true)
+  expect(store.close('/home')).toBeUndefined()
+  store.setPinned('/home', false)
+  expect(store.tabs[0]?.pinned).toBe(true)
+
+  store.upsert(createRecord('/reports'))
+  expect(store.tabs.find((tab) => tab.key === '/home')?.pinned).toBeUndefined()
+
+  store.close('/reports')
+  expect(store.tabs[0]).toMatchObject({ key: '/home', pinned: true })
+})
+
 test('persists a versioned minimal snapshot and restores it through the public reader', () => {
   const store = useAdminTabStore()
   store.initialize(STORAGE_KEY, [])
@@ -85,6 +102,37 @@ test('closes the active tab and returns the adjacent navigation target', () => {
 
   expect(store.close('/reports')).toBe('/system')
   expect(store.records.map((item) => item.key)).toEqual(['/dashboard', '/system'])
+})
+
+test('pins tabs before ordinary tabs, protects them from close, and persists the choice', () => {
+  const store = useAdminTabStore()
+  store.initialize(STORAGE_KEY, [createRecord('/home'), createRecord('/reports'), createRecord('/settings')])
+  store.setActive('/reports')
+
+  store.setPinned('/reports', true)
+  expect(store.records.map(({ key }) => key)).toEqual(['/reports', '/home', '/settings'])
+  expect(store.close('/reports')).toBeUndefined()
+  expect(store.activeKey).toBe('/reports')
+  expect(store.records).toHaveLength(3)
+  expect(store.readPersistedTabs(STORAGE_KEY)[0]).toEqual({ pinned: true, to: '/reports', viewPath: '/reports' })
+
+  store.upsert({ ...createRecord('/reports'), title: 'Updated' })
+  expect(store.records[0]).toMatchObject({ key: '/reports', pinned: true, title: 'Updated' })
+
+  store.setPinned('/reports', false)
+  expect(store.records[0]?.pinned).toBe(false)
+  expect(store.readPersistedTabs(STORAGE_KEY)[0]).toEqual({ to: '/reports', viewPath: '/reports' })
+  expect(store.close('/reports')).toBe('/home')
+})
+
+test('keeps pinned tabs when the route tab limit evicts an older sibling', () => {
+  const store = useAdminTabStore()
+  const detail = (id: number) => ({ ...createRecord(`/users/${id}`), routeName: 'Detail', meta: { title: 'Detail', maxNumOfOpenTab: 2 } })
+  store.initialize(STORAGE_KEY, [detail(1), detail(2)])
+  store.setPinned('/users/1', true)
+  store.upsert(detail(3))
+
+  expect(store.records.map(({ key }) => key)).toEqual(['/users/1', '/users/3'])
 })
 
 test('returns the adjacent tab last view path when closing an active canonical tab', () => {

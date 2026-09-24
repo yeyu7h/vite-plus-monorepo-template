@@ -10,6 +10,8 @@ export interface AdminTabItem {
   icon?: AdminMenuIcon
   /** 标签页唯一标识，默认使用包含 query 和 hash 的完整路由地址 */
   key: string
+  /** 标签页是否固定在前方且不可关闭 */
+  pinned?: boolean
   /** 激活状态下是否显示标签页下边框 */
   showActiveTabBorder?: boolean
   /** 标签页显示标题 */
@@ -22,7 +24,7 @@ export interface AdminTabItem {
  * 布局运行时使用的完整标签页记录
  *
  * `to` 是点击标签时使用的规范化目标，`viewPath` 则记录该标签最后实际
- * 展示的路由。两者分离后，配置了 `tabPath` 的嵌套路由也能恢复正确内容。
+ * 展示的路由，两者分离后，配置了 `tabPath` 的嵌套路由也能恢复正确内容
  */
 export interface AdminTabRecord extends AdminTabItem {
   /** 用于按动态路由统计打开数量，不参与 Tab 唯一标识 */
@@ -39,6 +41,8 @@ export interface AdminTabRecord extends AdminTabItem {
 
 /** sessionStorage 中保存的最小标签页快照 */
 export interface PersistedAdminTab {
+  /** 是否固定标签页 */
+  pinned?: boolean
   /** 点击标签时使用的规范化目标 */
   to: string
   /** 最后实际展示的完整路由地址 */

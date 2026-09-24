@@ -17,6 +17,14 @@ test('creates a route tab from the current route', () => {
   })
 })
 
+test('does not close pinned tabs', () => {
+  const tabs = [
+    { key: '/home', title: 'Home', to: '/home', pinned: true },
+    { key: '/reports', title: 'Reports', to: '/reports' },
+  ]
+  expect(closeAdminTab(tabs, '/home', '/home')).toEqual({ tabs })
+})
+
 test('creates a runtime tab record with an independent view path and keep-alive meta', () => {
   const tab = createAdminTabRecord({
     meta: {

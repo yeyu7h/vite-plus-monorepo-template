@@ -6,11 +6,11 @@ const props = defineProps<{
   storageKey?: string
 }>()
 
-const { activeKey, closeTab, refreshTab, selectTab, tabs } = useAdminTabbar({
+const { activeKey, closeTab, pinTab, refreshTab, selectTab, tabs } = useAdminTabbar({
   storageKey: props.storageKey,
 })
 </script>
 
 <template>
-  <TabsView :active-key="activeKey" :tabs="tabs" @close="closeTab" @refresh="refreshTab" @select="selectTab" />
+  <TabsView :active-key="activeKey" :tabs="tabs" @close="closeTab" @pin="pinTab" @refresh="refreshTab" @select="selectTab" />
 </template>

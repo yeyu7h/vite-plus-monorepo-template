@@ -9,6 +9,7 @@ defineProps<{
 
 const emit = defineEmits<{
   close: [key: string]
+  pin: [key: string, pinned: boolean]
   refresh: [key: string]
   select: [key: string]
 }>()
@@ -16,7 +17,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex h-full min-w-0 justify-between">
-    <Tabs :active-key="activeKey" :tabs="tabs" @close="emit('close', $event)" @select="emit('select', $event)" />
+    <Tabs :active-key="activeKey" :tabs="tabs" @close="emit('close', $event)" @pin="(key, pinned) => emit('pin', key, pinned)" @select="emit('select', $event)" />
 
     <div class="flex h-full">
       <button

@@ -7,6 +7,10 @@ export interface AdminTabRouteRecord extends AdminNavigationRouteRecord {
   query?: Record<string, string | null | (string | null)[]>
 }
 
+/** 读取路由显式指定的标签页标识
+ * @param route 当前路由记录
+ * @returns pageKey 参数值
+ */
 function pageKeyOf(route: AdminTabRouteRecord) {
   const fullPath = route.fullPath ?? route.path
   const query = fullPath.split('#')[0]?.split('?')[1] ?? ''
@@ -14,12 +18,19 @@ function pageKeyOf(route: AdminTabRouteRecord) {
   return Array.isArray(pageKey) ? pageKey[0] : pageKey
 }
 
+/** 在未指定新标识规则时读取兼容的 tabPath
+ * @param route 当前路由记录
+ * @returns 兼容的标签页地址
+ */
 function legacyTabPath(route: AdminTabRouteRecord) {
-  // pageKey 和 fullPathKey 优先；未显式配置标识规则时继续支持 tabPath。
+  // pageKey 和 fullPathKey 优先；未显式配置标识规则时继续支持 tabPath
   return !pageKeyOf(route) && route.meta.fullPathKey === undefined ? (route.tabPath ?? route.meta.tabPath) : undefined
 }
 
-/** pageKey 优先，其次按 fullPathKey 选择路径或完整地址。 */
+/** 按 pageKey 和 fullPathKey 规则生成标签页标识
+ * @param route 当前路由记录
+ * @returns 解码后的标签页标识
+ */
 export function getAdminTabKey(route: AdminTabRouteRecord): string {
   const fullPath = route.fullPath ?? route.path
   const rawKey = pageKeyOf(route) || (route.meta.fullPathKey === false ? (route.path.split(/[?#]/)[0] ?? '/') : (legacyTabPath(route) ?? fullPath))
@@ -126,7 +137,7 @@ export function closeAdminTab<T extends AdminTabItem>(tabs: readonly T[], key: s
   if (tabs.length <= 1) return { tabs: [...tabs] }
 
   const index = tabs.findIndex((tab) => tab.key === key)
-  if (index === -1) return { tabs: [...tabs] }
+  if (index === -1 || tabs[index]?.pinned || tabs[index]?.closable === false) return { tabs: [...tabs] }
 
   const nextTab = tabs[index + 1] ?? tabs[index - 1] // 关闭当前 `Tab` 时优先切右边，没有右边再退回左边
   const nextTabs = tabs.filter((tab) => tab.key !== key)

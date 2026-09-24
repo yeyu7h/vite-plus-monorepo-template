@@ -70,3 +70,22 @@ test('restores shared tabs from their last real URL with the same key', async ()
     restored.wrapper.unmount()
   }
 })
+
+test('restores pinned tabs and lets the context menu action unpin them', async () => {
+  const first = await setup('/users/1')
+  await first.router.push('/reports')
+  first.tabs.pinTab('/reports', true)
+  first.wrapper.unmount()
+
+  const restored = await setup('/users/1')
+  try {
+    expect(restored.store.records.map(({ key, pinned }) => ({ key, pinned }))).toEqual([
+      { key: '/reports', pinned: true },
+      { key: '/users/1', pinned: undefined },
+    ])
+    restored.tabs.pinTab('/reports', false)
+    expect(restored.store.records.find((item) => item.key === '/reports')?.pinned).toBe(false)
+  } finally {
+    restored.wrapper.unmount()
+  }
+})

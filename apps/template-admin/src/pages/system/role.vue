@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { z } from 'zod'
 
 import type { SystemRoleApi } from '@/api/core/system'
 import { systemRoleApi } from '@/api/core/system'
 import { useConfirm } from '@/composables/useConfirm'
+import AdminTable from '@/components/AdminTable.vue'
+import FormSlideover from '@/components/FormSlideover.vue'
+import { useServerTable } from '@/composables/useServerTable'
+import { useFormEditor } from '@/composables/useFormEditor'
 import {
   ALL_STATUS_VALUE,
   buildRolePermissionGroups,
@@ -30,15 +34,9 @@ const accessStore = useAdminAccessStore()
 const confirm = useConfirm()
 const toast = useToast()
 const queryClient = useQueryClient()
-const page = ref(1)
-const pageSize = 10
-const search = ref('')
-const appliedSearch = ref('')
 const status = ref(ALL_STATUS_VALUE)
 
-const slideoverOpen = ref(false)
 const activeEditorTab = ref('basic')
-const editingRole = ref<SystemRoleApi.Item | null>(null)
 const menuAuthorization = ref<SystemRoleApi.MenuAuthorization | null>(null)
 const permissions = ref<SystemRoleApi.PermissionResult | null>(null)
 const selectedMenuIds = ref<string[]>([])
@@ -47,12 +45,20 @@ const permissionCatalog = ref<RolePermissionInput[]>([])
 const permissionSearch = ref('')
 const collapsedPermissionGroups = ref<Set<string>>(new Set())
 const copyRoleId = ref('')
-const roleForm = reactive({
-  id: '',
-  name: '',
-  description: '',
-  status: 'ENABLED' as 'ENABLED' | 'DISABLED',
-  parentRoleIds: [] as string[],
+const {
+  open: slideoverOpen,
+  editing: editingRole,
+  form: roleForm,
+  formKey,
+  openEditor: initializeEditor,
+} = useFormEditor({
+  toForm: (role?: SystemRoleApi.Item) => ({
+    id: role?.id ?? '',
+    name: role?.name ?? '',
+    description: role?.description ?? '',
+    status: role?.status ?? 'ENABLED',
+    parentRoleIds: [...(role?.parentRoles ?? [])],
+  }),
 })
 
 const roleSchema = z.object({
@@ -92,23 +98,23 @@ const copyRoleOptions = computed(() => allRoles.value.filter(({ id }) => id !== 
 
 const parentRoleOptions = computed(() => allRoles.value.filter(({ id }) => id !== editingRole.value?.id).map((role) => ({ label: `${role.name} (${role.id})`, value: role.id })))
 
-const listQuery = computed(() =>
-  buildServerListQuery({ page: page.value, pageSize, search: appliedSearch.value, searchFields: ['id', 'name'], status: status.value, sortField: 'createdAt', sortOrder: 'asc' }),
-)
 const {
-  data: listData,
-  isFetching: loading,
-  refetch: loadRoles,
-} = useQuery({
-  queryKey: computed(() => ['admin', accessStore.sessionVersion, 'roles', listQuery.value] as const),
-  enabled: computed(() => accessStore.isLoggedIn),
-  retry: false,
-  refetchOnWindowFocus: false,
-  queryFn: ({ queryKey }) => systemRoleApi.list(queryKey[3]),
-  placeholderData: (previousData, previousQuery) => (previousQuery?.queryKey[1] === accessStore.sessionVersion ? previousData : undefined),
+  page,
+  pageSize,
+  search,
+  items: roles,
+  total,
+  loading,
+  applySearch: searchRoles,
+  refresh: loadRoles,
+  invalidate: invalidateList,
+} = useServerTable({
+  queryKey: () => ['admin', accessStore.sessionVersion, 'roles'],
+  enabled: () => accessStore.isLoggedIn,
+  filterSources: [status],
+  buildQuery: (state) => buildServerListQuery({ ...state, searchFields: ['id', 'name'], status: status.value, sortField: 'createdAt', sortOrder: 'asc' }),
+  queryFn: systemRoleApi.list,
 })
-const roles = computed(() => listData.value?.items ?? [])
-const total = computed(() => listData.value?.total ?? 0)
 
 const { data: roleOptionsData } = useQuery({
   queryKey: computed(() => ['admin', accessStore.sessionVersion, 'role-options'] as const),
@@ -119,25 +125,10 @@ const { data: roleOptionsData } = useQuery({
 })
 const allRoles = computed(() => roleOptionsData.value?.items ?? [])
 
-function searchRoles() {
-  if (page.value === 1 && appliedSearch.value === search.value) void loadRoles()
-  else {
-    appliedSearch.value = search.value
-    page.value = 1
-  }
-}
-
 async function openEditor(role?: SystemRoleApi.Item) {
   const requestSessionVersion = accessStore.sessionVersion
-  editingRole.value = role ?? null
+  initializeEditor(role)
   activeEditorTab.value = 'basic'
-  Object.assign(roleForm, {
-    id: role?.id ?? '',
-    name: role?.name ?? '',
-    description: role?.description ?? '',
-    status: role?.status ?? 'ENABLED',
-    parentRoleIds: role?.parentRoles ?? [],
-  })
   menuAuthorization.value = null
   permissions.value = null
   selectedMenuIds.value = []
@@ -146,7 +137,6 @@ async function openEditor(role?: SystemRoleApi.Item) {
   permissionSearch.value = ''
   collapsedPermissionGroups.value = new Set()
   copyRoleId.value = ''
-  slideoverOpen.value = true
 
   if (role) {
     const result = await loadRoleAuthorization()
@@ -185,10 +175,7 @@ const { isPending: savingBasic, mutate: saveBasic } = useMutation({
     else await systemRoleApi.create({ id: event.data.id, ...body })
     toast.add({ title: editingRole.value ? '角色已更新' : '角色已创建', color: 'success' })
     slideoverOpen.value = false
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['admin', accessStore.sessionVersion, 'roles'] }),
-      queryClient.invalidateQueries({ queryKey: ['admin', accessStore.sessionVersion, 'role-options'] }),
-    ])
+    await Promise.all([invalidateList(), queryClient.invalidateQueries({ queryKey: ['admin', accessStore.sessionVersion, 'role-options'] })])
   },
 })
 
@@ -285,22 +272,10 @@ async function requestDelete(role: SystemRoleApi.Item) {
     onConfirm: async () => {
       await systemRoleApi.delete(role.id)
       toast.add({ title: '角色已删除', color: 'success' })
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['admin', accessStore.sessionVersion, 'roles'] }),
-        queryClient.invalidateQueries({ queryKey: ['admin', accessStore.sessionVersion, 'role-options'] }),
-      ])
+      await Promise.all([invalidateList(), queryClient.invalidateQueries({ queryKey: ['admin', accessStore.sessionVersion, 'role-options'] })])
     },
   })
 }
-
-watch(
-  status,
-  () => {
-    appliedSearch.value = search.value
-    page.value = 1
-  },
-  { flush: 'sync' },
-)
 </script>
 
 <template>
@@ -328,7 +303,7 @@ watch(
       <UButton icon="i-lucide-refresh-cw" aria-label="刷新" color="neutral" variant="ghost" :loading="loading" @click="loadRoles()" />
     </div>
 
-    <UTable :data="roles" :columns="columns" :loading="loading" sticky="header" class="min-h-0 flex-1">
+    <AdminTable v-model:page="page" :data="roles" :columns="columns" :loading="loading" :total="total" :page-size="pageSize">
       <template #name-cell="{ row }">
         <div>
           <div class="font-medium text-default">{{ row.original.name }}</div>
@@ -364,18 +339,17 @@ watch(
         </div>
       </template>
       <template #empty><UEmpty icon="i-lucide-shield" title="暂无角色" /></template>
-    </UTable>
-
-    <div class="flex justify-end border-t border-default px-4 py-3"><UPagination v-model:page="page" :total="total" :items-per-page="pageSize" /></div>
+    </AdminTable>
   </div>
 
-  <USlideover
+  <FormSlideover
     v-model:open="slideoverOpen"
+    :saving="saving"
     :title="editingRole ? `编辑角色 · ${editingRole.name}` : '新建角色'"
     description="角色 ID 创建后不可修改。继承授权和公共菜单为只读。"
     :ui="{ content: 'sm:max-w-2xl' }"
   >
-    <template #body>
+    <template #body="{ formId }">
       <UTabs
         v-model="activeEditorTab"
         :items="[
@@ -385,7 +359,7 @@ watch(
         ]"
       >
         <template #content>
-          <UForm v-if="activeEditorTab === 'basic'" id="role-form" :schema="roleSchema" :state="roleForm" class="space-y-4 pt-4" @submit="saveBasic">
+          <UForm v-if="activeEditorTab === 'basic'" :id="formId" :key="formKey" :disabled="saving" :schema="roleSchema" :state="roleForm" class="space-y-4 pt-4" @submit="saveBasic">
             <UFormField name="id" label="角色 ID" required><UInput v-model="roleForm.id" :disabled="Boolean(editingRole)" class="w-full" /></UFormField>
             <UFormField name="name" label="角色名称" required><UInput v-model="roleForm.name" class="w-full" /></UFormField>
             <UFormField name="description" label="描述"><UTextarea v-model="roleForm.description" autoresize class="w-full" /></UFormField>
@@ -505,12 +479,12 @@ watch(
         </template>
       </UTabs>
     </template>
-    <template #footer="{ close }">
-      <UButton label="取消" color="neutral" variant="outline" @click="close" />
+    <template #footer="{ close, formId }">
+      <UButton label="取消" color="neutral" variant="outline" :disabled="saving" @click="close" />
       <UButton
         v-if="activeEditorTab === 'basic' && accessStore.hasPermission(editingRole ? 'system:role:update' : 'system:role:create')"
         type="submit"
-        form="role-form"
+        :form="formId"
         label="保存基本信息"
         :loading="saving"
       />
@@ -522,5 +496,5 @@ watch(
       />
       <UButton v-if="activeEditorTab === 'api' && editingRole && canEditPermissions" label="保存 API 权限" :loading="saving" @click="saveApiPermissions()" />
     </template>
-  </USlideover>
+  </FormSlideover>
 </template>

@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
 import { useToast } from '@nuxt/ui/runtime/composables/useToast.js'
-import { computed, defineAsyncComponent, reactive, ref, watch } from 'vue'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import type { DeepReadonly } from 'vue'
+import { useMutation } from '@tanstack/vue-query'
 import { z } from 'zod'
 
 import type { SystemParamApi } from '@/api/core/system'
 import { systemParamApi } from '@/api/core/system'
 import { useConfirm } from '@/composables/useConfirm'
+import AdminForm from '@/components/AdminForm.vue'
+import type { AdminFormConfig } from '@/components/admin-form'
+import AdminTable from '@/components/AdminTable.vue'
+import FormSlideover from '@/components/FormSlideover.vue'
+import { useAdminForm } from '@/composables/useAdminForm'
+import { useServerTable } from '@/composables/useServerTable'
+import { useFormEditor } from '@/composables/useFormEditor'
 import { buildServerListQuery } from '@/features/system-management/helpers'
 import {
   formatParamValue,
@@ -30,15 +38,7 @@ definePage({ meta: { title: '参数管理', icon: 'i-lucide-braces', order: 40, 
 const accessStore = useAdminAccessStore()
 const confirm = useConfirm()
 const toast = useToast()
-const queryClient = useQueryClient()
-const page = ref(1)
-const pageSize = 10
-const search = ref('')
-const appliedSearch = ref('')
 const status = ref<ParamStatus | null>(null)
-
-const slideoverOpen = ref(false)
-const editingParam = ref<SystemParamApi.Item | null>(null)
 
 type ParamForm = {
   key: string
@@ -49,16 +49,18 @@ type ParamForm = {
   status: ParamStatus
 }
 
-const form = reactive<ParamForm>({
-  key: '',
-  name: '',
-  value: '',
-  valueType: 'STRING',
-  description: '',
-  status: 'ENABLED',
-})
+function toParamForm(param?: DeepReadonly<SystemParamApi.Item>): ParamForm {
+  return {
+    key: param?.key ?? '',
+    name: param?.name ?? '',
+    value: param ? formatParamValue(param.valueType, param.value) : '',
+    valueType: param?.valueType ?? 'STRING',
+    description: param?.description ?? '',
+    status: param?.status ?? 'ENABLED',
+  }
+}
 
-let hydratingEditor = false
+const { open: slideoverOpen, editing: editingParam, form, formKey, hydrating, hydrate: editorHydrate, openEditor } = useFormEditor({ toForm: toParamForm })
 
 const paramSchema = z
   .object({
@@ -79,6 +81,25 @@ const paramSchema = z
   })
 
 type ParamSchema = z.output<typeof paramSchema>
+
+const formConfig = computed<AdminFormConfig<ParamForm, unknown, typeof paramSchema>>(() => ({
+  schema: paramSchema,
+  fields: [
+    { name: 'key', label: '参数键', required: true, description: '小写字母、数字和下划线，例如 site_name。', componentProps: { autocomplete: 'off' } },
+    { name: 'name', label: '参数名称', required: true },
+    { name: 'valueType', label: '值类型', required: true, description: getParamValueTypeMetadata(form.valueType).description, component: 'select', componentProps: { items: paramValueTypeOptions } },
+    { name: 'value', label: '参数值', required: true, component: 'slot' },
+    { name: 'description', label: '描述', component: 'textarea', componentProps: { rows: 3, autoresize: true, maxrows: 8 } },
+    { name: 'status', label: '状态', description: getParamStatusMetadata(form.status).description, component: 'select', componentProps: { items: paramStatusOptions } },
+  ],
+}))
+
+const { formRef, formProps } = useAdminForm({
+  state: form,
+  initialValues: () => toParamForm(editingParam.value ?? undefined),
+  config: formConfig,
+  replaceValues: editorHydrate,
+})
 
 const columns: TableColumn<SystemParamApi.Item>[] = [
   { accessorKey: 'name', header: '参数' },
@@ -110,51 +131,27 @@ const numberValue = computed<number | undefined>({
   },
 })
 
-const listQuery = computed(() =>
-  buildServerListQuery({ page: page.value, pageSize, search: appliedSearch.value, searchFields: ['key', 'name'], status: status.value ?? undefined, sortField: 'updatedAt' }),
-)
 const {
-  data: listData,
-  isFetching: loading,
-  refetch: loadParams,
-} = useQuery({
-  queryKey: computed(() => ['admin', accessStore.sessionVersion, 'params', listQuery.value] as const),
-  enabled: computed(() => accessStore.isLoggedIn),
-  retry: false,
-  refetchOnWindowFocus: false,
-  queryFn: ({ queryKey }) => systemParamApi.list(queryKey[3]),
-  placeholderData: (previousData, previousQuery) => (previousQuery?.queryKey[1] === accessStore.sessionVersion ? previousData : undefined),
+  page,
+  pageSize,
+  search,
+  items: params,
+  total,
+  loading,
+  applySearch: searchParams,
+  invalidate: invalidateList,
+} = useServerTable({
+  queryKey: () => ['admin', accessStore.sessionVersion, 'params'],
+  enabled: () => accessStore.isLoggedIn,
+  filterSources: [status],
+  buildQuery: (state) => buildServerListQuery({ ...state, searchFields: ['key', 'name'], status: status.value ?? undefined, sortField: 'updatedAt' }),
+  queryFn: systemParamApi.list,
 })
-const params = computed(() => listData.value?.items ?? [])
-const total = computed(() => listData.value?.total ?? 0)
-
-function searchParams() {
-  if (page.value === 1 && appliedSearch.value === search.value) void loadParams()
-  else {
-    appliedSearch.value = search.value
-    page.value = 1
-  }
-}
 
 function resetFilters() {
   search.value = ''
   if (status.value !== null) status.value = null
   else searchParams()
-}
-
-function openEditor(param?: SystemParamApi.Item) {
-  editingParam.value = param ?? null
-  hydratingEditor = true
-  Object.assign(form, {
-    key: param?.key ?? '',
-    name: param?.name ?? '',
-    value: param ? formatParamValue(param.valueType, param.value) : '',
-    valueType: param?.valueType ?? 'STRING',
-    description: param?.description ?? '',
-    status: param?.status ?? 'ENABLED',
-  })
-  hydratingEditor = false
-  slideoverOpen.value = true
 }
 
 const { isPending: saving, mutate: saveParam } = useMutation({
@@ -173,7 +170,7 @@ const { isPending: saving, mutate: saveParam } = useMutation({
 
     slideoverOpen.value = false
     toast.add({ title: editingParam.value ? '参数已更新' : '参数已创建', color: 'success' })
-    await queryClient.invalidateQueries({ queryKey: ['admin', accessStore.sessionVersion, 'params'] })
+    await invalidateList()
   },
 })
 
@@ -203,7 +200,7 @@ async function requestDelete(param: SystemParamApi.Item) {
     onConfirm: async () => {
       await systemParamApi.delete(param.id)
       toast.add({ title: '参数已删除', color: 'success' })
-      await queryClient.invalidateQueries({ queryKey: ['admin', accessStore.sessionVersion, 'params'] })
+      await invalidateList()
     },
   })
 }
@@ -211,16 +208,8 @@ async function requestDelete(param: SystemParamApi.Item) {
 watch(
   () => form.valueType,
   (valueType, previousValueType) => {
-    if (hydratingEditor || valueType === previousValueType) return
+    if (hydrating.value || valueType === previousValueType) return
     form.value = getDefaultParamValue(valueType)
-  },
-  { flush: 'sync' },
-)
-watch(
-  status,
-  () => {
-    appliedSearch.value = search.value
-    page.value = 1
   },
   { flush: 'sync' },
 )
@@ -242,7 +231,7 @@ watch(
       <UButton label="重置" color="neutral" variant="outline" @click="resetFilters" />
     </div>
 
-    <UTable :data="params" :columns="columns" :loading="loading" sticky="header" class="min-h-0 flex-1">
+    <AdminTable v-model:page="page" :data="params" :columns="columns" :loading="loading" :total="total" :page-size="pageSize">
       <template #name-cell="{ row }">
         <div>
           <div class="font-medium text-default">{{ row.original.name }}</div>
@@ -273,25 +262,22 @@ watch(
           <template #leading><UIcon name="i-lucide-inbox" class="size-12 text-muted" /></template>
         </UEmpty>
       </template>
-    </UTable>
-
-    <div class="flex justify-end border-t border-default px-4 py-3"><UPagination v-model:page="page" :total="total" :items-per-page="pageSize" /></div>
+    </AdminTable>
   </div>
 
-  <USlideover v-model:open="slideoverOpen" :title="editingParam ? `编辑参数 · ${editingParam.name}` : '新建参数'" description="参数值以字符串保存，并由值类型约束其格式。">
-    <template #body>
-      <UForm id="param-form" :schema="paramSchema" :state="form" class="space-y-4" @submit="saveParam">
-        <UAlert title="不要存放密码、令牌或私钥" description="启用的参数可通过公共参数接口读取；敏感值应使用环境变量或密钥管理服务。" color="warning" variant="subtle" />
-
-        <UFormField name="key" label="参数键" required description="小写字母、数字和下划线，例如 site_name。">
-          <UInput v-model="form.key" class="w-full" autocomplete="off" />
-        </UFormField>
-        <UFormField name="name" label="参数名称" required><UInput v-model="form.name" class="w-full" /></UFormField>
-        <UFormField name="valueType" label="值类型" required :description="getParamValueTypeMetadata(form.valueType).description">
-          <USelect v-model="form.valueType" :items="paramValueTypeOptions" class="w-full" />
-        </UFormField>
-
-        <UFormField name="value" label="参数值" required>
+  <FormSlideover
+    v-model:open="slideoverOpen"
+    :saving="saving"
+    cancel-variant="soft"
+    :title="editingParam ? `编辑参数 · ${editingParam.name}` : '新建参数'"
+    description="参数值以字符串保存，并由值类型约束其格式。"
+  >
+    <template #body="{ formId }">
+      <AdminForm :id="formId" :key="formKey" ref="formRef" v-bind="formProps" :disabled="saving" class="space-y-4" @submit="saveParam">
+        <template #leading>
+          <UAlert title="不要存放密码、令牌或私钥" description="启用的参数可通过公共参数接口读取；敏感值应使用环境变量或密钥管理服务。" color="warning" variant="subtle" />
+        </template>
+        <template #value>
           <UTextarea v-if="form.valueType === 'STRING'" v-model="form.value" :rows="4" autoresize :maxrows="10" class="w-full" />
           <UInputNumber v-else-if="form.valueType === 'NUMBER'" v-model="numberValue" :increment="false" :decrement="false" :ui="{ base: 'text-left' }" class="w-full" />
           <URadioGroup v-else-if="form.valueType === 'BOOLEAN'" v-model="form.value" :items="booleanOptions" orientation="horizontal" />
@@ -303,17 +289,8 @@ watch(
               </div>
             </template>
           </ParamJsonEditor>
-        </UFormField>
-
-        <UFormField name="description" label="描述"><UTextarea v-model="form.description" :rows="3" autoresize :maxrows="8" class="w-full" /></UFormField>
-        <UFormField name="status" label="状态" :description="getParamStatusMetadata(form.status).description">
-          <USelect v-model="form.status" :items="paramStatusOptions" class="w-full" />
-        </UFormField>
-      </UForm>
+        </template>
+      </AdminForm>
     </template>
-    <template #footer="{ close }">
-      <UButton label="取消" color="neutral" variant="soft" @click="close" />
-      <UButton type="submit" form="param-form" label="保存" :loading="saving" />
-    </template>
-  </USlideover>
+  </FormSlideover>
 </template>

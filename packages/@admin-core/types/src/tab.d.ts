@@ -1,6 +1,9 @@
 import type { AdminMenuIcon } from './menu'
 import type { AdminRouteMeta } from './route'
 
+/** 拖放标签时相对目标标签的放置位置 */
+export type AdminTabPlacement = 'before' | 'after'
+
 export interface AdminTabItem {
   /** 当前标签页是否处于激活态 */
   active?: boolean
@@ -8,9 +11,11 @@ export interface AdminTabItem {
   closable?: boolean
   /** 标签页展示的图标 */
   icon?: AdminMenuIcon
+  /** iframe 页面地址，普通页面为空 */
+  iframeSrc?: string
   /** 标签页唯一标识，默认使用包含 query 和 hash 的完整路由地址 */
   key: string
-  /** 标签页是否固定在前方且不可关闭 */
+  /** 标签页是否固定在前方，批量关闭时保留 */
   pinned?: boolean
   /** 激活状态下是否显示标签页下边框 */
   showActiveTabBorder?: boolean
@@ -29,8 +34,6 @@ export interface AdminTabItem {
 export interface AdminTabRecord extends AdminTabItem {
   /** 用于按动态路由统计打开数量，不参与 Tab 唯一标识 */
   routeName?: string | symbol
-  /** iframe 页面地址，普通页面为空 */
-  iframeSrc?: string
   /** 当前标签页是否保留运行状态 */
   keepAlive: boolean
   /** 最后一次访问时的路由元信息 */

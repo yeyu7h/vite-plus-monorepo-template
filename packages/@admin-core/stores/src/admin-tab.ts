@@ -1,4 +1,4 @@
-import type { AdminTabRecord, PersistedAdminTab } from '@monorepo-admin-core/types'
+import type { AdminTabPlacement, AdminTabRecord, PersistedAdminTab } from '@monorepo-admin-core/types'
 import { defineStore } from 'pinia'
 import { closeAdminTab, markActiveAdminTabs } from './route-tab'
 
@@ -156,6 +156,26 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
       persistTabs(this)
     },
 
+    /** 将标签页放到同一固定分组中目标标签的前后
+     * @param key 被拖动的标签页标识
+     * @param targetKey 目标标签页标识
+     * @param placement 放在目标标签之前或之后
+     */
+    moveTab(key: string, targetKey: string, placement: AdminTabPlacement) {
+      if (key === targetKey || this.records.length < 2) return
+      const moving = this.records.find((item) => item.key === key)
+      const target = this.records.find((item) => item.key === targetKey)
+      if (!moving || !target || Boolean(moving.pinned) !== Boolean(target.pinned)) return
+
+      const remaining = this.records.filter((item) => item.key !== key)
+      const targetIndex = remaining.findIndex((item) => item.key === targetKey)
+      const insertIndex = targetIndex + (placement === 'after' ? 1 : 0)
+      if (this.records[insertIndex]?.key === key) return
+
+      this.records = [...remaining.slice(0, insertIndex), moving, ...remaining.slice(insertIndex)]
+      persistTabs(this)
+    },
+
     /** 关闭一个标签页并返回相邻标签的 `viewPath`
      * @param key 待关闭标签的 `key`
      * @returns 当前激活标签被关闭时的下一个路由地址
@@ -180,6 +200,62 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
 
       persistTabs(this)
       return wasActive ? nextRecord?.viewPath : void 0
+    },
+
+    /** 关闭指定标签之外所有允许关闭的标签页
+     * @param key 需要保留的标签页标识
+     * @returns 当前标签被关闭时应跳转的路由地址
+     */
+    closeOthers(key: string) {
+      if (!this.records.some((item) => item.key === key)) return void 0
+      return this.closeByKeys(
+        this.records.filter((item) => item.key !== key).map((item) => item.key),
+        key,
+      )
+    },
+
+    /** 关闭指定标签右侧所有允许关闭的标签页
+     * @param key 作为右侧范围起点的标签页标识
+     * @returns 当前标签被关闭时应跳转的路由地址
+     */
+    closeToRight(key: string) {
+      const index = this.records.findIndex((item) => item.key === key)
+      if (index === -1) return void 0
+      return this.closeByKeys(
+        this.records.slice(index + 1).map((item) => item.key),
+        key,
+      )
+    },
+
+    /** 批量关闭标签并在当前标签被关闭时返回回退路由
+     * @param keys 候选关闭标签页的标识列表
+     * @param fallbackKey 右键选中的标签页标识，同时作为导航回退目标
+     * @returns 当前标签被关闭时应跳转的路由地址
+     */
+    closeByKeys(keys: readonly string[], fallbackKey: string) {
+      const fallback = this.records.find((item) => item.key === fallbackKey)
+      if (!fallback) return void 0
+
+      // 回退目标必须留在列表中；固定标签和声明不可关闭的标签也不会被批量关闭。
+      const closingKeys = new Set(keys)
+      closingKeys.delete(fallbackKey)
+      const removed = this.records.filter((item) => closingKeys.has(item.key) && !item.pinned && item.closable !== false)
+      if (removed.length === 0) return void 0
+
+      const removedKeys = new Set(removed.map((item) => item.key))
+      this.records = this.records.filter((item) => !removedKeys.has(item.key))
+      // 与单个关闭操作保持一致，释放已关闭页面的缓存和滚动状态。
+      for (const item of removed) {
+        this.renderedKeys.delete(item.key)
+        delete this.refreshVersions[item.key]
+        clearScrollPositions(this, item.key)
+      }
+
+      const activeClosed = removedKeys.has(this.activeKey)
+      // 仅在当前页被移除时切换激活项；调用方据此执行一次路由跳转。
+      if (activeClosed) this.activeKey = fallbackKey
+      persistTabs(this)
+      return activeClosed ? fallback.viewPath : void 0
     },
 
     /** 刷新指定标签页并清除其滚动位置

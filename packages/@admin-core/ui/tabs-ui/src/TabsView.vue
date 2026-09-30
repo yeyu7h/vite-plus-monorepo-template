@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AdminTabItem } from '@monorepo-admin-core/types'
+import type { AdminTabItem, AdminTabPlacement } from '@monorepo-admin-core/types'
 import Tabs from './components/Tabs.vue'
 
 defineProps<{
@@ -9,7 +9,12 @@ defineProps<{
 
 const emit = defineEmits<{
   close: [key: string]
+  closeOthers: [key: string]
+  closeRight: [key: string]
+  openBrowserTab: [key: string]
+  openIframeSource: [key: string]
   pin: [key: string, pinned: boolean]
+  reorder: [key: string, targetKey: string, placement: AdminTabPlacement]
   refresh: [key: string]
   select: [key: string]
 }>()
@@ -17,7 +22,19 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex h-full min-w-0 justify-between">
-    <Tabs :active-key="activeKey" :tabs="tabs" @close="emit('close', $event)" @pin="(key, pinned) => emit('pin', key, pinned)" @select="emit('select', $event)" />
+    <Tabs
+      :active-key="activeKey"
+      :tabs="tabs"
+      @close="emit('close', $event)"
+      @close-others="emit('closeOthers', $event)"
+      @close-right="emit('closeRight', $event)"
+      @open-browser-tab="emit('openBrowserTab', $event)"
+      @open-iframe-source="emit('openIframeSource', $event)"
+      @pin="(key, pinned) => emit('pin', key, pinned)"
+      @reorder="(key, targetKey, placement) => emit('reorder', key, targetKey, placement)"
+      @refresh="emit('refresh', $event)"
+      @select="emit('select', $event)"
+    />
 
     <div class="flex h-full">
       <button

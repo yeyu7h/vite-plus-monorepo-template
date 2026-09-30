@@ -104,14 +104,41 @@ test('closes the active tab and returns the adjacent navigation target', () => {
   expect(store.records.map((item) => item.key)).toEqual(['/dashboard', '/system'])
 })
 
-test('pins tabs before ordinary tabs, protects them from close, and persists the choice', () => {
+test('closes other tabs atomically, retaining pinned and non-closable tabs and clearing cache state', () => {
+  const store = useAdminTabStore()
+  store.initialize(STORAGE_KEY, [createRecord('/pinned', { pinned: true }), createRecord('/home', { keepAlive: true }), createRecord('/reports'), createRecord('/locked', { closable: false })])
+  store.setActive('/home')
+  store.refresh('/home')
+  store.setScrollPositions('/home', { body: { left: 0, top: 120 } })
+
+  expect(store.closeOthers('/reports')).toBe('/reports')
+  expect(store.records.map((item) => item.key)).toEqual(['/pinned', '/reports', '/locked'])
+  expect(store.activeKey).toBe('/reports')
+  expect(store.hasRendered('/home')).toBe(false)
+  expect(store.getRenderKey('/home')).toBe('/home:0')
+  expect(store.getScrollPositions('/home')).toEqual({})
+  expect(store.readPersistedTabs(STORAGE_KEY).map((item) => item.viewPath)).toEqual(['/pinned', '/reports', '/locked'])
+})
+
+test('closes only closable tabs to the right and leaves the active tab in place when retained', () => {
+  const store = useAdminTabStore()
+  store.initialize(STORAGE_KEY, [createRecord('/pinned', { pinned: true }), createRecord('/home'), createRecord('/locked', { closable: false }), createRecord('/reports')])
+  store.setActive('/home')
+
+  expect(store.closeToRight('/home')).toBeUndefined()
+  expect(store.records.map((item) => item.key)).toEqual(['/pinned', '/home', '/locked'])
+  expect(store.activeKey).toBe('/home')
+  expect(store.closeToRight('/missing')).toBeUndefined()
+  expect(store.closeOthers('/missing')).toBeUndefined()
+})
+
+test('pins tabs before ordinary tabs and persists the choice', () => {
   const store = useAdminTabStore()
   store.initialize(STORAGE_KEY, [createRecord('/home'), createRecord('/reports'), createRecord('/settings')])
   store.setActive('/reports')
 
   store.setPinned('/reports', true)
   expect(store.records.map(({ key }) => key)).toEqual(['/reports', '/home', '/settings'])
-  expect(store.close('/reports')).toBeUndefined()
   expect(store.activeKey).toBe('/reports')
   expect(store.records).toHaveLength(3)
   expect(store.readPersistedTabs(STORAGE_KEY)[0]).toEqual({ pinned: true, to: '/reports', viewPath: '/reports' })
@@ -123,6 +150,62 @@ test('pins tabs before ordinary tabs, protects them from close, and persists the
   expect(store.records[0]?.pinned).toBe(false)
   expect(store.readPersistedTabs(STORAGE_KEY)[0]).toEqual({ to: '/reports', viewPath: '/reports' })
   expect(store.close('/reports')).toBe('/home')
+})
+
+test('explicitly closes an active pinned tab and clears its cached state', () => {
+  const store = useAdminTabStore()
+  store.initialize(STORAGE_KEY, [createRecord('/pinned', { pinned: true, keepAlive: true }), createRecord('/home')])
+  store.setActive('/pinned')
+  store.refresh('/pinned')
+  store.setScrollPositions('/pinned', { body: { left: 0, top: 120 } })
+
+  expect(store.close('/pinned')).toBe('/home')
+  expect(store.records.map((item) => item.key)).toEqual(['/home'])
+  expect(store.activeKey).toBe('/home')
+  expect(store.hasRendered('/pinned')).toBe(false)
+  expect(store.getRenderKey('/pinned')).toBe('/pinned:0')
+  expect(store.getScrollPositions('/pinned')).toEqual({})
+  expect(store.readPersistedTabs(STORAGE_KEY).map((item) => item.viewPath)).toEqual(['/home'])
+})
+
+test('reorders pinned and ordinary tabs within their groups and restores the manual order', () => {
+  const store = useAdminTabStore()
+  store.initialize(STORAGE_KEY, [createRecord('/pinned-1', { pinned: true }), createRecord('/pinned-2', { pinned: true }), createRecord('/home'), createRecord('/reports')])
+  store.setActive('/reports')
+
+  store.moveTab('/pinned-2', '/pinned-1', 'before')
+  store.moveTab('/reports', '/home', 'before')
+  expect(store.records.map(({ key }) => key)).toEqual(['/pinned-2', '/pinned-1', '/reports', '/home'])
+  expect(store.activeKey).toBe('/reports')
+
+  const snapshots = store.readPersistedTabs(STORAGE_KEY)
+  setActivePinia(createPinia())
+  const restored = useAdminTabStore()
+  restored.initialize(
+    STORAGE_KEY,
+    snapshots.map((snapshot) => ({ ...createRecord(snapshot.to), pinned: snapshot.pinned })),
+  )
+  expect(restored.records.map(({ key }) => key)).toEqual(['/pinned-2', '/pinned-1', '/reports', '/home'])
+})
+
+test('rejects dragging across the pinned boundary and preserves the original order', () => {
+  const store = useAdminTabStore()
+  store.initialize(STORAGE_KEY, [createRecord('/pinned', { pinned: true }), createRecord('/home'), createRecord('/reports')])
+  const originalSnapshot = sessionStorage.getItem(STORAGE_KEY)
+
+  store.moveTab('/reports', '/pinned', 'before')
+  store.moveTab('/pinned', '/home', 'after')
+  expect(store.records.map(({ key, pinned }) => ({ key, pinned: Boolean(pinned) }))).toEqual([
+    { key: '/pinned', pinned: true },
+    { key: '/home', pinned: false },
+    { key: '/reports', pinned: false },
+  ])
+  expect(sessionStorage.getItem(STORAGE_KEY)).toBe(originalSnapshot)
+
+  store.moveTab('/missing', '/home', 'before')
+  store.moveTab('/home', '/missing', 'after')
+  store.moveTab('/home', '/home', 'before')
+  expect(store.records.map(({ key }) => key)).toEqual(['/pinned', '/home', '/reports'])
 })
 
 test('keeps pinned tabs when the route tab limit evicts an older sibling', () => {

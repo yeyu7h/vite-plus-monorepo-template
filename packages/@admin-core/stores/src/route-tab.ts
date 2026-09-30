@@ -137,7 +137,7 @@ export function closeAdminTab<T extends AdminTabItem>(tabs: readonly T[], key: s
   if (tabs.length <= 1) return { tabs: [...tabs] }
 
   const index = tabs.findIndex((tab) => tab.key === key)
-  if (index === -1 || tabs[index]?.pinned || tabs[index]?.closable === false) return { tabs: [...tabs] }
+  if (index === -1 || tabs[index]?.closable === false) return { tabs: [...tabs] }
 
   const nextTab = tabs[index + 1] ?? tabs[index - 1] // 关闭当前 `Tab` 时优先切右边，没有右边再退回左边
   const nextTabs = tabs.filter((tab) => tab.key !== key)

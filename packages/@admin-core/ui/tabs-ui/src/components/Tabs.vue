@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { AdminMenuImageIcon, AdminTabItem } from '@monorepo-admin-core/types'
+import type { AdminMenuImageIcon, AdminTabItem, AdminTabPlacement } from '@monorepo-admin-core/types'
 import { cn } from '@monorepo/shared/utils'
 import { ref } from 'vue'
+import { useTabDrag } from './use-tab-drag'
 
 const props = defineProps<{
   activeKey: string
@@ -10,11 +11,27 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [key: string]
+  closeOthers: [key: string]
+  closeRight: [key: string]
+  openBrowserTab: [key: string]
+  openIframeSource: [key: string]
   pin: [key: string, pinned: boolean]
+  reorder: [key: string, targetKey: string, placement: AdminTabPlacement]
+  refresh: [key: string]
   select: [key: string]
 }>()
 
 const contextMenuSnapshot = ref<{ key: string; pinned: boolean } | null>(null)
+const { draggingKey, displayedTabs, startTabPointer, consumeDragClick } = useTabDrag({
+  tabs: () => props.tabs,
+  onReorder: (key, targetKey, placement) => emit('reorder', key, targetKey, placement),
+})
+
+/** 拖拽松手后阻止浏览器额外触发一次标签切换 */
+function clickTab(event: MouseEvent, key: string) {
+  if (consumeDragClick(event)) return
+  selectTab(key)
+}
 
 /** 打开右键菜单时锁定固定状态，避免菜单关闭动画期间文案立即翻转
  * @param tab 当前标签页
@@ -53,7 +70,7 @@ function togglePinned(tab: AdminTabItem) {
  */
 function closeTab(key: string) {
   const tab = props.tabs.find((tab) => tab.key === key)
-  if (!tab || !isTabClosable(tab)) return
+  if (!tab || !canCloseTab(tab)) return
 
   emit('close', key)
 }
@@ -66,12 +83,28 @@ function selectTab(key: string) {
   emit('select', key)
 }
 
-/** 判断标签页是否允许关闭
+/** 判断标签页是否允许单独关闭
  * @param tab 当前标签页
  * @returns 是否可以关闭
  */
-function isTabClosable(tab: AdminTabItem) {
-  return !tab.pinned && tab.closable !== false && props.tabs.length > 1
+function canCloseTab(tab: AdminTabItem) {
+  return tab.closable !== false && props.tabs.length > 1
+}
+
+/** 固定标签保留快捷关闭入口的隐藏与批量关闭保护 */
+function isTabQuickClosable(tab: AdminTabItem) {
+  return !tab.pinned && canCloseTab(tab)
+}
+
+/** 判断批量关闭菜单是否有可操作的标签页
+ * @param key 右键选中的标签页标识
+ * @param rightOnly 是否只检查该标签右侧
+ * @returns 范围内是否存在可关闭的标签页
+ */
+function hasClosableTabs(key: string, rightOnly: boolean) {
+  const index = props.tabs.findIndex((tab) => tab.key === key)
+  if (index === -1) return false
+  return props.tabs.some((tab, tabIndex) => (rightOnly ? tabIndex > index : tabIndex !== index) && isTabQuickClosable(tab))
 }
 
 /** 获取图片图标在指定主题下的地址
@@ -102,86 +135,172 @@ function isActiveTab(tab: AdminTabItem) {
 </script>
 
 <template>
-  <div class="flex h-full min-w-0 flex-1 overflow-x-clip overflow-y-visible">
-    <UContextMenu
-      v-for="tab in tabs"
-      :key="tab.key"
-      :items="[
-        {
-          label: isContextMenuPinned(tab) ? '取消固定标签页' : '固定标签页',
-          icon: isContextMenuPinned(tab) ? 'i-lucide-pin-off' : 'i-lucide-pin',
-          disabled: tabs.length === 1,
-          onSelect: () => togglePinned(tab),
-        },
-      ]"
-      size="sm"
-      :ui="{ content: 'z-50', itemLeadingIcon: 'size-3.5' }"
-      @update:open="captureContextMenuState(tab, $event)"
-    >
-      <div
-        :class="
-          cn(
-            'tab-item group/tab relative flex h-full min-w-0 shrink items-center justify-center select-none',
-            isActiveTab(tab) ? cn('is-active z-10 bg-default', tab.showActiveTabBorder ? 'after:bg-border' : 'after:bg-default') : 'hover:bg-elevated hover:dark:bg-default',
-          )
-        "
-        @click="selectTab(tab.key)"
+  <TransitionGroup name="tab-reorder" tag="div" class="tab-reorder-list relative flex h-full min-w-0 flex-1 overflow-x-clip overflow-y-visible" :class="{ 'is-sorting': draggingKey }">
+    <div v-for="tab in displayedTabs" :key="tab.key" :data-tab-key="tab.key" :class="['tab-slot relative h-full min-w-0 shrink', { 'is-dragging': draggingKey === tab.key }]">
+      <UContextMenu
+        :items="[
+          [
+            {
+              label: '重新加载',
+              icon: 'i-lucide-refresh-cw',
+              onSelect: () => emit('refresh', tab.key),
+            },
+            {
+              label: isContextMenuPinned(tab) ? '取消固定' : '固定',
+              icon: isContextMenuPinned(tab) ? 'i-lucide-pin-off' : 'i-lucide-pin',
+              disabled: tabs.length === 1,
+              onSelect: () => togglePinned(tab),
+            },
+          ],
+          [
+            {
+              label: '在新标签页打开',
+              icon: 'i-lucide-external-link',
+              onSelect: () => emit('openBrowserTab', tab.key),
+            },
+            ...(tab.iframeSrc?.trim()
+              ? [
+                  {
+                    label: '在新标签页打开 iframe 链接',
+                    icon: 'i-lucide-external-link',
+                    onSelect: () => emit('openIframeSource', tab.key),
+                  },
+                ]
+              : []),
+          ],
+          [
+            {
+              label: '关闭',
+              disabled: !canCloseTab(tab),
+              onSelect: () => closeTab(tab.key),
+            },
+            {
+              label: '关闭其他标签页',
+              disabled: !hasClosableTabs(tab.key, false),
+              onSelect: () => hasClosableTabs(tab.key, false) && emit('closeOthers', tab.key),
+            },
+            {
+              label: '关闭右侧标签页',
+              disabled: !hasClosableTabs(tab.key, true),
+              onSelect: () => hasClosableTabs(tab.key, true) && emit('closeRight', tab.key),
+            },
+          ],
+        ]"
+        size="sm"
+        :ui="{ content: 'z-50', item: 'items-center', itemLeadingIcon: 'size-3.5' }"
+        @update:open="captureContextMenuState(tab, $event)"
       >
-        <div class="flex h-full min-w-0 flex-1 items-center justify-center overflow-hidden">
-          <div class="flex w-full min-w-0 items-center overflow-hidden pr-3 pl-3.5">
-            <div class="tab-primary-content flex min-w-0 flex-1 items-center overflow-hidden">
-              <UIcon
-                v-if="typeof tab.icon === 'string' && tab.icon.startsWith('i-')"
-                class="tab-leading-icon mr-2 shrink-0 text-muted group-[.is-active]/tab:text-default"
-                :name="tab.icon"
-                size="18"
-              />
-              <picture v-else-if="isTabImageIcon(tab.icon)" class="tab-leading-icon shrink-0">
-                <source media="(prefers-color-scheme: dark)" :srcset="getTabImageIcon(tab.icon, 'dark')" />
-                <img class="mr-2 size-4.5 object-contain" :src="getTabImageIcon(tab.icon)" />
-              </picture>
+        <div
+          :class="
+            cn(
+              'tab-item group/tab relative flex h-full w-full min-w-0 cursor-default items-center justify-center select-none',
+              isActiveTab(tab) ? cn('is-active z-10 bg-default', tab.showActiveTabBorder ? 'after:bg-border' : 'after:bg-default') : 'hover:bg-elevated hover:dark:bg-default',
+            )
+          "
+          :title="tab.title"
+          @click="clickTab($event, tab.key)"
+          @pointerdown="startTabPointer($event, tab.key)"
+        >
+          <div class="flex h-full min-w-0 flex-1 items-center justify-center overflow-hidden">
+            <div class="flex h-full w-full min-w-0 items-center overflow-hidden pr-3 pl-3.5">
+              <button
+                class="tab-select-button flex h-full min-w-0 flex-1 cursor-default items-center text-left"
+                type="button"
+                :aria-label="tab.title"
+                :aria-current="isActiveTab(tab) ? 'page' : undefined"
+              >
+                <div class="tab-primary-content flex min-w-0 flex-1 items-center overflow-hidden">
+                  <UIcon
+                    v-if="typeof tab.icon === 'string' && tab.icon.startsWith('i-')"
+                    class="tab-leading-icon mr-2 shrink-0 text-muted group-[.is-active]/tab:text-default"
+                    :name="tab.icon"
+                    size="18"
+                  />
+                  <picture v-else-if="isTabImageIcon(tab.icon)" class="tab-leading-icon shrink-0">
+                    <source media="(prefers-color-scheme: dark)" :srcset="getTabImageIcon(tab.icon, 'dark')" />
+                    <img class="mr-2 size-4.5 object-contain" :src="getTabImageIcon(tab.icon)" draggable="false" />
+                  </picture>
 
-              <span class="tab-title min-w-0 flex-1 overflow-hidden text-sm leading-none font-medium whitespace-nowrap text-muted group-[.is-active]/tab:text-default">
-                {{ tab.title }}
-              </span>
+                  <span class="tab-title min-w-0 flex-1 overflow-hidden text-sm leading-none font-medium whitespace-nowrap text-muted group-[.is-active]/tab:text-default">
+                    {{ tab.title }}
+                  </span>
+                </div>
+              </button>
+
+              <button
+                v-if="isTabPinned(tab)"
+                class="tab-pin-button ml-3 flex size-5 shrink-0 items-center justify-center rounded-full text-muted enabled:hover:bg-accented enabled:hover:text-default group-[.is-active]/tab:text-default disabled:cursor-default disabled:opacity-60"
+                type="button"
+                :title="tabs.length === 1 ? '唯一标签页不可取消固定' : '取消固定标签页'"
+                :aria-label="tabs.length === 1 ? '唯一标签页不可取消固定' : '取消固定标签页'"
+                :disabled="tabs.length === 1"
+                @click.stop="emit('pin', tab.key, false)"
+              >
+                <UIcon name="i-lucide-pin" size="14" />
+              </button>
+
+              <button
+                v-if="isTabQuickClosable(tab)"
+                class="tab-close-button ml-3 flex size-5 shrink-0 items-center justify-center rounded-full text-muted hover:bg-accented hover:text-default group-[.is-active]/tab:text-default"
+                type="button"
+                title="关闭标签页"
+                @click.stop="closeTab(tab.key)"
+              >
+                <UIcon name="i-lucide-x" size="14" />
+              </button>
             </div>
-
-            <button
-              v-if="isTabPinned(tab)"
-              class="tab-pin-button ml-3 flex size-5 shrink-0 items-center justify-center rounded-full text-muted group-[.is-active]/tab:text-default disabled:cursor-default disabled:opacity-60"
-              type="button"
-              :title="tabs.length === 1 ? '唯一标签页不可取消固定' : '取消固定标签页'"
-              :aria-label="tabs.length === 1 ? '唯一标签页不可取消固定' : '取消固定标签页'"
-              :disabled="tabs.length === 1"
-              @click.stop="emit('pin', tab.key, false)"
-            >
-              <UIcon name="i-lucide-pin" size="14" />
-            </button>
-
-            <button
-              v-if="isTabClosable(tab)"
-              class="tab-close-button ml-3 flex size-5 shrink-0 items-center justify-center rounded-full text-muted hover:bg-accented hover:text-default group-[.is-active]/tab:text-default"
-              type="button"
-              title="关闭标签页"
-              @click.stop="closeTab(tab.key)"
-            >
-              <UIcon name="i-lucide-x" size="14" />
-            </button>
           </div>
         </div>
-
-        <span aria-hidden="true" class="pointer-events-none absolute top-0 right-0 -bottom-px z-10 w-px bg-border" />
-      </div>
-    </UContextMenu>
-  </div>
+      </UContextMenu>
+    </div>
+  </TransitionGroup>
 </template>
 
 <style lang="scss" scoped>
+.tab-slot {
+  border-inline-end: 1px solid var(--ui-border);
+  flex-basis: 15rem;
+
+  &.is-dragging .tab-item {
+    visibility: hidden;
+  }
+}
+
+.tab-drag-ghost {
+  pointer-events: none;
+  position: fixed;
+  z-index: 2147483647;
+  background: var(--ui-bg);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 16%);
+}
+
+.tab-reorder-move {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.is-sorting .tab-reorder-move {
+  transition-duration: 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-reorder-move {
+    transition: none;
+  }
+}
+
 .tab-item {
   container-name: admin-tab;
   container-type: inline-size;
-  /* 为嵌套的可压缩内容提供基础宽度，避免 Tab 在父级 flex 布局中收缩为 0 */
-  flex-basis: 15rem;
+  touch-action: pan-y;
+
+  &:has(.tab-select-button:focus-visible) {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: -2px;
+  }
+
+  .tab-select-button:focus-visible {
+    outline: none;
+  }
 
   /* 用伪元素绘制激活指示线，默认收缩为 0，不占用 Tab 的布局空间 */
   &::after {

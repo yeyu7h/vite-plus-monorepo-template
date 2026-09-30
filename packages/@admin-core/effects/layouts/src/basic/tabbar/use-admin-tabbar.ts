@@ -1,4 +1,4 @@
-import type { AdminTabRecord, PersistedAdminTab } from '@monorepo-admin-core/types'
+import type { AdminTabPlacement, AdminTabRecord, PersistedAdminTab } from '@monorepo-admin-core/types'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
@@ -59,6 +59,26 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
     await router.push(tab.viewPath)
   }
 
+  /** 在浏览器新标签页打开标签页最后实际访问的地址
+   * @param key 目标标签标识
+   */
+  function openBrowserTab(key: string) {
+    const tab = tabStore.records.find((item) => item.key === key)
+    if (!tab) return
+
+    window.open(router.resolve(tab.viewPath).href, '_blank', 'noopener,noreferrer')
+  }
+
+  /** 在浏览器新标签页打开 iframe 的原始地址
+   * @param key 目标标签标识
+   */
+  function openIframeSource(key: string) {
+    const src = tabStore.records.find((item) => item.key === key)?.iframeSrc?.trim()
+    if (!src) return
+
+    window.open(src, '_blank', 'noopener,noreferrer')
+  }
+
   /**
    * 关闭指定标签页 如果关闭的是当前页 则跳到相邻标签
    * @param key 待关闭标签标识
@@ -71,6 +91,22 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
     }
   }
 
+  /** 关闭指定标签之外的可关闭标签页
+   * @param key 右键选中的标签页标识
+   */
+  async function closeOtherTabs(key: string) {
+    const nextActiveTarget = tabStore.closeOthers(key)
+    if (nextActiveTarget) await router.push(nextActiveTarget)
+  }
+
+  /** 关闭指定标签右侧的可关闭标签页
+   * @param key 右键选中的标签页标识
+   */
+  async function closeRightTabs(key: string) {
+    const nextActiveTarget = tabStore.closeToRight(key)
+    if (nextActiveTarget) await router.push(nextActiveTarget)
+  }
+
   /** 更新指定标签页的固定状态
    * @param key 标签页标识
    * @param pinned 是否固定
@@ -79,12 +115,20 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
     tabStore.setPinned(key, pinned)
   }
 
+  /** 按拖放目标调整标签页顺序
+   * @param key 被拖动的标签页标识
+   * @param targetKey 目标标签页标识
+   * @param placement 放在目标标签之前或之后
+   */
+  function moveTab(key: string, targetKey: string, placement: AdminTabPlacement) {
+    tabStore.moveTab(key, targetKey, placement)
+  }
+
   /**
-   * 刷新当前激活标签页
+   * 刷新指定标签页
    * @param key 待刷新标签标识
    */
   function refreshTab(key: string) {
-    if (key !== activeKey.value) return
     tabStore.refresh(key)
   }
 
@@ -118,7 +162,12 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
 
   return {
     activeKey,
+    closeOtherTabs,
+    closeRightTabs,
     closeTab,
+    moveTab,
+    openBrowserTab,
+    openIframeSource,
     pinTab,
     refreshTab,
     selectTab,

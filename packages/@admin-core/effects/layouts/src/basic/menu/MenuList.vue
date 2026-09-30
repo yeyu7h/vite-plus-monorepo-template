@@ -62,7 +62,7 @@ function itemClass(item: AdminMenuItem) {
   const hasChildren = Boolean(item.children?.length)
 
   return [
-    'group relative isolate flex w-full items-center rounded-md py-1.5 text-left text-sm font-medium transition-[gap,padding,color,background-color] duration-200 focus:outline-none focus-visible:outline-3 focus-visible:outline-primary/25',
+    'group relative isolate flex w-full items-center rounded-md py-1.5 text-left text-sm font-medium transition-[gap,padding,color,background-color] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
     isRootCollapsed.value ? 'gap-0 px-1.5' : ['gap-1.5 pr-2.5', props.depth === 1 ? 'pl-1.5' : props.depth >= 3 ? 'pl-2.75' : 'pl-2.5'],
     item.active
       ? isRootCollapsed.value

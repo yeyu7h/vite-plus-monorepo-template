@@ -20,11 +20,13 @@ const scrollElements = new Map<string, HTMLElement>()
 const bufferedScrollPositions = new Map<string, Map<string, ScrollPosition>>()
 const pendingScrollPositions = new Map<string, Map<string, ScrollPosition>>()
 let contentRoot: HTMLElement | undefined
+let contentObserver: MutationObserver | undefined
 let concealedContentRoot: { element: HTMLElement; visibility: string } | undefined
 let pendingScrollFrame: number | undefined
 let scrollElementSequence = 0
 let restoreGeneration = 0
 let restoringTabKey = ''
+let unmounted = false
 
 interface ScrollPosition {
   left: number
@@ -201,6 +203,11 @@ function clearBufferedTab(tabKey: string) {
 
 function pruneDisconnectedScrollElements() {
   const retainedElementKeys = new Set<string>()
+  const activePositions = new Set<string>([
+    ...Object.keys(tabStore.getScrollPositions(activeKey.value)),
+    ...(bufferedScrollPositions.get(activeKey.value)?.keys() ?? []),
+    ...(pendingScrollPositions.get(activeKey.value)?.keys() ?? []),
+  ])
 
   for (const positions of Object.values(tabStore.scrollPositions)) {
     for (const elementKey of Object.keys(positions)) retainedElementKeys.add(elementKey)
@@ -215,8 +222,17 @@ function pruneDisconnectedScrollElements() {
   }
 
   for (const [elementKey, element] of scrollElements) {
-    if (!element.isConnected && !retainedElementKeys.has(elementKey)) {
-      scrollElements.delete(elementKey)
+    // Hidden KeepAlive pages are detached too; only drop nodes from the active page or closed tabs.
+    if (element.isConnected || (!activePositions.has(elementKey) && retainedElementKeys.has(elementKey))) continue
+
+    scrollElements.delete(elementKey)
+    for (const positions of bufferedScrollPositions.values()) positions.delete(elementKey)
+    for (const positions of pendingScrollPositions.values()) positions.delete(elementKey)
+    for (const [tabKey, positions] of Object.entries(tabStore.scrollPositions)) {
+      if (!Object.hasOwn(positions, elementKey)) continue
+      const nextPositions = { ...positions }
+      delete nextPositions[elementKey]
+      tabStore.setScrollPositions(tabKey, nextPositions)
     }
   }
 }
@@ -224,6 +240,7 @@ function pruneDisconnectedScrollElements() {
 async function pruneAfterRender() {
   await nextTick()
   await nextAnimationFrame()
+  if (unmounted) return
   pruneDisconnectedScrollElements()
 }
 
@@ -299,9 +316,19 @@ onMounted(() => {
   contentRoot = contentMarker.value?.parentElement ?? void 0
   document.addEventListener('scroll', handleScroll, true)
   contentRoot?.addEventListener('scroll', handleScroll, true)
+  if (contentRoot) {
+    contentObserver = new MutationObserver(() => {
+      void nextTick().then(() => {
+        if (!unmounted) pruneDisconnectedScrollElements()
+      })
+    })
+    contentObserver.observe(contentRoot, { childList: true, subtree: true })
+  }
 })
 
 onBeforeUnmount(() => {
+  unmounted = true
+  contentObserver?.disconnect()
   restoreGeneration += 1
   restoringTabKey = ''
   revealContent()

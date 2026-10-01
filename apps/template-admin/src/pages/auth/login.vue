@@ -4,7 +4,7 @@ import type { CapErrorEvent, CapProgressEvent } from 'cap-widget'
 
 import Cap from 'cap-widget'
 import { z } from 'zod'
-import { computed, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { resolveAdminApiURL } from '@/config/app'
 import { resolvePostLoginPath } from '@/router/access'
@@ -134,6 +134,11 @@ function resetCaptcha() {
   captchaProgress.value = 0
   captchaStatus.value = 'idle'
 }
+
+onBeforeUnmount(() => {
+  captchaClient?.widget.remove()
+  captchaClient = undefined
+})
 
 function useDemoAccount(type: 'admin' | 'user') {
   form.username = type

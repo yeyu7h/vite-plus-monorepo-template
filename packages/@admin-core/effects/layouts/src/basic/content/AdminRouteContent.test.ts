@@ -70,6 +70,17 @@ function createScrollablePage(testId: string) {
 
 const ScrollablePageA = createScrollablePage('scroll-a')
 const ScrollablePageB = createScrollablePage('scroll-b')
+const DynamicScrollablePage = defineComponent({
+  name: 'DynamicScrollablePage',
+  setup() {
+    const generation = ref(0)
+    return () =>
+      h('div', [
+        h('button', { 'data-testid': 'replace-scroll', onClick: () => (generation.value += 1), type: 'button' }, 'Replace'),
+        h('div', { 'data-testid': 'dynamic-scroll', key: generation.value, style: { height: '20px', overflow: 'auto' } }, h('div', { style: { height: '500px' } })),
+      ])
+  },
+})
 
 beforeEach(() => {
   sessionStorage.clear()
@@ -163,7 +174,7 @@ test('lazily mounts restored iframes, keeps opted-in instances and refreshes onl
 })
 
 test('restores shared and nested scroll containers independently for each cached tab', async () => {
-  const { router, store, wrapper } = await mountContent([createRecord('/scroll-a', { keepAlive: true }), createRecord('/scroll-b', { keepAlive: true })])
+  const { router, store, wrapper } = await mountContent([createRecord('/scroll-a', { keepAlive: true }), createRecord('/scroll-b', { keepAlive: true })], '/scroll-a', true)
   const contentRoot = wrapper.get('span[aria-hidden="true"]').element.parentElement as HTMLElement
   const documentScroller = document.scrollingElement instanceof HTMLElement ? document.scrollingElement : document.documentElement
   const scrollA = wrapper.get('[data-testid="scroll-a"]').element as HTMLElement
@@ -224,7 +235,27 @@ test('restores shared and nested scroll containers independently for each cached
   wrapper.unmount()
 })
 
-async function mountContent(records: AdminTabRecord[], initialPath = records[0]?.viewPath ?? '/plain') {
+test('releases a scroll container removed inside an active cached page', async () => {
+  const { router, store, wrapper } = await mountContent([createRecord('/dynamic', { keepAlive: true }), createRecord('/plain')], '/dynamic', true)
+  const removedScroller = wrapper.get('[data-testid="dynamic-scroll"]').element as HTMLElement
+  removedScroller.scrollTop = 120
+  removedScroller.dispatchEvent(new Event('scroll'))
+
+  await wrapper.get('[data-testid="replace-scroll"]').trigger('click')
+  await new Promise<void>((resolve) => setTimeout(resolve))
+  expect(removedScroller.isConnected).toBe(false)
+
+  const currentScroller = wrapper.get('[data-testid="dynamic-scroll"]').element as HTMLElement
+  currentScroller.scrollTop = 35
+  currentScroller.dispatchEvent(new Event('scroll'))
+  await activate(store, router, '/plain')
+
+  expect(Object.values(store.getScrollPositions('/dynamic'))).toContainEqual({ left: 0, top: 35 })
+  expect(Object.values(store.getScrollPositions('/dynamic'))).not.toContainEqual({ left: 0, top: 120 })
+  wrapper.unmount()
+})
+
+async function mountContent(records: AdminTabRecord[], initialPath = records[0]?.viewPath ?? '/plain', attachToDocument = false) {
   const pinia = createPinia()
   setActivePinia(pinia)
 
@@ -232,6 +263,7 @@ async function mountContent(records: AdminTabRecord[], initialPath = records[0]?
     history: createMemoryHistory(),
     routes: [
       { component: CachedPage, path: '/cached' },
+      { component: DynamicScrollablePage, path: '/dynamic' },
       { component: PlainPage, path: '/plain' },
       { component: PlainPage, path: '/persistent-frame' },
       { component: ScrollablePageA, path: '/scroll-a' },
@@ -246,6 +278,7 @@ async function mountContent(records: AdminTabRecord[], initialPath = records[0]?
   store.setActive(records.find((item) => item.viewPath === initialPath)?.key ?? initialPath)
 
   const wrapper = mount(AdminRouteContent, {
+    ...(attachToDocument ? { attachTo: document.body } : {}),
     global: {
       plugins: [pinia, router],
       stubs: {

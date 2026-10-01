@@ -12,7 +12,7 @@ Scalar 首页位于 `/`，三组 OpenAPI JSON 分别位于 `/api/doc`、`/api/cl
 
 ```bash
 vp install
-cp apps/template-api/.env.example apps/template-api/.env
+cp templates/template-api/.env.example templates/template-api/.env
 vp run @app/template-api#dev
 ```
 

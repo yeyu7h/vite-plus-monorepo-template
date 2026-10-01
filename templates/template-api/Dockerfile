@@ -18,7 +18,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 RUN ./node_modules/.bin/vp run -t @app/template-api#build
 RUN pnpm --config.inject-workspace-packages=true \
     --filter @app/template-api deploy --prod /opt/template-api
-RUN cp -R apps/template-api/dist /opt/template-api/dist
+RUN cp -R templates/template-api/dist /opt/template-api/dist
 
 FROM node:24-bookworm-slim AS runner
 

@@ -1,6 +1,7 @@
 packages:
   - internal/*
   - apps/*
+  - templates/*
   - packages/*
   - packages/@admin-core/*
   - packages/@admin-core/ui/*

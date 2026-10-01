@@ -23,7 +23,7 @@
 
 | Clhoria Template                                                              | 本仓库                                |
 | ----------------------------------------------------------------------------- | ------------------------------------- |
-| `src/routes/**`、`src/db/**`、`src/services/**`                               | `apps/template-api/src/**`            |
+| `src/routes/**`、`src/db/**`、`src/services/**`                               | `templates/template-api/src/**`       |
 | `src/lib/core/{create-application,define-config,factory,singleton,stoker}/**` | `packages/server-core/src/**`         |
 | `src/lib/core/refine-query/**`                                                | `packages/server-refine-query/src/**` |
 | `plugins/**`                                                                  | `packages/server-vite-plugin/src/**`  |
@@ -48,6 +48,6 @@
 
 ## 约束
 
-- 不要用上游文件覆盖 `apps/template-api` 的 Docker/Compose/Vite+ 配置。
+- 不要用上游文件覆盖 `templates/template-api` 的 Docker/Compose/Vite+ 配置。
 - 上游对 `src/lib/core`、`plugins`、`src/utils` 的修改需要同步到对应共享 package，而不是重新放回 app 内。
 - 每次完成同步后，更新本文件的上游 SHA、同步日期和必要的兼容性说明。

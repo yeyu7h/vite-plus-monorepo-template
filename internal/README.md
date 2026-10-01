@@ -53,6 +53,8 @@ export default defineNodeLibraryConfig({
 
 `@monorepo/vite-config` 提供 `defineAdminConfig`，按原有顺序组合运行时配置注入、加载页、Vue Router、Vue、JSX、布局、Tailwind 和 Nuxt UI 插件。它与库构建配置分包，避免应用预设依赖插件、插件又依赖库构建预设时形成循环。
 
+普通前台应用可使用同包的 `defineWebConfig`，只组合 Vue Router、Vue、Tailwind 和 Nuxt UI，并由应用传入 `root`、`nuxtUI` 和 `vite` 覆盖配置。它不注入管理端专用的运行时配置和布局插件。
+
 ```ts
 import { defineAdminConfig } from '@monorepo/vite-config'
 
@@ -76,7 +78,7 @@ export default defineAdminConfig({
 - `vite` 支持静态配置或异步回调，回调接收 `{ command, mode, root, env, ... }`。`env` 使用 Vite 默认的 `VITE_` 前缀过滤，不自动开放其他环境变量。
 - 应用配置通过 Vite+ 的 `mergeConfig` 合并：普通嵌套对象合并，插件列表和多数数组追加；别名等字段遵循 Vite 的专用合并规则。应用的 `plugins` 会追加在预设插件后。`root` 和 `envDir` 不在覆盖接口中，统一使用顶层 `root`。
 
-目录与依赖方向为：`apps/template-admin` → `internal/vite-config` → 配置注入/加载页插件 → `internal/build-config`。配置包直接导出 TypeScript 源码，无须预构建。应用若直接使用某个插件的客户端类型，仍需保留该插件的直接依赖，例如 `vite-plugin-vue-layouts-next/client` 和加载页的 `@monorepo/vite-plugin-app-loading/runtime`。
+目录与依赖方向为：`templates/template-admin` → `internal/vite-config` → 配置注入/加载页插件 → `internal/build-config`。配置包直接导出 TypeScript 源码，无须预构建。应用若直接使用某个插件的客户端类型，仍需保留该插件的直接依赖，例如 `vite-plugin-vue-layouts-next/client` 和加载页的 `@monorepo/vite-plugin-app-loading/runtime`。
 
 ## 验证
 

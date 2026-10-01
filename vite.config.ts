@@ -7,13 +7,13 @@ export default defineConfig({
     '*': 'vp check --fix',
   },
   test: {
-    projects: ['apps/*/vite.config.ts', 'packages/**/vite.config.ts', 'internal/*/vite.config.ts'],
+    projects: ['apps/*/vite.config.ts', 'templates/*/vite.config.ts', 'packages/**/vite.config.ts', 'internal/*/vite.config.ts'],
   },
   fmt: {
     semi: false,
     singleQuote: true,
     printWidth: 200,
-    ignorePatterns: ['apps/**/typed-router.d.ts', 'apps/**/src/types/openapi/**', '.agents/**'],
+    ignorePatterns: ['apps/**/typed-router.d.ts', 'apps/**/src/types/openapi/**', 'templates/**/typed-router.d.ts', 'templates/**/src/types/openapi/**', '.agents/**'],
   },
   lint: {
     plugins: ['eslint', 'typescript', 'unicorn', 'oxc', 'vue', 'vitest'],
@@ -24,7 +24,16 @@ export default defineConfig({
       browser: true,
       builtin: true,
     },
-    ignorePatterns: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**', 'apps/**/typed-router.d.ts', 'apps/**/src/types/openapi/**', '.agents/**'],
+    ignorePatterns: [
+      '**/dist/**',
+      '**/dist-ssr/**',
+      '**/coverage/**',
+      'apps/**/typed-router.d.ts',
+      'apps/**/src/types/openapi/**',
+      'templates/**/typed-router.d.ts',
+      'templates/**/src/types/openapi/**',
+      '.agents/**',
+    ],
     rules: {
       'no-array-constructor': 'error',
       'typescript/ban-ts-comment': 'error',
@@ -86,7 +95,7 @@ export default defineConfig({
         },
       },
       {
-        files: ['apps/template-api/**/*.integration.test.ts'],
+        files: ['templates/template-api/**/*.integration.test.ts', 'apps/**/*.integration.test.ts'],
         rules: {
           'typescript/no-explicit-any': 'off',
           'typescript/unbound-method': 'off',
@@ -105,7 +114,7 @@ export default defineConfig({
         },
       },
       {
-        files: ['apps/template-api/migrations/**/*.ts', 'apps/template-api/scripts/**/*.ts'],
+        files: ['templates/template-api/migrations/**/*.ts', 'templates/template-api/scripts/**/*.ts', 'apps/*/migrations/**/*.ts', 'apps/*/scripts/**/*.ts'],
         rules: {
           'typescript/no-explicit-any': 'off',
         },

@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Portions of `apps/template-api`, `packages/server-core`, `packages/server-refine-query`, `packages/server-vite-plugin`, and `packages/utils` are derived from Clhoria Template.
+Portions of `templates/template-api`, `packages/server-core`, `packages/server-refine-query`, `packages/server-vite-plugin`, and `packages/utils` are derived from Clhoria Template.
 
 ## Clhoria Template
 

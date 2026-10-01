@@ -15,7 +15,7 @@ export interface AdminConfigContext extends ConfigEnv {
   env: Record<string, string>
 }
 
-type AdminViteOverrides = Omit<UserConfig, 'root' | 'envDir'>
+type AppViteOverrides = Omit<UserConfig, 'root' | 'envDir'>
 
 export interface AdminConfigOptions {
   /** Absolute application directory or a file URL, normally new URL('.', import.meta.url). */
@@ -23,7 +23,32 @@ export interface AdminConfigOptions {
   nuxtUI?: Parameters<typeof NuxtUI>[0]
   layouts?: Parameters<typeof Layouts>[0]
   loading?: Omit<InjectAppLoadingPluginOptions, 'env' | 'isBuild' | 'root'>
-  vite?: AdminViteOverrides | ((context: AdminConfigContext) => AdminViteOverrides | Promise<AdminViteOverrides>)
+  vite?: AppViteOverrides | ((context: AdminConfigContext) => AppViteOverrides | Promise<AppViteOverrides>)
+}
+
+export interface WebConfigOptions {
+  /** Absolute application directory or a file URL, normally new URL('.', import.meta.url). */
+  root: string | URL
+  nuxtUI?: Parameters<typeof NuxtUI>[0]
+  vite?: AppViteOverrides
+}
+
+/** A small Vue application preset without the admin runtime, layouts, or access plugins. */
+export function defineWebConfig(options: WebConfigOptions) {
+  const root = options.root instanceof URL ? fileURLToPath(options.root) : options.root
+  if (!isAbsolute(root)) throw new Error('defineWebConfig requires an absolute application root')
+
+  const config: UserConfig = {
+    root,
+    plugins: [VueRouter(), Vue(), Tailwindcss(), NuxtUI(options.nuxtUI)],
+    resolve: {
+      alias: { '@': resolve(root, 'src') },
+      dedupe: ['vue', 'vue-router'],
+    },
+    server: { host: '0.0.0.0' },
+  }
+
+  return defineConfig(mergeConfig(config, options.vite ?? {}))
 }
 
 /** Compose the admin plugins while keeping application choices at the call site. */

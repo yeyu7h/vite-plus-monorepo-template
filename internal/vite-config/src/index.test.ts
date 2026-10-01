@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vite-plus/test'
 import type { Plugin, PluginOption } from 'vite-plus'
-import { defineAdminConfig } from './index'
+import { defineAdminConfig, defineWebConfig } from './index'
 
 const roots: string[] = []
 
@@ -81,5 +81,32 @@ describe('defineAdminConfig', () => {
 
   it('rejects roots whose meaning would depend on the command working directory', () => {
     expect(() => defineAdminConfig({ root: './apps/admin' })).toThrow('requires an absolute application root')
+  })
+})
+
+describe('defineWebConfig', () => {
+  it('keeps the web plugin set independent of admin plugins and merges app overrides', async () => {
+    const root = await fixture('Web')
+    const config = defineWebConfig({
+      root: pathToFileURL(`${root}/`),
+      vite: {
+        server: { port: 5174, proxy: { '/api': 'http://localhost:9999' } },
+        plugins: [{ name: 'web-extra' }],
+      },
+    })
+
+    expect(config.root).toBe(`${root}/`)
+    expect(config.resolve?.alias).toEqual({ '@': join(root, 'src') })
+    expect(config.server).toMatchObject({ host: '0.0.0.0', port: 5174, proxy: { '/api': 'http://localhost:9999' } })
+
+    const names = (await plugins(config.plugins)).map((plugin) => plugin.name)
+    expect(names).toContain('vite:vue')
+    expect(names).toContain('web-extra')
+    expect(names).not.toContain('vite:inject-app-config')
+    expect(names).not.toContain('vite:inject-app-loading')
+  })
+
+  it('requires an absolute application root', () => {
+    expect(() => defineWebConfig({ root: './apps/web' })).toThrow('requires an absolute application root')
   })
 })

@@ -1,0 +1,32 @@
+{
+  "name": "@app/template-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "build-only": "vp build",
+    "preview": "vp preview",
+    "type-check": "vue-tsc --build"
+  },
+  "dependencies": {
+    "@monorepo/request": "workspace:*",
+    "@nuxt/ui": "catalog:vue3",
+    "tailwindcss": "catalog:",
+    "vue": "catalog:vue3",
+    "vue-router": "catalog:vue3"
+  },
+  "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
+    "@monorepo/vite-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vue-tsc": "catalog:vue3"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  }
+}

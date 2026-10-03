@@ -1,10 +1,11 @@
 import { hash } from '@node-rs/argon2'
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
+import { decode } from 'hono/jwt'
 import { testClient } from 'hono/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test'
 
 import db from '@/db'
-import { systemMenuRoles, systemMenus, systemRoles, systemUsers } from '@/db/schema'
+import { systemMenuRoles, systemMenus, systemRoles, systemUserRoles, systemUsers } from '@/db/schema'
 import env from '@/env'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { Status } from '@/lib/enums'
@@ -176,6 +177,36 @@ describe('auth routes', () => {
       expect(newRefreshToken).not.toBe(oldRefreshToken)
     })
 
+    it('should use current role assignments when refreshing', async () => {
+      const { refreshToken } = await loginAs(USER_CREDENTIALS)
+      const [regularUser] = await db.select({ id: systemUsers.id }).from(systemUsers).where(eq(systemUsers.username, 'user')).limit(1)
+      expect(regularUser).toBeDefined()
+
+      await db.delete(systemUserRoles).where(and(eq(systemUserRoles.userId, regularUser!.id), eq(systemUserRoles.roleId, 'user')))
+      try {
+        const response = await client.auth.refresh.$post({}, { headers: { Cookie: `refreshToken=${refreshToken}` } })
+        expect(response.status).toBe(HttpStatusCodes.OK)
+        if (response.status === HttpStatusCodes.OK) {
+          const body = await response.json()
+          const payload = decode((body as any).data.accessToken).payload
+          expect(payload.roles).not.toContain('user')
+        }
+      } finally {
+        await db.insert(systemUserRoles).values({ userId: regularUser!.id, roleId: 'user' }).onConflictDoNothing()
+      }
+    })
+
+    it('should reject refresh after the user is disabled', async () => {
+      const { refreshToken } = await loginAs(USER_CREDENTIALS)
+      await db.update(systemUsers).set({ status: Status.DISABLED }).where(eq(systemUsers.username, 'user'))
+      try {
+        const response = await client.auth.refresh.$post({}, { headers: { Cookie: `refreshToken=${refreshToken}` } })
+        expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED)
+      } finally {
+        await db.update(systemUsers).set({ status: Status.ENABLED }).where(eq(systemUsers.username, 'user'))
+      }
+    })
+
     it('should return 401 when no refresh token cookie present', async () => {
       const response = await client.auth.refresh.$post({})
 
@@ -252,6 +283,9 @@ describe('auth routes', () => {
       const refresh2 = await client.auth.refresh.$post({}, { headers: { Cookie: `refreshToken=${login2.refreshToken}` } })
 
       expect(refresh2.status).toBe(HttpStatusCodes.UNAUTHORIZED)
+
+      const identity = await client.auth.userinfo.$get({}, { headers: { Authorization: `Bearer ${login2.accessToken}` } })
+      expect(identity.status).toBe(HttpStatusCodes.UNAUTHORIZED)
     })
 
     it('should return 401 without JWT', async () => {
@@ -370,8 +404,8 @@ describe('auth routes', () => {
       const menuIds = [rootMenuId, pageMenuId, buttonMenuId]
       const roleIds = [parentRoleId, childRoleId]
 
-      const [adminUser] = await db.select({ id: systemUsers.id }).from(systemUsers).where(eq(systemUsers.username, 'admin')).limit(1)
-      expect(adminUser).toBeDefined()
+      const [regularUser] = await db.select({ id: systemUsers.id }).from(systemUsers).where(eq(systemUsers.username, 'user')).limit(1)
+      expect(regularUser).toBeDefined()
 
       await db.insert(systemRoles).values([
         { id: parentRoleId, name: 'Access Parent', status: Status.ENABLED },
@@ -383,10 +417,11 @@ describe('auth routes', () => {
         { id: buttonMenuId, parentId: pageMenuId, path: 'create', title: '继承按钮', type: 'button', permissionCode: `access:${suffix}:create`, status: Status.ENABLED },
       ])
       await db.insert(systemMenuRoles).values(menuIds.map((menuId) => ({ menuId, roleId: parentRoleId })))
+      await db.insert(systemUserRoles).values({ userId: regularUser!.id, roleId: childRoleId })
       await setRoleParents(childRoleId, [parentRoleId])
 
       try {
-        const accessToken = await generateAccessToken({ id: adminUser!.id, roles: [childRoleId] })
+        const accessToken = await generateAccessToken({ id: regularUser!.id, roles: [childRoleId] })
         const response = await client.auth.access.$get({}, { headers: { Authorization: `Bearer ${accessToken}` } })
 
         expect(response.status).toBe(HttpStatusCodes.OK)
@@ -403,6 +438,7 @@ describe('auth routes', () => {
         }
       } finally {
         await setRoleParents(childRoleId, [])
+        await db.delete(systemUserRoles).where(eq(systemUserRoles.roleId, childRoleId))
         await db.delete(systemMenuRoles).where(inArray(systemMenuRoles.menuId, menuIds))
         await db.delete(systemMenus).where(inArray(systemMenus.id, menuIds))
         await db.delete(systemRoles).where(inArray(systemRoles.id, roleIds))

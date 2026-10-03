@@ -12,6 +12,7 @@ import { withLock } from '@/lib/infrastructure'
 import { enforcerPromise } from '@/lib/services/casbin'
 import { getAdminPermissionCatalog } from '@/lib/services/casbin/permission-catalog'
 import { getRoleApiPermissions } from '@/lib/services/casbin/permissions'
+import { getEffectiveEnabledRoleIds } from '@/lib/services/admin-roles'
 import { buildMenuTree, loadMenuRows, replaceRoleMenuLinks } from '../menus/menus.helpers'
 import type { RoleMenuAuthorizationNode } from './roles.schema'
 
@@ -181,6 +182,7 @@ export async function validateParentRolesExist(parentRoleIds: string[]): Promise
  * 更新角色的父角色关系
  */
 export async function updateRoleParents(roleId: string, parentRoleIds: string[]): Promise<UpdateRoleParentsResult> {
+  if (parentRoleIds.includes('admin')) return { success: false, error: 'admin 角色不允许被继承' }
   if (parentRoleIds.length > 0) {
     const hasCircular = await checkCircularInheritance(roleId, parentRoleIds)
     if (hasCircular) {
@@ -230,7 +232,8 @@ export async function saveRolePermissions(roleId: string, permissions: Array<[st
         const directPermissions = await enforcer.getPermissionsForUser(roleId.toString())
 
         // Get all implicit permissions (including inherited) / 获取所有隐式权限（包括继承的）
-        const allImplicitPermissions = await enforcer.getImplicitPermissionsForUser(roleId.toString())
+        const activeParents = (await getEffectiveEnabledRoleIds([roleId])).filter((id) => id !== roleId)
+        const allImplicitPermissions = (await Promise.all(activeParents.map((parent) => enforcer.getPermissionsForUser(parent)))).flat()
         const directPermSet = new Set(directPermissions.map((p) => `${p[1]}:${p[2]}`))
         const inheritedPermSet = new Set(allImplicitPermissions.filter((p) => !directPermSet.has(`${p[1]}:${p[2]}`)).map((p) => `${p[1]}:${p[2]}`))
 
@@ -304,11 +307,9 @@ export async function saveRolePermissions(roleId: string, permissions: Array<[st
 export async function getRolePermissionsAndGroupings(roleId: string) {
   const enforcer = await enforcerPromise
 
-  // Get all implicit permissions (including inherited) / 获取所有隐式权限（包括继承的）
-  const [allImplicitPermissions, directPermissions] = await Promise.all([
-    getRoleApiPermissions(enforcer, roleId),
-    roleId === 'admin' ? getRoleApiPermissions(enforcer, roleId) : enforcer.getPermissionsForUser(roleId),
-  ])
+  const activeRoles = roleId === 'admin' ? [roleId] : [...new Set([roleId, ...(await getEffectiveEnabledRoleIds([roleId]))])]
+  const allImplicitPermissions = (await Promise.all(activeRoles.map((id) => (id === 'admin' ? getRoleApiPermissions(enforcer, id) : enforcer.getPermissionsForUser(id))))).flat()
+  const directPermissions = allImplicitPermissions.filter(([source]) => source === roleId)
   const directKeys = new Set(directPermissions.map((permission) => `${permission[1]}\u0000${permission[2]}`))
 
   const permissions = allImplicitPermissions.map((p) => ({
@@ -411,6 +412,5 @@ export async function saveRoleMenus(roleId: string, requestedMenuIds: readonly s
 }
 
 export async function resolveInheritedRoleIds(roleId: string): Promise<string[]> {
-  const enforcer = await enforcerPromise
-  return enforcer.getImplicitRolesForUser(roleId)
+  return (await getEffectiveEnabledRoleIds([roleId])).filter((id) => id !== roleId)
 }

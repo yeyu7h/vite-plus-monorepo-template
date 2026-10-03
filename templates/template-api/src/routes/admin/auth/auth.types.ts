@@ -5,6 +5,7 @@ import type { AdminRouteHandler } from '@monorepo/server-core'
 export type UserTokenInfo = {
   id: string | number
   roles: string[]
+  sessionId?: string
 }
 
 export type ValidateLoginResult = { success: true; user: UserTokenInfo } | { success: false; error: string; status: 'unauthorized' | 'forbidden' }

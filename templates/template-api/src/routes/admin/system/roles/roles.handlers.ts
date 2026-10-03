@@ -11,6 +11,7 @@ import { HttpStatusCodes } from '@monorepo/server-core'
 import { HttpStatusPhrases } from '@monorepo/server-core'
 
 import { Resp } from '@/utils'
+import { getAdminActorRoles, refreshAllAdminSessions } from '@/lib/services/admin-session'
 
 import {
   cleanRoleAuthorization,
@@ -56,9 +57,15 @@ export const list: SystemRolesRouteHandlerType<'list'> = async (c) => {
 
 export const create: SystemRolesRouteHandlerType<'create'> = async (c) => {
   const body = c.req.valid('json')
-  const { sub } = c.get('jwtPayload')
+  const payload = c.get('jwtPayload')
+  const { sub } = payload
 
   const { parentRoleIds, ...roleData } = body
+
+  if (parentRoleIds?.length && !(await getAdminActorRoles(payload))?.includes('admin')) {
+    return c.json(Resp.fail('只有管理员可以设置角色继承'), HttpStatusCodes.FORBIDDEN)
+  }
+  if (parentRoleIds?.includes('admin')) return c.json(Resp.fail('admin 角色不允许被继承'), HttpStatusCodes.BAD_REQUEST)
 
   if (parentRoleIds && parentRoleIds.length > 0) {
     const invalidIds = await validateParentRolesExist(parentRoleIds)
@@ -101,13 +108,18 @@ export const get: SystemRolesRouteHandlerType<'get'> = async (c) => {
 export const update: SystemRolesRouteHandlerType<'update'> = async (c) => {
   const { id } = c.req.valid('param')
   const body = c.req.valid('json')
-  const { sub } = c.get('jwtPayload')
+  const payload = c.get('jwtPayload')
+  const { sub } = payload
 
   const { parentRoleIds, ...roleData } = body
 
   if (id === 'admin') {
     if (roleData.status === 'DISABLED') return c.json(Resp.fail('admin 角色不允许禁用'), HttpStatusCodes.FORBIDDEN)
     if (parentRoleIds !== undefined) return c.json(Resp.fail('admin 角色授权不允许修改'), HttpStatusCodes.FORBIDDEN)
+  }
+
+  if (parentRoleIds !== undefined && !(await getAdminActorRoles(payload))?.includes('admin')) {
+    return c.json(Resp.fail('只有管理员可以设置角色继承'), HttpStatusCodes.FORBIDDEN)
   }
 
   if (parentRoleIds !== undefined) {
@@ -118,22 +130,29 @@ export const update: SystemRolesRouteHandlerType<'update'> = async (c) => {
   }
 
   let updated
-  if (Object.keys(roleData).length > 0) {
-    ;[updated] = await db
-      .update(systemRoles)
-      .set({
-        ...roleData,
-        updatedBy: sub,
-      })
-      .where(eq(systemRoles.id, id))
-      .returning()
-  } else {
-    updated = await getRoleById(id)
+  try {
+    if (Object.keys(roleData).length > 0) {
+      ;[updated] = await db
+        .update(systemRoles)
+        .set({
+          ...roleData,
+          updatedBy: sub,
+        })
+        .where(eq(systemRoles.id, id))
+        .returning()
+    } else {
+      updated = await getRoleById(id)
+    }
+  } catch (error) {
+    if (parentRoleIds !== undefined) await refreshAllAdminSessions()
+    throw error
   }
 
   if (!updated) {
     return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
   }
+
+  if (roleData.status !== undefined || parentRoleIds !== undefined) await refreshAllAdminSessions()
 
   const roleWithParents = await enrichRoleWithParents(updated)
 
@@ -179,6 +198,10 @@ export const savePermissions: SystemRolesRouteHandlerType<'savePermissions'> = a
   const { id } = c.req.valid('param')
   const { permissions, parentRoleIds } = c.req.valid('json')
 
+  if (!(await getAdminActorRoles(c.get('jwtPayload')))?.includes('admin')) {
+    return c.json(Resp.fail('只有管理员可以修改角色授权'), HttpStatusCodes.FORBIDDEN)
+  }
+
   if (id === 'admin') return c.json(Resp.fail('admin 角色授权不允许修改'), HttpStatusCodes.FORBIDDEN)
 
   const exists = await roleExists(id)
@@ -195,8 +218,11 @@ export const savePermissions: SystemRolesRouteHandlerType<'savePermissions'> = a
 
   const permResult = await saveRolePermissions(id, permissions)
   if (!permResult.success) {
+    if (parentRoleIds !== undefined) await refreshAllAdminSessions()
     return c.json(Resp.fail(permResult.error), HttpStatusCodes.BAD_REQUEST)
   }
+
+  await refreshAllAdminSessions()
 
   return c.json(Resp.ok({ added: permResult.added, removed: permResult.removed, total: permResult.total }), HttpStatusCodes.OK)
 }
@@ -211,6 +237,9 @@ export const getMenus: SystemRolesRouteHandlerType<'getMenus'> = async (c) => {
 export const saveMenus: SystemRolesRouteHandlerType<'saveMenus'> = async (c) => {
   const { id } = c.req.valid('param')
   const { menuIds } = c.req.valid('json')
+  if (!(await getAdminActorRoles(c.get('jwtPayload')))?.includes('admin')) {
+    return c.json(Resp.fail('只有管理员可以修改角色授权'), HttpStatusCodes.FORBIDDEN)
+  }
   const result = await saveRoleMenus(id, menuIds)
   if (!result.success) {
     const status = result.status === 'forbidden' ? HttpStatusCodes.FORBIDDEN : HttpStatusCodes.NOT_FOUND

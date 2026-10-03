@@ -6,6 +6,16 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { enforcerPromise } from '@/lib/services/casbin'
 import { authorize } from './authorize'
 
+const sessionState = vi.hoisted(() => ({ roles: [] as string[], effectiveRoles: [] as string[], permissions: [] as string[][], revoked: false }))
+
+vi.mock('@/lib/services/admin-session', () => {
+  return {
+    getAdminSession: vi.fn<(userId: string, sessionId: string) => Promise<unknown>>(async (userId, sessionId) =>
+      sessionState.revoked ? null : { userId, sessionId, roles: sessionState.roles, effectiveRoles: sessionState.effectiveRoles, permissions: sessionState.permissions, groupings: [] },
+    ),
+  }
+})
+
 vi.mock('@/lib/services/casbin', async () => {
   const { newEnforcer, newModel } = await import('casbin')
   return {
@@ -37,13 +47,19 @@ app.use('*', authorize)
 app.all('/api/admin/new-feature/:id', (c) => c.json({ ok: true }))
 
 async function request(roles: string[], method = 'GET', sub = 'test-user') {
-  const token = await sign({ sub, roles }, secret, 'HS256')
+  sessionState.roles = roles
+  sessionState.effectiveRoles = roles
+  const token = await sign({ sub, roles, sessionId: 'test-session' }, secret, 'HS256')
   return app.request('/api/admin/new-feature/123', { method, headers: { Authorization: `Bearer ${token}` } })
 }
 
 beforeEach(async () => {
   const enforcer = await enforcerPromise
   enforcer.clearPolicy()
+  sessionState.roles = []
+  sessionState.effectiveRoles = []
+  sessionState.permissions = []
+  sessionState.revoked = false
 })
 
 describe('admin API authorization', () => {
@@ -58,13 +74,32 @@ describe('admin API authorization', () => {
   })
 
   it('preserves explicit and inherited Casbin permissions and method restrictions', async () => {
-    const enforcer = await enforcerPromise
-    await enforcer.addPolicy('reader', '/new-feature/{id}', 'GET')
-    await enforcer.addGroupingPolicy('operator', 'reader')
-
+    sessionState.permissions = [['reader', '/new-feature/{id}', 'GET']]
     expect((await request(['reader'])).status).toBe(200)
+    sessionState.effectiveRoles = ['operator', 'reader']
     expect((await request(['operator'])).status).toBe(200)
     expect((await request(['operator'], 'DELETE')).status).toBe(403)
+  })
+
+  it('does not trust a stale admin role in a valid token', async () => {
+    const token = await sign({ sub: 'test-user', roles: ['admin'], sessionId: 'test-session' }, secret, 'HS256')
+    sessionState.roles = ['reader']
+    expect((await app.request('/api/admin/new-feature/123', { headers: { Authorization: `Bearer ${token}` } })).status).toBe(403)
+  })
+
+  it('does not inherit policies from a disabled parent role', async () => {
+    sessionState.effectiveRoles = ['operator']
+    expect((await request(['operator'])).status).toBe(403)
+  })
+
+  it('rejects a revoked Redis login session', async () => {
+    sessionState.revoked = true
+    expect((await request(['admin'])).status).toBe(401)
+  })
+
+  it('accepts an existing token without a session ID until it expires', async () => {
+    const token = await sign({ sub: 'test-user', roles: ['admin'] }, secret, 'HS256')
+    expect((await app.request('/api/admin/new-feature/123', { headers: { Authorization: `Bearer ${token}` } })).status).toBe(200)
   })
 
   it('still requires a valid JWT before admin authorization', async () => {

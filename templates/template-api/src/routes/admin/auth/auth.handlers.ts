@@ -14,8 +14,9 @@ import { loginLogger } from '@/lib/services/logger'
 import { getIPAddress } from '@/services/ip'
 import { Resp, tryit } from '@/utils'
 
-import { getAdminAccessByRoles } from './access.helpers'
-import { generateTokens, getIdentityById, getPermissionsByRoles, logout as logoutUtil, refreshAccessToken, validateCaptcha, validateLogin } from './auth.helpers'
+import { getAdminAccessByRoles, resolveEffectiveAdminRoles } from './access.helpers'
+import { formatRolePolicies, generateTokens, getIdentityById, getPermissionsByRoles, logout as logoutUtil, refreshAccessToken, validateCaptcha, validateLogin } from './auth.helpers'
+import { getAdminSession } from '@/lib/services/admin-session'
 
 /** Admin login / 管理端登录 */
 export const login: AuthRouteHandlerType<'login'> = async (c) => {
@@ -99,9 +100,11 @@ export const logout: AuthRouteHandlerType<'logout'> = async (c) => {
 
 /** Get user info / 获取用户信息 */
 export const getIdentity: AuthRouteHandlerType<'getIdentity'> = async (c) => {
-  const { sub } = c.get('jwtPayload')
+  const { sub, roles, sessionId } = c.get('jwtPayload')
+  const session = sessionId ? await getAdminSession(sub, sessionId) : null
+  if (sessionId && !session) return c.json(Resp.fail(HttpStatusPhrases.UNAUTHORIZED), HttpStatusCodes.UNAUTHORIZED)
 
-  const identity = await getIdentityById(sub)
+  const identity = await getIdentityById(sub, session?.effectiveRoles ?? (await resolveEffectiveAdminRoles(roles ?? [])))
 
   if (!identity) {
     return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
@@ -112,21 +115,25 @@ export const getIdentity: AuthRouteHandlerType<'getIdentity'> = async (c) => {
 
 /** Get current admin menu access / 获取当前用户菜单和权限码 */
 export const getAccess: AuthRouteHandlerType<'getAccess'> = async (c) => {
-  const { roles } = c.get('jwtPayload')
-  const access = await getAdminAccessByRoles(roles ?? [])
+  const { sub, roles, sessionId } = c.get('jwtPayload')
+  const session = sessionId ? await getAdminSession(sub, sessionId) : null
+  if (sessionId && !session) return c.json(Resp.fail(HttpStatusPhrases.UNAUTHORIZED), HttpStatusCodes.UNAUTHORIZED)
+  const access = await getAdminAccessByRoles(session?.effectiveRoles ?? (await resolveEffectiveAdminRoles(roles ?? [])))
 
   return c.json(Resp.ok(access), HttpStatusCodes.OK)
 }
 
 /** Get user permissions / 获取用户权限 */
 export const getPermissions: AuthRouteHandlerType<'getPermissions'> = async (c) => {
-  const { roles } = c.get('jwtPayload')
+  const { sub, roles, sessionId } = c.get('jwtPayload')
+  const session = sessionId ? await getAdminSession(sub, sessionId) : null
+  if (sessionId && !session) return c.json(Resp.fail(HttpStatusPhrases.UNAUTHORIZED), HttpStatusCodes.UNAUTHORIZED)
 
-  if (!roles || roles.length === 0) {
+  if ((session?.roles ?? roles ?? []).length === 0) {
     return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
   }
 
-  const result = await getPermissionsByRoles(roles)
+  const result = session ? formatRolePolicies(session.permissions, session.groupings) : await getPermissionsByRoles(roles ?? [])
 
   return c.json(Resp.ok(result), HttpStatusCodes.OK)
 }

@@ -3,11 +3,11 @@ import crypto from 'node:crypto'
 
 import { verify } from '@node-rs/argon2'
 import { addDays, addMinutes, differenceInSeconds, getUnixTime } from 'date-fns'
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { sign } from 'hono/jwt'
 
 import db from '@/db'
-import { systemRoles, systemUserRoles, systemUsers } from '@/db/schema'
+import { systemUsers } from '@/db/schema'
 import env from '@/env'
 
 import { ACCESS_TOKEN_EXPIRES_MINUTES, REFRESH_TOKEN_EXPIRES_DAYS } from '@/lib/constants'
@@ -15,9 +15,9 @@ import { Status } from '@/lib/enums'
 import cap from '@/lib/services/cap'
 import { enforcerPromise } from '@/lib/services/casbin'
 import { getRoleApiPermissions } from '@/lib/services/casbin/permissions'
+import { getCurrentAdminUserRoles } from '@/lib/services/admin-roles'
+import { createAdminSession, refreshAdminSession, revokeAdminSession, revokeAdminSessionsForUser } from '@/lib/services/admin-session'
 import redisClient from '@/lib/services/redis'
-
-import { resolveEffectiveAdminRoles } from './access.helpers'
 
 // ===== Configuration / 配置 =====
 const ACCESS_TOKEN_SECRET = env.ADMIN_JWT_SECRET
@@ -57,6 +57,7 @@ export async function generateAccessToken(user: UserTokenInfo) {
   return await sign(
     {
       roles: user.roles,
+      ...(user.sessionId ? { sessionId: user.sessionId } : {}),
       sub: user.id,
       iat, // Issued at (Unix seconds timestamp) / 签发时间（Unix 秒级时间戳）
       exp, // Expiration time (Unix seconds timestamp) / 过期时间（Unix 秒级时间戳）
@@ -83,8 +84,15 @@ export async function generateRefreshToken(user: UserTokenInfo) {
  * 登录/注册时生成一对 Token
  */
 export async function generateTokens(user: UserTokenInfo) {
-  const [accessToken, refreshToken] = await Promise.all([generateAccessToken(user), generateRefreshToken(user)])
-  return { accessToken, refreshToken }
+  const session = await createAdminSession(String(user.id))
+  const sessionUser = { ...user, roles: session.roles, sessionId: session.sessionId }
+  try {
+    const [accessToken, refreshToken] = await Promise.all([generateAccessToken(sessionUser), generateRefreshToken(sessionUser)])
+    return { accessToken, refreshToken }
+  } catch (error) {
+    await revokeAdminSession(String(user.id), session.sessionId)
+    throw error
+  }
 }
 
 /**
@@ -117,6 +125,11 @@ export async function refreshAccessToken(refreshToken: string) {
     throw new Error('Token user mismatch')
   }
 
+  const session = user.sessionId ? await refreshAdminSession(userId, user.sessionId) : await createAdminSession(userId)
+  if (!session) throw new Error('Login session is no longer active')
+  user.roles = session.roles
+  user.sessionId = session.sessionId
+
   // Rotation: delete old refresh, issue new refresh / 轮换：删除旧 refresh，发新 refresh
   await redisClient.del(refreshKey(userId, randomPart))
   await redisClient.srem(refreshIndexKey(userId), randomPart)
@@ -133,15 +146,14 @@ export async function refreshAccessToken(refreshToken: string) {
 export async function logout(userId: string | number) {
   const tokens = await redisClient.smembers(refreshIndexKey(userId))
 
-  if (tokens.length === 0) {
-    return
+  if (tokens.length > 0) {
+    const pipeline = redisClient.pipeline()
+    // All keys share the same Hash Tag {user.${userId}}, ensuring they are in the same slot / 所有 key 都带有相同的 Hash Tag {user.${userId}}，确保在同一 slot
+    tokens.forEach((t) => pipeline.del(refreshKey(userId, t)))
+    pipeline.del(refreshIndexKey(userId))
+    await pipeline.exec()
   }
-
-  const pipeline = redisClient.pipeline()
-  // All keys share the same Hash Tag {user.${userId}}, ensuring they are in the same slot / 所有 key 都带有相同的 Hash Tag {user.${userId}}，确保在同一 slot
-  tokens.forEach((t) => pipeline.del(refreshKey(userId, t)))
-  pipeline.del(refreshIndexKey(userId))
-  await pipeline.exec()
+  await revokeAdminSessionsForUser(String(userId))
 }
 
 /**
@@ -182,7 +194,7 @@ export async function validateLogin(username: string, password: string): Promise
     return { success: false, error: '用户名或密码错误', status: 'unauthorized' }
   }
 
-  const enabledRoles = await getEnabledRoleIds(user.id)
+  const enabledRoles = (await getCurrentAdminUserRoles(user.id)) ?? []
 
   return {
     success: true,
@@ -197,7 +209,7 @@ export async function validateLogin(username: string, password: string): Promise
  * Get user identity info
  * 获取用户身份信息
  */
-export async function getIdentityById(userId: string) {
+export async function getIdentityById(userId: string, roles: string[]) {
   const [user] = await db
     .select({ id: systemUsers.id, username: systemUsers.username, avatar: systemUsers.avatar, homePath: systemUsers.homePath, nickName: systemUsers.nickName })
     .from(systemUsers)
@@ -205,20 +217,7 @@ export async function getIdentityById(userId: string) {
     .limit(1)
 
   if (!user) return null
-
-  const roles = await resolveEffectiveAdminRoles(await getEnabledRoleIds(user.id))
-
   return { ...user, roles }
-}
-
-async function getEnabledRoleIds(userId: string) {
-  const roles = await db
-    .select({ id: systemRoles.id })
-    .from(systemUserRoles)
-    .innerJoin(systemRoles, eq(systemUserRoles.roleId, systemRoles.id))
-    .where(and(eq(systemUserRoles.userId, userId), eq(systemRoles.status, Status.ENABLED)))
-
-  return roles.map(({ id }) => id)
 }
 
 /**
@@ -227,27 +226,26 @@ async function getEnabledRoleIds(userId: string) {
  */
 export async function getPermissionsByRoles(roles: string[]) {
   const casbinEnforcer = await enforcerPromise
+  const allPermsArrays = await Promise.all(roles.map((role) => getRoleApiPermissions(casbinEnforcer, role)))
+  const allGroupings = await casbinEnforcer.getGroupingPolicy()
+  return formatRolePolicies(
+    allPermsArrays.flat(),
+    allGroupings.filter(([child, parent]) => roles.includes(child) && roles.includes(parent)),
+  )
+}
+
+export function formatRolePolicies(permissions: string[][], groupings: string[][]) {
   const permissionsSet = new Set<string>()
   const groupingsSet = new Set<string>()
 
-  const allPermsArrays = await Promise.all(roles.map((role) => getRoleApiPermissions(casbinEnforcer, role)))
-
   // Process permissions for all roles / 处理所有角色的权限
-  for (const perms of allPermsArrays) {
-    for (const perm of perms) {
-      if (!perm || perm.length === 0) continue
-
-      const filteredPerm = perm.filter((item) => item && item.trim() !== '')
-      if (filteredPerm.length === 0) continue
-
-      const permStr = `p, ${filteredPerm.join(', ')}`
-      permissionsSet.add(permStr)
-    }
+  for (const perm of permissions) {
+    if (!perm || perm.length === 0) continue
+    const filteredPerm = perm.filter((item) => item && item.trim() !== '')
+    if (filteredPerm.length > 0) permissionsSet.add(`p, ${filteredPerm.join(', ')}`)
   }
 
-  // Get all role inheritance relationships / 获取所有角色继承关系
-  const allGroupings = await casbinEnforcer.getGroupingPolicy()
-  for (const grouping of allGroupings) {
+  for (const grouping of groupings) {
     if (!grouping || grouping.length === 0) continue
 
     const filteredGrouping = grouping.filter((item) => item && item.trim() !== '')

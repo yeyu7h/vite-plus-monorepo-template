@@ -27,10 +27,12 @@ import {
 } from '@/features/system-management/helpers'
 import type { RolePermissionGroup, RolePermissionInput } from '@/features/system-management/helpers'
 import { useAdminAccessStore } from '@/stores/access'
+import { useAdminUserStore } from '@/stores/user'
 
-definePage({ meta: { title: '角色管理', icon: 'i-lucide-shield-check', order: 10, authority: ['admin'] } })
+definePage({ meta: { title: '角色管理', icon: 'i-lucide-shield-check', order: 10 } })
 
 const accessStore = useAdminAccessStore()
+const userStore = useAdminUserStore()
 const confirm = useConfirm()
 const toast = useToast()
 const queryClient = useQueryClient()
@@ -78,7 +80,10 @@ const columns: TableColumn<SystemRoleApi.Item>[] = [
 ]
 
 const saving = computed(() => savingBasic.value || savingMenus.value || savingPermissions.value)
-const canEditPermissions = computed(() => permissions.value !== null && !editorLoading.value && editingRole.value?.id !== 'admin' && accessStore.hasPermission('system:role:authorize'))
+const canManageAuthorization = computed(() => userStore.roles.includes('admin'))
+const canEditPermissions = computed(
+  () => permissions.value !== null && !editorLoading.value && editingRole.value?.id !== 'admin' && canManageAuthorization.value && accessStore.hasPermission('system:role:authorize'),
+)
 const inheritedPermissions = computed(() => permissions.value?.permissions.filter(({ inherited }) => inherited).map(normalizeRolePermission) ?? [])
 const permissionGroups = computed(() => {
   const keyword = permissionSearch.value.trim().toLowerCase()
@@ -96,7 +101,7 @@ const isPermissionSearching = computed(() => Boolean(permissionSearch.value.trim
 const permissionSearchResults = computed(() => permissionGroups.value.flatMap(({ permissions }) => permissions))
 const copyRoleOptions = computed(() => allRoles.value.filter(({ id }) => id !== editingRole.value?.id).map((role) => ({ label: `${role.name} (${role.id})`, value: role.id })))
 
-const parentRoleOptions = computed(() => allRoles.value.filter(({ id }) => id !== editingRole.value?.id).map((role) => ({ label: `${role.name} (${role.id})`, value: role.id })))
+const parentRoleOptions = computed(() => allRoles.value.filter(({ id }) => id !== editingRole.value?.id && id !== 'admin').map((role) => ({ label: `${role.name} (${role.id})`, value: role.id })))
 
 const {
   page,
@@ -138,7 +143,7 @@ async function openEditor(role?: SystemRoleApi.Item) {
   collapsedPermissionGroups.value = new Set()
   copyRoleId.value = ''
 
-  if (role) {
+  if (role && canManageAuthorization.value) {
     const result = await loadRoleAuthorization()
     if (!result.data || result.isError || editingRole.value?.id !== role.id || !slideoverOpen.value || accessStore.sessionVersion !== requestSessionVersion) return
     const { menus, apiPermissions } = result.data
@@ -169,7 +174,7 @@ const { isPending: savingBasic, mutate: saveBasic } = useMutation({
       name: event.data.name,
       description: roleForm.description || undefined,
       status: roleForm.status,
-      parentRoleIds: roleForm.parentRoleIds,
+      ...(canManageAuthorization.value && editingRole.value?.id !== 'admin' ? { parentRoleIds: roleForm.parentRoleIds } : {}),
     }
     if (editingRole.value) await systemRoleApi.update(editingRole.value.id, body)
     else await systemRoleApi.create({ id: event.data.id, ...body })
@@ -354,8 +359,8 @@ async function requestDelete(role: SystemRoleApi.Item) {
         v-model="activeEditorTab"
         :items="[
           { label: '基本信息', value: 'basic', icon: 'i-lucide-info' },
-          { label: '菜单授权', value: 'menus', icon: 'i-lucide-list-checks', disabled: !editingRole },
-          { label: 'API 权限', value: 'api', icon: 'i-lucide-code-xml', disabled: !editingRole },
+          { label: '菜单授权', value: 'menus', icon: 'i-lucide-list-checks', disabled: !editingRole || !canManageAuthorization },
+          { label: 'API 权限', value: 'api', icon: 'i-lucide-code-xml', disabled: !editingRole || !canManageAuthorization },
         ]"
       >
         <template #content>
@@ -374,7 +379,7 @@ async function requestDelete(role: SystemRoleApi.Item) {
                 class="w-full"
             /></UFormField>
             <UFormField name="parentRoleIds" label="上级角色" description="上级角色的菜单与 API 权限会被继承。"
-              ><USelectMenu v-model="roleForm.parentRoleIds" multiple value-key="value" :disabled="editingRole?.id === 'admin'" :items="parentRoleOptions" class="w-full"
+              ><USelectMenu v-model="roleForm.parentRoleIds" multiple value-key="value" :disabled="editingRole?.id === 'admin' || !canManageAuthorization" :items="parentRoleOptions" class="w-full"
             /></UFormField>
           </UForm>
 
@@ -489,7 +494,7 @@ async function requestDelete(role: SystemRoleApi.Item) {
         :loading="saving"
       />
       <UButton
-        v-if="activeEditorTab === 'menus' && editingRole && !menuAuthorization?.readOnly && accessStore.hasPermission('system:role:authorize')"
+        v-if="activeEditorTab === 'menus' && editingRole && !menuAuthorization?.readOnly && canManageAuthorization && accessStore.hasPermission('system:role:authorize')"
         label="保存菜单授权"
         :loading="saving"
         @click="saveMenuAuthorization()"

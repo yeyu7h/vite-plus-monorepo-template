@@ -1,9 +1,10 @@
-import { Enforcer } from 'casbin'
+import { Enforcer, Util } from 'casbin'
 
 import { createAdminMiddleware } from '@monorepo/server-core'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { HttpStatusPhrases } from '@monorepo/server-core'
 import { enforcerPromise } from '@/lib/services/casbin'
+import { getAdminSession } from '@/lib/services/admin-session'
 import { Resp } from '@/utils'
 import { stripPrefix } from '@monorepo/utils'
 
@@ -14,32 +15,35 @@ import { stripPrefix } from '@monorepo/utils'
  * 用于校验当前用户是否有访问指定接口的权限
  */
 export const authorize = createAdminMiddleware(async (c, next) => {
-  const { roles } = c.get('jwtPayload')
+  const { sub, roles, sessionId } = c.get('jwtPayload')
 
-  if (!Array.isArray(roles)) {
+  if (typeof sub !== 'string' || !Array.isArray(roles)) {
     return c.json(Resp.fail(HttpStatusPhrases.FORBIDDEN), HttpStatusCodes.FORBIDDEN)
   }
 
+  const session = sessionId ? await getAdminSession(sub, sessionId) : null
+  if (sessionId && !session) return c.json(Resp.fail(HttpStatusPhrases.UNAUTHORIZED), HttpStatusCodes.UNAUTHORIZED)
+  const directRoles = session?.roles ?? roles
+
   // admin 自动拥有管理端接口权限，不依赖 seed 中的静态策略。
-  if (roles.includes('admin')) {
+  if (directRoles.includes('admin')) {
     await next()
     return
-  }
-
-  // Get Casbin permission enforcer / 获取 Casbin 权限管理器
-  const enforcer = await enforcerPromise
-
-  // Check if enforcer is valid / 检查 enforcer 是否有效
-  if (!(enforcer instanceof Enforcer)) {
-    return c.json(Resp.fail(HttpStatusPhrases.INTERNAL_SERVER_ERROR), HttpStatusCodes.INTERNAL_SERVER_ERROR)
   }
 
   // Strip API prefix to get the actual request path / 去除 API 前缀，获取实际请求路径
   const path = stripPrefix(c.req.path, c.get('tierBasePath') ?? '')
 
-  // Check all role permissions in parallel / 并行检查所有角色权限
-  const results = await Promise.all(roles.map((role) => enforcer.enforce(role, path, c.req.method)))
-  const hasPermission = results.some((hasPermission) => hasPermission)
+  // New logins use the Redis permission snapshot. Tokens issued before the
+  // session migration retain their former Casbin behavior until expiry.
+  let hasPermission: boolean
+  if (session) {
+    hasPermission = session.permissions.some(([, resource, action]) => !!resource && !!action && Util.keyMatch3Func(path, resource) && Util.regexMatchFunc(c.req.method, action))
+  } else {
+    const enforcer = await enforcerPromise
+    if (!(enforcer instanceof Enforcer)) return c.json(Resp.fail(HttpStatusPhrases.INTERNAL_SERVER_ERROR), HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    hasPermission = (await Promise.all(directRoles.map((role) => enforcer.enforce(role, path, c.req.method)))).some(Boolean)
+  }
 
   // Return 403 if no permission / 无权限则返回 403
   if (!hasPermission) {

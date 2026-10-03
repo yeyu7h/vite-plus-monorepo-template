@@ -8,6 +8,7 @@ import { casbinRule, systemRoles, systemUserRoles } from '@/db/schema'
 import env from '@/env'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { Status } from '@/lib/enums'
+import { enforcerPromise } from '@/lib/services/casbin'
 import { authorize } from '@/middlewares/authorize'
 import systemRolesRouter from '@/routes/admin/system/roles/roles.index'
 import { getAdminToken, getAuthHeaders, getUserToken } from '~/tests/auth-utils'
@@ -122,6 +123,20 @@ describe('system role routes', () => {
       const response = await client.system.roles.$get({ query: {} }, {})
 
       expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED)
+    })
+
+    it('should reject inheritance changes from a non-admin with the update API permission', async () => {
+      const roleId = `${testRoleId}_delegated`
+      await db.insert(systemRoles).values({ id: roleId, name: '委派测试角色', status: Status.ENABLED })
+      const enforcer = await enforcerPromise
+      const added = await enforcer.addPolicy('user', '/system/roles/{id}', 'PATCH')
+      try {
+        const response = await client.system.roles[':id'].$patch({ param: { id: roleId }, json: { parentRoleIds: ['admin'] } }, { headers: getAuthHeaders(userToken) })
+        expect(response.status).toBe(HttpStatusCodes.FORBIDDEN)
+      } finally {
+        if (added) await enforcer.removePolicy('user', '/system/roles/{id}', 'PATCH')
+        await db.delete(systemRoles).where(eq(systemRoles.id, roleId))
+      }
     })
   })
 
@@ -496,6 +511,12 @@ describe('system role routes', () => {
 
         expect(json.message).toContain('上级角色不存在')
       }
+    })
+
+    it('should not allow inheriting the built-in admin role', async () => {
+      const response = await client.system.roles.$post({ json: { ...testRole, id: `${testRoleId}_admin_parent`, parentRoleIds: ['admin'] } }, { headers: getAuthHeaders(adminToken) })
+
+      expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST)
     })
 
     it('should return 409 for duplicate role id', async () => {

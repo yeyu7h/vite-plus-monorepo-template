@@ -40,6 +40,7 @@ export const create = createRoute({
     [HttpStatusCodes.CREATED]: jsonContent(RefineResultSchema(systemUsersDetailResponseSchema), '创建成功'),
     [HttpStatusCodes.CONFLICT]: jsonContent(respErrSchema, '用户名已存在'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '角色不存在或已禁用'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '只有管理员可以分配用户角色'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, '参数验证失败'),
   },

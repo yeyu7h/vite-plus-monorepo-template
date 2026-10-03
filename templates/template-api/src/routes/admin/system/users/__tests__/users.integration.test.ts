@@ -8,6 +8,8 @@ import { casbinRule, systemUserRoles, systemUsers } from '@/db/schema'
 import env from '@/env'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { Status } from '@/lib/enums'
+import { enforcerPromise } from '@/lib/services/casbin'
+import { createAdminSession, getAdminSession, revokeAdminSession } from '@/lib/services/admin-session'
 import { authorize } from '@/middlewares/authorize'
 import systemUsersRouter from '@/routes/admin/system/users/users.index'
 import { getAdminToken, getAuthHeaders, getUserToken } from '~/tests/auth-utils'
@@ -113,6 +115,17 @@ describe('system user routes', () => {
 
       expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED)
     })
+
+    it('should reject role assignment from a non-admin with the create API permission', async () => {
+      const enforcer = await enforcerPromise
+      const added = await enforcer.addPolicy('user', '/system/users', 'POST')
+      try {
+        const response = await client.system.users.$post({ json: { ...testUser, username: `${testUsername}_delegated`, roleIds: ['admin'] } }, { headers: getAuthHeaders(userToken) })
+        expect(response.status).toBe(HttpStatusCodes.FORBIDDEN)
+      } finally {
+        if (added) await enforcer.removePolicy('user', '/system/users', 'POST')
+      }
+    })
   })
 
   describe('get /system/user - list users', () => {
@@ -201,7 +214,7 @@ describe('system user routes', () => {
         {
           json: {
             username: `${testUsername}_required`,
-          },
+          } as never,
         },
         { headers: getAuthHeaders(adminToken) },
       )
@@ -463,6 +476,31 @@ describe('system user routes', () => {
       if (response.status === HttpStatusCodes.OK) {
         const json = await response.json()
         expect(json.data.roles).toEqual([expect.objectContaining({ id: 'user' })])
+      }
+    })
+
+    it('should refresh an online user session after role assignment changes', async () => {
+      const session = await createAdminSession(userId)
+      expect(session.roles).toContain('user')
+
+      try {
+        const response = await client.system.users[':id'].$patch({ param: { id: userId }, json: { roleIds: [] } }, { headers: getAuthHeaders(adminToken) })
+        expect(response.status).toBe(HttpStatusCodes.OK)
+        expect((await getAdminSession(userId, session.sessionId))?.roles).toEqual([])
+      } finally {
+        await revokeAdminSession(userId, session.sessionId)
+        await client.system.users[':id'].$patch({ param: { id: userId }, json: { roleIds: ['user'] } }, { headers: getAuthHeaders(adminToken) })
+      }
+    })
+
+    it('should revoke an online user session when the user is disabled', async () => {
+      const session = await createAdminSession(userId)
+      try {
+        const response = await client.system.users[':id'].$patch({ param: { id: userId }, json: { status: Status.DISABLED } }, { headers: getAuthHeaders(adminToken) })
+        expect(response.status).toBe(HttpStatusCodes.OK)
+        expect(await getAdminSession(userId, session.sessionId)).toBeNull()
+      } finally {
+        await client.system.users[':id'].$patch({ param: { id: userId }, json: { status: Status.ENABLED } }, { headers: getAuthHeaders(adminToken) })
       }
     })
 

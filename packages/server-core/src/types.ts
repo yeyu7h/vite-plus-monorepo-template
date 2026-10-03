@@ -28,6 +28,8 @@ export type ClientJwtPayload = BaseJwtPayload
 export type AdminJwtPayload = BaseJwtPayload & {
   /** User roles / 用户角色 */
   roles: string[]
+  /** Redis login session / Redis 登录会话 */
+  sessionId?: string
 }
 
 // ── Per-Tier Bindings / 分层绑定 ──

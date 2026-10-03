@@ -205,22 +205,15 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
   }
 }
 
-/** Resolve direct user roles plus all inherited parent roles from Casbin. */
+/** Compatibility for access tokens issued before Redis-backed sessions. */
 export async function resolveEffectiveAdminRoles(roles: readonly string[]): Promise<string[]> {
-  const roleSet = new Set(roles)
   const enforcer = await enforcerPromise
-  const inheritedRoles = await Promise.all(roles.map((role) => enforcer.getImplicitRolesForUser(role)))
-
-  for (const inherited of inheritedRoles) {
-    for (const role of inherited) roleSet.add(role)
-  }
-
-  return [...roleSet]
+  const inherited = await Promise.all(roles.map((role) => enforcer.getImplicitRolesForUser(role)))
+  return [...new Set([...roles, ...inherited.flat().filter((role) => role !== 'admin' || roles.includes('admin'))])]
 }
 
 export async function getAdminAccessByRoles(roles: readonly string[]): Promise<AdminAccessPayload> {
-  const [rows, effectiveRoles] = await Promise.all([loadAdminAccessMenuRows(), resolveEffectiveAdminRoles(roles)])
-  return buildAdminAccessPayload(rows, effectiveRoles)
+  return buildAdminAccessPayload(await loadAdminAccessMenuRows(), roles)
 }
 
 async function loadAdminAccessMenuRows(): Promise<AdminAccessMenuRecord[]> {

@@ -8,26 +8,17 @@ import { systemMenuRoles, systemMenus as menusTable } from '@/db/schema'
 
 type MenuRow = typeof systemMenus.$inferSelect
 type MenuWithRoles = MenuRow & { roleIds: string[] }
-type MenuValidationInput = Pick<MenuRow, 'id' | 'path' | 'type'> &
+type MenuValidationInput = Pick<MenuRow, 'id' | 'type'> &
   Partial<
     Pick<
       MenuRow,
-      | 'activePath'
-      | 'externalLink'
-      | 'hideInBreadcrumb'
-      | 'hideInMenu'
-      | 'hideInTab'
-      | 'icon'
-      | 'iframeSrc'
-      | 'ignoreAccess'
-      | 'keepAlive'
-      | 'menuVisibleWithForbidden'
-      | 'showActiveTabBorder'
-      | 'tabPath'
+      'activePath' | 'externalLink' | 'hideInBreadcrumb' | 'hideInMenu' | 'hideInTab' | 'iframeSrc' | 'ignoreAccess' | 'keepAlive' | 'menuVisibleWithForbidden' | 'showActiveTabBorder' | 'tabPath'
     >
   > & {
     accessScope: 'public' | 'restricted'
+    icon?: unknown
     parentId?: string | null
+    path?: string | null
     permissionCode?: string | null
   }
 

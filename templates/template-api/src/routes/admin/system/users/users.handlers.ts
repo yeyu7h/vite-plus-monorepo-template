@@ -8,6 +8,8 @@ import { RefineQueryParamsSchema } from '@/lib/core/refine-query'
 import { HttpStatusCodes } from '@monorepo/server-core'
 import { HttpStatusPhrases } from '@monorepo/server-core'
 import { omit, Resp } from '@/utils'
+import { getAdminActorRoles, refreshAdminSessionsForUser } from '@/lib/services/admin-session'
+import { logout } from '@/routes/admin/auth/auth.helpers'
 
 import { createUser, getAssignableRoles, listUsers, UserRoleValidationError } from './users.helpers'
 
@@ -32,7 +34,12 @@ export const list: SystemUsersRouteHandlerType<'list'> = async (c) => {
 
 export const create: SystemUsersRouteHandlerType<'create'> = async (c) => {
   const body = c.req.valid('json')
-  const { sub } = c.get('jwtPayload')
+  const payload = c.get('jwtPayload')
+  const { sub } = payload
+
+  if (body.roleIds.length > 0 && !(await getAdminActorRoles(payload))?.includes('admin')) {
+    return c.json(Resp.fail('只有管理员可以分配用户角色'), HttpStatusCodes.FORBIDDEN)
+  }
 
   let created
   try {
@@ -74,7 +81,8 @@ export const get: SystemUsersRouteHandlerType<'get'> = async (c) => {
 export const update: SystemUsersRouteHandlerType<'update'> = async (c) => {
   const { id } = c.req.valid('param')
   const body = c.req.valid('json')
-  const { sub } = c.get('jwtPayload')
+  const payload = c.get('jwtPayload')
+  const { sub } = payload
 
   // Check if built-in user / 检查是否为内置用户
   const user = await db.query.systemUsers.findFirst({ where: { id }, with: { roles: { columns: { id: true, name: true } } } })
@@ -92,6 +100,9 @@ export const update: SystemUsersRouteHandlerType<'update'> = async (c) => {
 
   const { roleIds: requestedRoleIds, ...updateData } = body
   const roleIds = requestedRoleIds as string[] | undefined
+  if (roleIds !== undefined && !(await getAdminActorRoles(payload))?.includes('admin')) {
+    return c.json(Resp.fail('只有管理员可以分配用户角色'), HttpStatusCodes.FORBIDDEN)
+  }
   let roles = user.roles
   try {
     if (roleIds !== undefined) roles = (await getAssignableRoles(roleIds)).map(({ id: roleId, name }) => ({ id: roleId, name }))
@@ -120,6 +131,9 @@ export const update: SystemUsersRouteHandlerType<'update'> = async (c) => {
     return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
   }
 
+  if (updated.status === 'DISABLED') await logout(id)
+  else if (roleIds !== undefined || body.status !== undefined) await refreshAdminSessionsForUser(id)
+
   const userWithoutPassword = { ...omit(updated, ['password']), roles }
 
   return c.json(Resp.ok(userWithoutPassword), HttpStatusCodes.OK)
@@ -147,6 +161,8 @@ export const remove: SystemUsersRouteHandlerType<'remove'> = async (c) => {
   if (!deleted) {
     return c.json(Resp.fail(HttpStatusPhrases.NOT_FOUND), HttpStatusCodes.NOT_FOUND)
   }
+
+  await logout(id)
 
   return c.json(Resp.ok(deleted), HttpStatusCodes.OK)
 }

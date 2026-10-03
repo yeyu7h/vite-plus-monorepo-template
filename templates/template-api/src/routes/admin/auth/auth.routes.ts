@@ -91,6 +91,7 @@ export const getIdentity = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemUsersInfoResponseSchema), '获取成功'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '用户不存在'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(respErrSchema, '登录会话已失效'),
   },
 })
 
@@ -104,6 +105,7 @@ export const getAccess = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(adminAccessPayloadSchema), '获取成功'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(respErrSchema, '未授权'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '用户已禁用'),
   },
 })
 
@@ -125,6 +127,8 @@ export const getPermissions = createRoute({
       '获取成功',
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '角色不存在'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(respErrSchema, '登录会话已失效'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '用户已禁用'),
   },
 })
 

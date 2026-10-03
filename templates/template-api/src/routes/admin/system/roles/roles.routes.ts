@@ -50,6 +50,7 @@ export const create = createRoute({
   responses: {
     [HttpStatusCodes.CREATED]: jsonContent(RefineResultSchema(systemRolesDetailResponseSchema), '创建成功'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '上级角色不存在'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(respErrSchema, '只有管理员可以设置角色继承'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, '参数验证失败'),
   },
 })

@@ -202,6 +202,7 @@ const menuTreeSeed: MenuSeed[] = [
           { id: 'system-settings-account', path: 'account', description: '修改密码、绑定邮箱和手机号', order: 41, title: '账户设置', type: 'menu' },
         ],
       },
+      { id: 'system-cache', path: 'cache', icon: 'i-lucide-database', order: 60, title: '缓存管理', type: 'menu' },
     ],
   },
   {
@@ -367,6 +368,7 @@ async function seedMenuRoles(menuRows: readonly InferInsertModel<typeof systemMe
       'system-params-create',
       'system-params-update',
       'system-params-delete',
+      'system-cache',
       'system-settings',
       'system-settings-level-three',
       'system-settings-theme',

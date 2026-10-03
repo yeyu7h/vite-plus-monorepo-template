@@ -94,6 +94,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/system/cache': RouteRecordInfo<
+      '/system/cache',
+      '/system/cache',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/system/menu': RouteRecordInfo<
       '/system/menu',
       '/system/menu',
@@ -239,6 +246,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/reports/sales.vue': {
       routes:
         | '/reports/sales'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/system/cache.vue': {
+      routes:
+        | '/system/cache'
       views:
         | never
       pathParamNames:

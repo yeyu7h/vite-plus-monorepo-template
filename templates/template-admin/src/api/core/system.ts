@@ -113,3 +113,13 @@ export const systemUserApi = {
   update: (id: string, data: SystemUserApi.UpdateBody) => client.patch<SystemUserApi.Item>(`/admin/system/users/${id}`, data),
   delete: (id: string) => client.delete<{ id: string }>(`/admin/system/users/${id}`),
 }
+
+export type CacheCategory = 'dict' | 'param' | 'ip'
+export type CacheItem = { key: string; category: CacheCategory; ttlSeconds: number; preview: string; truncated: boolean }
+export type CacheList = { items: CacheItem[]; cursor: string; hasMore: boolean }
+
+export const systemCacheApi = {
+  list: (category: CacheCategory, cursor = '0') => client.get<CacheList>('/admin/system/cache', { params: { category, cursor } }),
+  remove: (key: string) => client.delete<{ deleted: number }>(`/admin/system/cache/${encodeURIComponent(key)}`),
+  clearCategory: (category: CacheCategory, cursor = '0') => client.post<{ deleted: number; complete: boolean; cursor: string }>('/admin/system/cache/clear', { category, cursor }),
+}

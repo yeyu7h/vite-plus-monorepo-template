@@ -34,7 +34,7 @@ export namespace CoreAuthApi {
 export const coreAuthApi = {
   getAccess: () => client.get<CoreAuthApi.AccessResult>('/admin/auth/access'),
   getIdentity: () => client.get<CoreAuthApi.IdentityResult>('/admin/auth/userinfo'),
-  login: (data: CoreAuthApi.LoginBody) => client.post<CoreAuthApi.LoginResult>('/admin/auth/login', data),
+  login: (data: CoreAuthApi.LoginBody) => client.post<CoreAuthApi.LoginResult>('/admin/auth/login', data, { __skipAuthRefresh: true }),
   logout: () => client.post<CoreAuthApi.LogoutResult>('/admin/auth/logout'),
   refresh: () => client.post<CoreAuthApi.RefreshResult>('/admin/auth/refresh', undefined, { __skipAuthRefresh: true }),
 }

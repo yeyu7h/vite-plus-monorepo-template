@@ -59,7 +59,7 @@ const activeMenu = computed(() => settingsMenus.value.find((item) => route.path 
           <component :is="Component" v-if="Component" />
           <div v-else class="p-6">
             <h2 class="text-base font-semibold text-highlighted">请选择设置项</h2>
-            <p class="mt-1 text-sm text-muted">当前内容区会渲染通知设置、主题设置等子路由。</p>
+            <p class="mt-1 text-sm text-muted">当前内容区会渲染通知设置等子路由。</p>
             <p v-if="activeMenu" class="mt-4 text-sm text-muted">当前设置项：{{ activeMenu.title }}</p>
           </div>
         </RouterView>

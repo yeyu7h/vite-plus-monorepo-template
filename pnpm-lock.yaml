@@ -76,6 +76,9 @@ catalogs:
     '@vitest/coverage-v8':
       specifier: 4.1.11
       version: 4.1.11
+    '@vueuse/core':
+      specifier: ^14.4.0
+      version: 14.4.0
     axios:
       specifier: ^1.20.0
       version: 1.20.0
@@ -880,6 +883,9 @@ importers:
       '@tanstack/vue-table':
         specifier: catalog:tanstack
         version: 8.21.3(vue@3.5.42(typescript@6.0.3))
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
       cap-widget:
         specifier: 'catalog:'
         version: 0.1.57

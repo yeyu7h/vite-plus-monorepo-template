@@ -59,6 +59,7 @@ catalog:
   cap-widget: ^0.1.57
   codemirror: ^6.0.2
   sass: ^1.103.1
+  '@vueuse/core': ^14.4.0
 
 overrides:
   'vite@*': npm:@voidzero-dev/vite-plus-core@0.3.0

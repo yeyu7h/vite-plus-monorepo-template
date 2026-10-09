@@ -4,11 +4,13 @@ import { router } from './router'
 import NuxtUI from '@nuxt/ui/vue-plugin'
 import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
+import { applyThemePreferences, loadThemePreferences } from './features/theme-preferences'
 
 import './styles/main.css'
 
 // oxlint-disable-next-line no-unused-vars
 async function bootstrap(namespace: string) {
+  applyThemePreferences(loadThemePreferences())
   const app = createApp(App)
 
   app.use(createPinia())

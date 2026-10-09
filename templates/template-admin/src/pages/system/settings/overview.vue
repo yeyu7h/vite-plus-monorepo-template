@@ -16,7 +16,7 @@ const levels = [
       <p class="mt-1 text-sm text-muted">当前菜单路径：系统 → 设置中心 → 设置概览</p>
     </div>
 
-    <UAlert color="success" variant="subtle" icon="i-lucide-circle-check" title="设置导航已正常渲染" description="主题设置和通知设置会与本页共享同一个侧边栏菜单和 Tab。" />
+    <UAlert color="success" variant="subtle" icon="i-lucide-circle-check" title="设置导航已正常渲染" description="通知设置会与本页共享同一个侧边栏菜单和 Tab。" />
 
     <div class="grid gap-3 md:grid-cols-3">
       <div v-for="item in levels" :key="item.level" class="rounded-lg border border-default bg-default p-4">

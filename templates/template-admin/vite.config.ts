@@ -1,14 +1,24 @@
 import { defineAdminConfig } from '@monorepo/vite-config'
 
+// Menu groups add 0.25rem padding; the item highlight is inset another 1px.
+const insetMenuItemRadius = 'before:rounded-[max(0px,calc(var(--radius-lg)_-_0.25rem_-_1px))]'
+
 export default defineAdminConfig({
   root: new URL('.', import.meta.url),
   loading: { themeStorageKey: 'vueuse-color-scheme' },
   nuxtUI: {
     ui: {
       colors: { neutral: 'neutral' },
+      contextMenu: {
+        slots: {
+          content: 'rounded-lg',
+          item: insetMenuItemRadius,
+        },
+      },
       dropdownMenu: {
         slots: {
-          content: 'z-60',
+          content: 'z-60 rounded-lg',
+          item: insetMenuItemRadius,
         },
       },
       drawer: {
@@ -23,6 +33,12 @@ export default defineAdminConfig({
           error: 'absolute mt-0.5 text-xs text-end',
         },
       },
+      inputMenu: {
+        slots: {
+          content: 'rounded-lg',
+          item: insetMenuItemRadius,
+        },
+      },
       modal: {
         slots: {
           content: 'z-50',
@@ -31,12 +47,14 @@ export default defineAdminConfig({
       },
       select: {
         slots: {
-          content: 'z-60',
+          content: 'z-60 rounded-lg',
+          item: insetMenuItemRadius,
         },
       },
       selectMenu: {
         slots: {
-          content: 'z-60',
+          content: 'z-60 rounded-lg',
+          item: insetMenuItemRadius,
         },
       },
       slideover: {

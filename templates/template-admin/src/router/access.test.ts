@@ -56,7 +56,7 @@ const accessFileRoutes: RouteRecordRaw[] = [
         path: 'settings',
         children: [
           { component, path: 'overview' },
-          { component, path: 'theme' },
+          { component, path: 'notification' },
         ],
       },
     ],
@@ -109,9 +109,9 @@ const backendMenus = [
             meta: { authority: ['admin'], icon: 'i-lucide-list-tree', order: 10, title: '设置概览' },
           },
           {
-            id: 'system-settings-theme',
-            path: 'theme',
-            meta: { activePath: '/system/settings/overview', authority: ['admin'], hideInMenu: true, tabPath: '/system/settings/overview', title: '主题设置' },
+            id: 'system-settings-notification',
+            path: 'notification',
+            meta: { activePath: '/system/settings/overview', authority: ['admin'], hideInMenu: true, tabPath: '/system/settings/overview', title: '通知设置' },
           },
         ],
       },
@@ -165,11 +165,11 @@ test('keeps real page component when visible forbidden route authority matches',
 
 test('keeps hidden authorized child routes accessible without rendering them in the menu', () => {
   const result = resolveAdminAccess(accessFileRoutes, backendMenus, ['admin'])
-  const themeRoute = result.navigationRoutes.find((route) => route.path === '/system/settings/theme')
+  const notificationRoute = result.navigationRoutes.find((route) => route.path === '/system/settings/notification')
 
-  expect(result.routePathSet.has('/system/settings/theme')).toBe(true)
-  expect(JSON.stringify(result.menuGroups)).not.toContain('/system/settings/theme')
-  expect(themeRoute).toMatchObject({ activePath: '/system/settings/overview', tabPath: '/system/settings/overview' })
+  expect(result.routePathSet.has('/system/settings/notification')).toBe(true)
+  expect(JSON.stringify(result.menuGroups)).not.toContain('/system/settings/notification')
+  expect(notificationRoute).toMatchObject({ activePath: '/system/settings/overview', tabPath: '/system/settings/overview' })
 })
 
 test('keeps visible third-level routes nested in the menu tree', () => {

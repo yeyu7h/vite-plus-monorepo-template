@@ -187,7 +187,6 @@ const menuTreeSeed: MenuSeed[] = [
             title: '设置概览',
             type: 'menu',
           },
-          { id: 'system-settings-theme', path: 'theme', activePath: '/system/settings/overview', hideInMenu: true, order: 30, tabPath: '/system/settings/overview', title: '主题设置', type: 'menu' },
           {
             id: 'system-settings-notification',
             path: 'notification',
@@ -371,7 +370,6 @@ async function seedMenuRoles(menuRows: readonly InferInsertModel<typeof systemMe
       'system-cache',
       'system-settings',
       'system-settings-level-three',
-      'system-settings-theme',
       'system-settings-notification',
       'system-settings-account',
     ])

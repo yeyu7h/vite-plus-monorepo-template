@@ -129,7 +129,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | '/system/settings/notification'
       | '/system/settings/overview'
-      | '/system/settings/theme'
     >,
     '/system/settings/notification': RouteRecordInfo<
       '/system/settings/notification',
@@ -141,13 +140,6 @@ declare module 'vue-router/auto-routes' {
     '/system/settings/overview': RouteRecordInfo<
       '/system/settings/overview',
       '/system/settings/overview',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/system/settings/theme': RouteRecordInfo<
-      '/system/settings/theme',
-      '/system/settings/theme',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -288,7 +280,6 @@ declare module 'vue-router/auto-routes' {
         | '/system/settings'
         | '/system/settings/notification'
         | '/system/settings/overview'
-        | '/system/settings/theme'
       views:
         | 'default'
       pathParamNames:
@@ -305,14 +296,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/system/settings/overview.vue': {
       routes:
         | '/system/settings/overview'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/system/settings/theme.vue': {
-      routes:
-        | '/system/settings/theme'
       views:
         | never
       pathParamNames:

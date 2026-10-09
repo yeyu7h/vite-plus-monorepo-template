@@ -32,6 +32,7 @@
     "@nuxt/ui": "catalog:vue3",
     "@tanstack/vue-query": "catalog:tanstack",
     "@tanstack/vue-table": "catalog:tanstack",
+    "@vueuse/core": "catalog:",
     "cap-widget": "catalog:",
     "codemirror": "catalog:",
     "pinia": "catalog:vue3",

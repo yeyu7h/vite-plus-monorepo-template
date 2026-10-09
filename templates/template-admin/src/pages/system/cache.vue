@@ -58,7 +58,7 @@ async function loadCache(reset = false) {
     cursor.value = result.cursor
     hasMore.value = result.hasMore
   } catch {
-    toast.add({ title: '读取缓存失败', color: 'error' })
+    // The shared request interceptor shows the failure.
   } finally {
     if (version === requestVersion) loading.value = false
   }

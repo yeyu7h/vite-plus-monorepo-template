@@ -4,6 +4,34 @@ import { RequestClient, defaultResponseInterceptor, authenticateResponseIntercep
 import { adminAppConfig } from '@/config/app'
 import { ADMIN_ACCESS_TOKEN_STORAGE_KEY } from '@/constants/storage'
 
+let requestErrorNotifier: ((message: string) => void) | undefined
+
+export function setRequestErrorNotifier(notifier?: (message: string) => void) {
+  requestErrorNotifier = notifier
+}
+
+function getRequestErrorMessage(message: string, error: unknown): string {
+  const response = isRecord(error) ? error.response : void 0
+  const responseData = isRecord(response) ? response.data : void 0
+
+  if (isRecord(responseData)) {
+    if (typeof responseData.error === 'string' && responseData.error.trim()) return responseData.error
+    if (typeof responseData.message === 'string' && responseData.message.trim()) return responseData.message
+  }
+
+  const fallbackMessages: Record<string, string> = {
+    'Bad request.': '请求参数有误',
+    'Access forbidden.': '没有权限执行此操作',
+    'Internal server error.': '服务器暂时不可用，请稍后重试',
+    'Network error. Check your connection and try again.': '网络连接失败，请检查网络后重试',
+    'The requested resource was not found.': '请求的资源不存在',
+    'The request timed out.': '请求超时，请稍后重试',
+    'Authentication is required.': '登录状态已失效，请重新登录',
+  }
+
+  return fallbackMessages[message] ?? message
+}
+
 function formatToken(token: string | null): string | null {
   return token ? `Bearer ${token}` : null
 }
@@ -50,10 +78,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
 
   client.addResponseInterceptor(
     errorMessageResponseInterceptor((message, error) => {
-      const response = isRecord(error) ? error.response : void 0
-      const responseData = isRecord(response) && isRecord(response.data) ? response.data : {}
-      const errorMessage = responseData?.error ?? responseData?.message ?? ''
-      console.log('[errorMessage]-55', errorMessage || message)
+      requestErrorNotifier?.(getRequestErrorMessage(message, error))
     }),
   )
 

@@ -3,7 +3,6 @@ import { differenceInMilliseconds, format } from 'date-fns'
 import { createAdminMiddleware } from '@monorepo/server-core'
 import { getClientIp } from '@/lib/core/rate-limit-factory'
 import { operationLogger } from '@/lib/services/logger'
-import { redactLogValue } from '@/lib/services/log-redaction'
 
 type OperationLogOptions = {
   moduleName?: string
@@ -67,9 +66,9 @@ export function operationLog(options?: OperationLogOptions) {
           userAgent,
           userId,
           username,
-          body: redactLogValue(body),
-          params: redactLogValue(params),
-          response: redactLogValue(response),
+          body,
+          params,
+          response,
           startTime: format(startTime, 'yyyy-MM-dd HH:mm:ss'),
           endTime: format(endTime, 'yyyy-MM-dd HH:mm:ss'),
           durationMs,

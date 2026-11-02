@@ -1,7 +1,7 @@
 import pino from 'pino'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { redactLogObject, redactLogValue } from './log-redaction'
+import { redactLogObject } from './log-redaction'
 
 describe('log redaction', () => {
   it('redacts nested credentials, headers and tokens without changing source data', () => {
@@ -11,7 +11,7 @@ describe('log redaction', () => {
       response: { refreshToken: 'refresh-secret' },
       headers: { Authorization: 'Bearer secret', Cookie: 'session=secret', 'Set-Cookie': 'session=other' },
     }
-    expect(redactLogValue(source)).toEqual({
+    expect(redactLogObject(source)).toEqual({
       body: { username: 'alice', password: '[REDACTED]', users: [{ new_password: '[REDACTED]' }] },
       params: { access_token: '[REDACTED]' },
       response: { refreshToken: '[REDACTED]' },

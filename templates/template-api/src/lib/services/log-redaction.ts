@@ -21,11 +21,6 @@ const sensitiveFields = new Set([
   'apikey',
 ])
 
-/** Copy JSON log data before redaction so request/response objects stay intact. */
-export function redactLogValue(value: unknown): unknown {
-  return redactValue(value, new WeakMap())
-}
-
 function redactValue(value: unknown, seen: WeakMap<object, unknown>): unknown {
   if (!value || typeof value !== 'object') return value
   if (seen.has(value)) return seen.get(value)
@@ -41,6 +36,7 @@ function redactValue(value: unknown, seen: WeakMap<object, unknown>): unknown {
   return value
 }
 
+/** Copy log data before redaction so request/response objects stay intact. */
 export function redactLogObject(value: Record<string, unknown>): Record<string, unknown> {
   return redactObject(value, new WeakMap())
 }

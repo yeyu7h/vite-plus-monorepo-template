@@ -4,8 +4,21 @@ import { expect, it, vi } from 'vite-plus/test'
 
 import { operationLog } from './operation-log'
 
-const logs = vi.hoisted(() => ({ info: vi.fn<(data: Record<string, unknown>, message: string) => void>(), warn: vi.fn<(data: Record<string, unknown>, message: string) => void>() }))
-vi.mock('@/lib/services/logger', () => ({ operationLogger: logs }))
+const logLines = vi.hoisted(() => [] as string[])
+vi.mock('@/lib/services/logger', async () => {
+  const { default: pino } = await import('pino')
+  const { redactLogObject } = await import('@/lib/services/log-redaction')
+  return {
+    operationLogger: pino(
+      { formatters: { log: redactLogObject } },
+      {
+        write: (line) => {
+          logLines.push(line)
+        },
+      },
+    ).child({ type: 'OPERATION' }),
+  }
+})
 vi.mock('@/lib/core/rate-limit-factory', () => ({ getClientIp: () => '127.0.0.1' }))
 
 it('audits user creation without storing its password or changing the handler input', async () => {
@@ -26,13 +39,13 @@ it('audits user creation without storing its password or changing the handler in
     body: JSON.stringify({ username: 'alice', password: 'original-password' }),
   })
   expect(response.status).toBe(201)
-  await expect.poll(() => logs.info.mock.calls.length).toBe(1)
-  expect(logs.info).toHaveBeenCalledWith(
-    expect.objectContaining({
-      body: { username: 'alice', password: '[REDACTED]' },
-      params: { token: '[REDACTED]' },
-      response: { username: 'alice', accessToken: '[REDACTED]' },
-    }),
-    '操作日志',
-  )
+  expect(await response.json()).toEqual({ username: 'alice', accessToken: 'response-secret' })
+  await expect.poll(() => logLines.length).toBe(1)
+  expect(JSON.parse(logLines[0]!)).toMatchObject({
+    type: 'OPERATION',
+    body: { username: 'alice', password: '[REDACTED]' },
+    params: { token: '[REDACTED]' },
+    response: { username: 'alice', accessToken: '[REDACTED]' },
+    msg: '操作日志',
+  })
 })

@@ -1,0 +1,7 @@
+export { createMiniappAuth, createAlipayTokenClient } from './auth'
+export type { MiniappAuthOptions, AlipayTokenClient } from './auth'
+export { miniappAppsSchema, miniappAppSchema, miniappIdentitySchema } from './config'
+export type { MiniappApps, MiniappApp, MiniappIdentity, AlipayApp } from './config'
+export { MiniappAuthError } from './errors'
+export type { MiniappAuthErrorCode } from './errors'
+export { formatUserUid } from './uid'

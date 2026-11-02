@@ -36,6 +36,7 @@
     "@hono/sentry": "catalog:hono",
     "@hono/zod-openapi": "catalog:hono",
     "@monorepo/server-core": "workspace:*",
+    "@monorepo/server-miniapp-auth": "workspace:*",
     "@monorepo/server-refine-query": "workspace:*",
     "@monorepo/utils": "workspace:*",
     "@node-rs/argon2": "catalog:",

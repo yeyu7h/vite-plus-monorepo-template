@@ -10,7 +10,7 @@ import db from '@/db'
 import { systemUsers } from '@/db/schema'
 import env from '@/env'
 
-import { ACCESS_TOKEN_EXPIRES_MINUTES, REFRESH_TOKEN_EXPIRES_DAYS } from '@/lib/constants'
+import { ACCESS_TOKEN_EXPIRES_MINUTES, REFRESH_TOKEN_EXPIRES_DAYS, ADMIN_JWT_AUDIENCE, ADMIN_JWT_ISSUER } from '@/lib/constants'
 import { Status } from '@/lib/enums'
 import cap from '@/lib/services/cap'
 import { enforcerPromise } from '@/lib/services/casbin'
@@ -56,6 +56,8 @@ export async function generateAccessToken(user: UserTokenInfo) {
 
   return await sign(
     {
+      aud: ADMIN_JWT_AUDIENCE,
+      iss: ADMIN_JWT_ISSUER,
       roles: user.roles,
       ...(user.sessionId ? { sessionId: user.sessionId } : {}),
       sub: user.id,

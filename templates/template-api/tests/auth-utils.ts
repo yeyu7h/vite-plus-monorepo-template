@@ -5,6 +5,7 @@ import { sign } from 'hono/jwt'
 
 import db from '@/db'
 import env from '@/env'
+import { ADMIN_JWT_AUDIENCE, ADMIN_JWT_ISSUER } from '@/lib/constants/jwt'
 
 /** Cached token information / 缓存的token信息 */
 type CachedToken = {
@@ -43,6 +44,8 @@ async function generateTestToken(username: string): Promise<CachedToken> {
   const jti = crypto.randomUUID()
 
   const tokenPayload: JWTPayload = {
+    aud: ADMIN_JWT_AUDIENCE,
+    iss: ADMIN_JWT_ISSUER,
     sub: user.id,
     iat: now,
     exp: accessTokenExp,

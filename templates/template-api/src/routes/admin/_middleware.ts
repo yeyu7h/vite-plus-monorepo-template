@@ -1,7 +1,6 @@
-import { jwt } from 'hono/jwt'
 import type { Context } from 'hono'
 
-import env from '@/env'
+import { createAdminJwt } from '@/middlewares/admin-jwt'
 import { defineMiddleware } from '@monorepo/server-core'
 import { authorize } from '@/middlewares/authorize'
 import { operationLog } from '@/middlewares/operation-log'
@@ -18,7 +17,7 @@ function getAdminRouteKey(c: Context): string {
 
 export default defineMiddleware([
   {
-    handler: jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' }),
+    handler: createAdminJwt(),
     except: (c) => publicAuthRoutes.has(getAdminRouteKey(c)),
   },
   {

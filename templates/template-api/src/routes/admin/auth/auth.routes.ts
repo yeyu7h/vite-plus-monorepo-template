@@ -1,7 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi'
-import { jwt } from 'hono/jwt'
-
-import env from '@/env'
+import { createAdminJwt } from '@/middlewares/admin-jwt'
 import { AUTH_RATE_LIMIT_MAX_REQUESTS, AUTH_RATE_LIMIT_WINDOW_MS } from '@/lib/constants/rate-limit'
 import { createRateLimiter } from '@/lib/core/rate-limit-factory'
 import { RefineResultSchema } from '@/lib/core/refine-query'
@@ -73,7 +71,7 @@ export const logout = createRoute({
   path: `${routePrefix}/logout`,
   method: 'post',
   tags,
-  middleware: [jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' })],
+  middleware: [createAdminJwt()],
   summary: '管理端退出登录',
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(z.object({})), '退出成功'),
@@ -86,7 +84,7 @@ export const getIdentity = createRoute({
   path: `${routePrefix}/userinfo`,
   method: 'get',
   tags,
-  middleware: [jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' })],
+  middleware: [createAdminJwt()],
   summary: '管理端获取当前用户信息',
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemUsersInfoResponseSchema), '获取成功'),
@@ -99,7 +97,7 @@ export const getIdentity = createRoute({
 export const getAccess = createRoute({
   path: `${routePrefix}/access`,
   method: 'get',
-  middleware: [jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' })],
+  middleware: [createAdminJwt()],
   tags,
   summary: '获取当前用户菜单和权限码',
   responses: {
@@ -114,7 +112,7 @@ export const getPermissions = createRoute({
   path: `${routePrefix}/permissions`,
   method: 'get',
   tags,
-  middleware: [jwt({ secret: env.ADMIN_JWT_SECRET, alg: 'HS256' })],
+  middleware: [createAdminJwt()],
   summary: '管理端获取当前用户权限',
   responses: {
     [HttpStatusCodes.OK]: jsonContent(

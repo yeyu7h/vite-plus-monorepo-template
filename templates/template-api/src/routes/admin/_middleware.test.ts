@@ -6,6 +6,7 @@ import { sign } from 'hono/jwt'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import env from '@/env'
+import { ADMIN_JWT_AUDIENCE, ADMIN_JWT_ISSUER } from '@/lib/constants/jwt'
 import middlewares from './_middleware'
 
 const state = vi.hoisted(() => ({ roles: ['user'], audit: vi.fn<MiddlewareHandler>() }))
@@ -29,7 +30,7 @@ function createApp(basePath = '/api/admin') {
 }
 
 async function authHeaders() {
-  const token = await sign({ sub: 'test-user', roles: state.roles, sessionId: 'test-session' }, env.ADMIN_JWT_SECRET, 'HS256')
+  const token = await sign({ sub: 'test-user', roles: state.roles, sessionId: 'test-session', aud: ADMIN_JWT_AUDIENCE, iss: ADMIN_JWT_ISSUER }, env.ADMIN_JWT_SECRET, 'HS256')
   return { Authorization: `Bearer ${token}` }
 }
 
@@ -41,6 +42,13 @@ beforeEach(() => {
 })
 
 describe('admin middleware route exemptions', () => {
+  it.each(['/auth/userinfo', '/auth/access', '/auth/permissions', '/system/users'])('rejects client audience at %s even if signed using the admin key', async (path) => {
+    state.roles = ['admin']
+    const token = await sign({ sub: 'test-user', roles: ['admin'], sessionId: 'test-session', aud: 'client', iss: 'miniapp-client' }, env.ADMIN_JWT_SECRET, 'HS256')
+    expect((await createApp().request('/api/admin' + path, { headers: { Authorization: `Bearer ${token}` } })).status).toBe(401)
+    expect(state.audit).not.toHaveBeenCalled()
+  })
+
   it.each(['GET', 'PATCH', 'DELETE'])('requires API permission for %s on auth-prefixed role IDs', async (method) => {
     const response = await createApp().request('/api/admin/system/roles/auth_reader', { method, headers: await authHeaders() })
     expect(response.status).toBe(403)

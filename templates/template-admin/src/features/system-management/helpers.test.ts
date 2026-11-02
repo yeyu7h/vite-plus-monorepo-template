@@ -13,6 +13,7 @@ import {
   getDirectRolePermissions,
   hasRolePermission,
   mergeRolePermissions,
+  normalizeRolePermission,
   removeRolePermissions,
   toggleRoleMenuSelection,
 } from './helpers'
@@ -143,6 +144,30 @@ describe('system management helpers', () => {
       { resource: '/system/users/{id}', action: 'PATCH' },
     ])
     expect(removeRolePermissions(merged, groups[0]!.permissions)).toEqual([{ resource: '/system/roles', action: 'GET' }])
+  })
+
+  test('preserves wildcard and method-regex rules when saving or selecting catalog entries', () => {
+    const regexAction = String.raw`GET|\w+`
+    const custom = { resource: '/system/users/*', action: regexAction }
+    const result: SystemRoleApi.PermissionResult = {
+      permissions: [{ ...custom, sourceRoleId: 'operator', direct: true, inherited: false }],
+      catalog: [{ resource: '/system/users', action: 'GET', summary: '用户列表', group: '用户管理' }],
+      groupings: [],
+    }
+    const selected = mergeRolePermissions(getDirectRolePermissions(result), result.catalog)
+    expect(buildSaveRolePermissions(selected)).toHaveLength(2)
+    expect(buildSaveRolePermissions(selected)).toEqual(
+      expect.arrayContaining([
+        ['/system/users', 'GET'],
+        ['/system/users/*', regexAction],
+      ]),
+    )
+    expect(buildSaveRolePermissions(removeRolePermissions(selected, result.catalog))).toEqual([['/system/users/*', regexAction]])
+  })
+
+  test('normalizes literal HTTP methods without altering regex syntax', () => {
+    expect(normalizeRolePermission({ resource: '/users', action: ' get ' }).action).toBe('GET')
+    expect(normalizeRolePermission({ resource: '/users', action: String.raw`^GET|\w+$` }).action).toBe(String.raw`^GET|\w+$`)
   })
 
   test('builds serializable server pagination and filter parameters', () => {

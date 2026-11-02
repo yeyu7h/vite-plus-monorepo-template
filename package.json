@@ -26,7 +26,8 @@
     "npm-run-all2": "catalog:",
     "unplugin-vue": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "vue-tsc": "catalog:vue3"
   },
   "engines": {
     "node": "^22.18.0 || >=24.11.0"

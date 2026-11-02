@@ -32,12 +32,15 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const port = Number.parseInt(env.PORT ?? '9999', 10)
   const runIntegration = process.env.RUN_INTEGRATION === 'true'
+  if (runIntegration && (!process.env.TEST_DATABASE_URL || !process.env.TEST_REDIS_URL)) {
+    throw new Error('集成测试必须显式配置专用 TEST_DATABASE_URL 和 TEST_REDIS_URL，禁止回退到默认数据库')
+  }
   const testEnv = {
     NODE_ENV: 'test',
     PORT: '9999',
     LOG_LEVEL: 'silent',
-    DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/postgres',
-    REDIS_URL: 'redis://localhost:6379/0',
+    DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/postgres',
+    REDIS_URL: process.env.TEST_REDIS_URL ?? 'redis://localhost:6379/0',
     CLIENT_JWT_SECRET: 'test-client-jwt-secret-at-least-32-characters',
     ADMIN_JWT_SECRET: 'test-admin-jwt-secret-at-least-32-characters',
     ACCESS_KEY_ID: 'test-access-key',
@@ -48,6 +51,14 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    run: {
+      tasks: {
+        'test:integration': {
+          command: 'RUN_INTEGRATION=true vp test',
+          cache: false,
+        },
+      },
+    },
     server: {
       host: '0.0.0.0',
       port,

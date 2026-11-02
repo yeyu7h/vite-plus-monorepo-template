@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const workspaceRoot = fileURLToPath(new URL('../', import.meta.url))
 const templateKinds = ['admin', 'web', 'api']
-const omittedNames = new Set(['node_modules', 'dist', 'dist-ssr', 'coverage', '.git', '.vite', '.DS_Store', '.env', 'auto-imports.d.ts', 'components.d.ts', 'typed-router.d.ts'])
+const omittedNames = new Set(['node_modules', 'dist', 'dist-ssr', 'coverage', '.git', '.vite', '.DS_Store', '.env', '.env.rustfs', 'auto-imports.d.ts', 'components.d.ts', 'typed-router.d.ts'])
 const decoder = new TextDecoder('utf-8', { fatal: true })
 
 function shouldCopy(sourceRoot, path) {

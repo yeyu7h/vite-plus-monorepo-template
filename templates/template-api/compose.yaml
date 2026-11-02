@@ -35,7 +35,7 @@ services:
     build:
       context: ../..
       dockerfile: templates/template-api/Dockerfile
-    image: vite-plus-template-api
+    image: ${API_IMAGE:-vite-plus-template-api}
     ports:
       - '${PORT:-9999}:9999'
     env_file:
@@ -53,6 +53,11 @@ services:
       SECRET_ACCESS_KEY: ${SECRET_ACCESS_KEY:-}
       ENDPOINT: ${ENDPOINT:-}
       BUCKET_NAME: ${BUCKET_NAME:-}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-r2}
+      STORAGE_REGION: ${STORAGE_REGION:-}
+      STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-}
+      STORAGE_PRESIGN_ENDPOINT: ${STORAGE_PRESIGN_ENDPOINT:-}
+      STORAGE_PUBLIC_BASE_URL: ${STORAGE_PUBLIC_BASE_URL:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:
       postgres:

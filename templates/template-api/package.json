@@ -17,6 +17,7 @@
     "push": "vp exec drizzle-kit push --config drizzle.config.ts",
     "studio": "vp exec drizzle-kit studio --config drizzle.config.ts",
     "seed": "vp exec tsx migrations/seed/index.ts",
+    "storage:init": "dotenvx run -f .env.rustfs -- node scripts/init-object-storage.ts",
     "migrate": "vp exec drizzle-kit migrate --config drizzle.config.ts",
     "db:comments": "vp exec tsx scripts/sync-comments.ts",
     "db:comments:dry": "vp exec tsx scripts/sync-comments.ts --dry-run",

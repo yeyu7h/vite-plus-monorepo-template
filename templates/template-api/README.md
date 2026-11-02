@@ -8,6 +8,8 @@ Scalar 首页位于 `/`，三组 OpenAPI JSON 分别位于 `/api/doc`、`/api/cl
 
 微信、支付宝小程序共用业务用户表及固定前缀 UID，业务账号与后台管理账号独立。接入配置、接口和原生调用示例见 [小程序登录](docs/miniapp-auth.md)。
 
+对象存储通过 `STORAGE_PROVIDER=r2|rustfs` 选择，默认兼容现有 R2 配置。RustFS 可选部署、公开图片域名和服务端上传方法见 [对象存储](docs/object-storage.md)。
+
 ## 本地启动
 
 从仓库根目录执行：
@@ -29,9 +31,12 @@ vp run @app/template-api#push
 vp run @app/template-api#seed
 vp run @app/template-api#test
 vp run @app/template-api#test:integration
+vp run @app/template-api#test:storage
 ```
 
 `test` 默认排除 `*.integration.test.ts`；集成测试需要专用 PostgreSQL、Redis，以及已执行的迁移和 seed。必须显式设置 `TEST_DATABASE_URL`、`TEST_REDIS_URL`，缺少地址会在加载测试前终止。
+
+`test:storage` 独立使用专用 RustFS；必须显式设置 `TEST_STORAGE_ENDPOINT`、`TEST_STORAGE_ACCESS_KEY_ID`、`TEST_STORAGE_SECRET_ACCESS_KEY`、`TEST_STORAGE_BUCKET_NAME`，默认测试和数据库集成测试均不连接对象存储。配置选择日志不进行网络探测。
 
 ## 可复用边界
 

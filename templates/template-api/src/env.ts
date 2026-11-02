@@ -4,6 +4,7 @@ import { config } from '@dotenvx/dotenvx'
 import { z } from 'zod'
 import { miniappAppsSchema } from '@monorepo/server-miniapp-auth'
 import { parseEnvOrExit } from '@/utils/zod'
+import { objectStorageEnvSchema } from '@/lib/services/object-storage/config'
 
 const envFile = path.resolve(process.cwd(), process.env.NODE_ENV === 'test' ? '.env.test' : '.env')
 if (existsSync(envFile)) {
@@ -50,21 +51,13 @@ const EnvSchema = z
     CLIENT_ACCESS_TOKEN_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
     CLIENT_SESSION_SECONDS: z.coerce.number().int().min(3600).max(2592000).default(604800),
 
-    /** Cloud provider R2 access key ID / 云服务商R2访问密钥ID */
-    ACCESS_KEY_ID: z.string(),
-    /** Cloud provider R2 secret access key / 云服务商R2访问密钥 */
-    SECRET_ACCESS_KEY: z.string(),
-    /** Cloud provider R2 endpoint / 云服务商R2终端节点 */
-    ENDPOINT: z.url(),
-    /** Cloud provider R2 bucket name / 云服务商R2存储桶名称 */
-    BUCKET_NAME: z.string().default('default-bucket'),
-
     /** Sentry error tracking / Sentry错误追踪 */
     SENTRY_DSN: z.string().optional(),
 
     /** Trusted proxy IPs / 信任的代理IP */
     TRUSTED_PROXY_IPS: z.string().default('private'),
   })
+  .extend(objectStorageEnvSchema.shape)
   .refine((value) => value.CLIENT_JWT_SECRET !== value.ADMIN_JWT_SECRET, {
     path: ['CLIENT_JWT_SECRET'],
     message: '客户端与管理端必须使用不同的 JWT 密钥',

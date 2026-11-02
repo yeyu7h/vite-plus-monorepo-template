@@ -114,6 +114,7 @@ catalogs:
 minimumReleaseAge: 1440
 
 allowBuilds:
+  '@parcel/watcher': false
   esbuild: false
   msgpackr-extract: true
   vue-demi: false

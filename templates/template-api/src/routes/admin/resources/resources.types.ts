@@ -1,21 +1,7 @@
 import type * as routes from './resources.routes'
 import type { AdminRouteHandler } from '@monorepo/server-core'
 
-export type GenerateUploadUrlParams = {
-  fileName: string
-  fileType?: string
-  expiresIn?: number
-}
-
-export type GenerateDownloadUrlParams = {
-  fileName: string
-  expiresIn?: number
-}
-
-export type PresignedUrlResult = {
-  url: string
-  expiresAt: string
-}
+export type { GenerateUploadUrlParams, GenerateDownloadUrlParams, PresignedUrlResult } from '@/lib/services/object-storage'
 
 type RouteTypes = {
   [K in keyof typeof routes]: (typeof routes)[K]

@@ -4,6 +4,8 @@ import * as z from 'zod'
 
 import { createSingleton, destroyAllSingletons, hasSingleton } from '@monorepo/server-core'
 import logger from '@/lib/services/logger'
+import { objectStorageConfig } from '@/lib/services/object-storage'
+import { objectStorageSummary } from '@/lib/services/object-storage/config'
 
 import { initExcelize } from './excelize'
 
@@ -20,6 +22,7 @@ export function bootstrap(): Promise<void> {
     // Initialize excelize wasm / 初始化 excelize wasm
     yield* initExcelize
     logger.info('[Bootstrap]: excelize wasm 已加载')
+    logger.info(objectStorageSummary(objectStorageConfig), '[ObjectStorage]: 当前存储服务')
 
     createSingleton(KEY, () => true)
   })

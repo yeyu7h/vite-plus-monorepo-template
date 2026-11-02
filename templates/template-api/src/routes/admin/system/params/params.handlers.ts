@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import type { systemParamResponseSchema } from './params.schema'
+import { systemParamValueSchema, type systemParamResponseSchema } from './params.schema'
 import type { SystemParamRouteHandlerType } from './params.types'
 
 import { eq } from 'drizzle-orm'
@@ -8,12 +8,8 @@ import db from '@/db'
 import { systemParams } from '@/db/schema'
 import { executeRefineQuery, RefineQueryParamsSchema } from '@/lib/core/refine-query'
 import { HttpStatusCodes } from '@monorepo/server-core'
-import logger from '@/lib/services/logger'
-import redisClient from '@/lib/services/redis'
+import { invalidateConfigCache } from '@/lib/services/config-cache'
 import { Resp } from '@/utils'
-
-/** Redis cache key prefix / Redis 缓存 Key 前缀 */
-const PARAM_CACHE_PREFIX = 'param:'
 
 /** List query / 列表查询 */
 export const list: SystemParamRouteHandlerType<'list'> = async (c) => {
@@ -54,8 +50,7 @@ export const create: SystemParamRouteHandlerType<'create'> = async (c) => {
     })
     .returning()
 
-  // Asynchronously clear potential cache / 异步清除可能存在的缓存
-  void redisClient.del(`${PARAM_CACHE_PREFIX}${created.key}`).catch((error) => logger.warn({ error, key: created.key }, '[参数]: 清除缓存失败'))
+  await invalidateConfigCache('param', [created.key])
 
   return c.json(Resp.ok(created), HttpStatusCodes.CREATED)
 }
@@ -81,23 +76,31 @@ export const update: SystemParamRouteHandlerType<'update'> = async (c) => {
   const body = c.req.valid('json')
   const { sub } = c.get('jwtPayload')
 
-  const [updated] = await db
-    .update(systemParams)
-    .set({
-      ...body,
-      updatedBy: sub,
-    })
-    .where(eq(systemParams.id, id))
-    .returning()
+  const result = await db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(systemParams).where(eq(systemParams.id, id)).for('update')
+    if (!existing) return { status: 'not_found' } as const
+
+    if (body.value !== undefined || body.valueType !== undefined) {
+      const validation = systemParamValueSchema.safeParse({ value: body.value ?? existing.value, valueType: body.valueType ?? existing.valueType })
+      if (!validation.success) return { status: 'invalid', error: validation.error } as const
+    }
+
+    const [updated] = await tx
+      .update(systemParams)
+      .set({ ...body, updatedBy: sub })
+      .where(eq(systemParams.id, id))
+      .returning()
+    return { status: 'updated', updated, previousKey: existing.key } as const
+  })
 
   // If no records were updated, the parameter does not exist / 如果没有更新任何记录，说明参数不存在
-  if (!updated) {
+  if (result.status === 'not_found') {
     return c.json(Resp.fail('参数不存在'), HttpStatusCodes.NOT_FOUND)
   }
+  if (result.status === 'invalid') return c.json(Resp.fail(result.error), HttpStatusCodes.UNPROCESSABLE_ENTITY)
 
-  // Clear cache (regardless of whether key was modified) / 清除缓存（无论 key 是否修改，都清除当前 key 的缓存）
-  // Note: if key was modified, old cache key won't be cleared but will naturally expire / 注意：如果修改了 key，旧的缓存 key 不会被清除，但会自然过期
-  void redisClient.del(`${PARAM_CACHE_PREFIX}${updated.key}`).catch((error) => logger.warn({ error, key: updated.key }, '[参数]: 清除缓存失败'))
+  const { updated, previousKey } = result
+  await invalidateConfigCache('param', [previousKey, updated.key])
 
   return c.json(Resp.ok(updated), HttpStatusCodes.OK)
 }
@@ -114,8 +117,7 @@ export const remove: SystemParamRouteHandlerType<'remove'> = async (c) => {
     return c.json(Resp.fail('参数不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
-  // Clear cache / 清除缓存
-  void redisClient.del(`${PARAM_CACHE_PREFIX}${deleted.key}`).catch((error) => logger.warn({ error, key: deleted.key }, '[参数]: 清除缓存失败'))
+  await invalidateConfigCache('param', [deleted.key])
 
   return c.json(Resp.ok({ id: deleted.id }), HttpStatusCodes.OK)
 }

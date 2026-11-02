@@ -21,8 +21,26 @@ const paramBaseFields = {
   status: z.enum([Status.ENABLED, Status.DISABLED]).optional().meta({ description: '状态' }),
 }
 
+function validateParamValue(data: { value: string; valueType?: z.infer<typeof selectSystemParamsSchema>['valueType'] }, context: z.RefinementCtx) {
+  let message: string | undefined
+  if (!data.value.trim()) message = '参数值不能为空'
+  else if (data.valueType === ParamValueType.NUMBER && !Number.isFinite(Number(data.value))) message = '请输入有限数字'
+  else if (data.valueType === ParamValueType.BOOLEAN && data.value !== 'true' && data.value !== 'false') message = '布尔值只能是 true 或 false'
+  else if (data.valueType === ParamValueType.JSON) {
+    try {
+      JSON.parse(data.value)
+    } catch {
+      message = '请输入合法 JSON'
+    }
+  }
+  if (message) context.addIssue({ code: 'custom', path: ['value'], message })
+}
+
+/** Validate the complete value/type pair after merging a partial update. */
+export const systemParamValueSchema = selectSystemParamsSchema.pick({ value: true, valueType: true }).superRefine(validateParamValue)
+
 /** Create parameter Schema / 创建参数 Schema */
-export const systemParamCreateSchema = insertSystemParamsSchema.extend(paramBaseFields)
+export const systemParamCreateSchema = insertSystemParamsSchema.extend(paramBaseFields).superRefine(validateParamValue)
 
 /** Update parameter Schema / 更新参数 Schema */
 export const systemParamPatchSchema = insertSystemParamsSchema

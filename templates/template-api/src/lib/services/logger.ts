@@ -3,6 +3,7 @@ import pino from 'pino'
 
 import env from '@/env'
 import { createSingleton } from '@monorepo/server-core'
+import { redactLogObject } from './log-redaction'
 
 function buildTransportTargets(): TransportTargetOptions[] {
   const targets: TransportTargetOptions[] = []
@@ -25,7 +26,7 @@ function buildTransportTargets(): TransportTargetOptions[] {
   return targets
 }
 
-const logger = createSingleton('logger', () => pino({ level: env.LOG_LEVEL || 'info' }, pino.transport({ targets: buildTransportTargets() })), {
+const logger = createSingleton('logger', () => pino({ level: env.LOG_LEVEL || 'info', formatters: { log: redactLogObject } }, pino.transport({ targets: buildTransportTargets() })), {
   destroy: (instance) => new Promise<void>((resolve) => instance.flush(() => resolve())),
 })
 

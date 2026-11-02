@@ -70,6 +70,7 @@ export const update = createRoute({
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(systemParamResponseSchema), '更新成功'),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, '参数值与类型不匹配'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(respErrSchema, '参数不存在'),
   },
 })

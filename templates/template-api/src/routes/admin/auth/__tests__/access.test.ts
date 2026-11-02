@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import type { AdminAccessMenuRecord } from '../access.helpers'
-import { buildAdminAccessPayload } from '../access.helpers'
+import type { AdminAccessMenuRecord } from '../access.payload'
+import { buildAdminAccessPayload } from '../access.payload'
 
 const rows: AdminAccessMenuRecord[] = [
   {

@@ -1,4 +1,4 @@
-import type { AdminAccessMenu } from './access.helpers'
+import type { AdminAccessMenu } from './access.payload'
 
 import { z } from '@hono/zod-openapi'
 

@@ -8,12 +8,8 @@ import db from '@/db'
 import { systemDicts } from '@/db/schema'
 import { executeRefineQuery, RefineQueryParamsSchema } from '@/lib/core/refine-query'
 import { HttpStatusCodes } from '@monorepo/server-core'
-import logger from '@/lib/services/logger'
-import redisClient from '@/lib/services/redis'
+import { invalidateConfigCache } from '@/lib/services/config-cache'
 import { Resp } from '@/utils'
-
-/** Redis cache key prefix / Redis 缓存 Key 前缀 */
-const DICT_CACHE_PREFIX = 'dict:'
 
 /** List query / 列表查询 */
 export const list: SystemDictRouteHandlerType<'list'> = async (c) => {
@@ -54,8 +50,7 @@ export const create: SystemDictRouteHandlerType<'create'> = async (c) => {
     })
     .returning()
 
-  // Asynchronously clear potential cache / 异步清除可能存在的缓存
-  void redisClient.del(`${DICT_CACHE_PREFIX}${created.code}`).catch((error) => logger.warn({ error, code: created.code }, '[字典]: 清除缓存失败'))
+  await invalidateConfigCache('dict', [created.code])
 
   return c.json(Resp.ok(created), HttpStatusCodes.CREATED)
 }
@@ -81,23 +76,24 @@ export const update: SystemDictRouteHandlerType<'update'> = async (c) => {
   const body = c.req.valid('json')
   const { sub } = c.get('jwtPayload')
 
-  const [updated] = await db
-    .update(systemDicts)
-    .set({
-      ...body,
-      updatedBy: sub,
-    })
-    .where(eq(systemDicts.id, id))
-    .returning()
+  const result = await db.transaction(async (tx) => {
+    const [existing] = await tx.select().from(systemDicts).where(eq(systemDicts.id, id)).for('update')
+    if (!existing) return null
+    const [updated] = await tx
+      .update(systemDicts)
+      .set({ ...body, updatedBy: sub })
+      .where(eq(systemDicts.id, id))
+      .returning()
+    return { updated, previousCode: existing.code }
+  })
 
   // If no records were updated, the dictionary does not exist / 如果没有更新任何记录，说明字典不存在
-  if (!updated) {
+  if (!result) {
     return c.json(Resp.fail('字典不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
-  // Clear cache (regardless of whether code was modified) / 清除缓存（无论 code 是否修改，都清除当前 code 的缓存）
-  // Note: if code was modified, old cache key won't be cleared but will naturally expire / 注意：如果修改了 code，旧的缓存 key 不会被清除，但会自然过期
-  void redisClient.del(`${DICT_CACHE_PREFIX}${updated.code}`).catch((error) => logger.warn({ error, code: updated.code }, '[字典]: 清除缓存失败'))
+  const { updated, previousCode } = result
+  await invalidateConfigCache('dict', [previousCode, updated.code])
 
   return c.json(Resp.ok(updated), HttpStatusCodes.OK)
 }
@@ -114,8 +110,7 @@ export const remove: SystemDictRouteHandlerType<'remove'> = async (c) => {
     return c.json(Resp.fail('字典不存在'), HttpStatusCodes.NOT_FOUND)
   }
 
-  // Clear cache / 清除缓存
-  void redisClient.del(`${DICT_CACHE_PREFIX}${deleted.code}`).catch((error) => logger.warn({ error, code: deleted.code }, '[字典]: 清除缓存失败'))
+  await invalidateConfigCache('dict', [deleted.code])
 
   return c.json(Resp.ok({ id: deleted.id }), HttpStatusCodes.OK)
 }

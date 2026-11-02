@@ -9,6 +9,7 @@
 - `templates/template-api`：Hono + OpenAPI + Drizzle + Redis + BullMQ + Casbin 后端模板，默认监听 `9999`。
 - `apps/`：通过创建命令生成的应用，仍属于同一 pnpm 工作区。
 - `packages/server-core`：Hono 类型、路由工厂、OpenAPI、响应模型、应用装配和 singleton 生命周期。
+- `packages/server-miniapp-auth`：可复用的微信、支付宝小程序服务端身份验证及 UID 格式规则。
 - `packages/server-refine-query`：通过依赖注入绑定 Drizzle 的 Refine 查询转换与执行器。
 - `packages/server-vite-plugin`：服务端构建、Bull Board 静态资源、HMR 通知、资源监控和 Zod hoist 插件。
 - `packages/utils`：与运行时无关的通用工具。
@@ -52,7 +53,7 @@ vp run api:push
 vp run api:seed
 ```
 
-默认测试不依赖 PostgreSQL 或 Redis。启动外部服务并完成迁移后，可运行：
+默认测试不依赖 PostgreSQL 或 Redis。为专用测试服务完成迁移和 seed 后，显式设置 `TEST_DATABASE_URL`、`TEST_REDIS_URL`，再运行：
 
 ```bash
 vp run @app/template-api#test:integration

@@ -6,6 +6,8 @@
 
 Scalar 首页位于 `/`，三组 OpenAPI JSON 分别位于 `/api/doc`、`/api/client/doc` 和 `/api/admin/doc`。
 
+微信、支付宝小程序共用业务用户表及固定前缀 UID，业务账号与后台管理账号独立。接入配置、接口和原生调用示例见 [小程序登录](docs/miniapp-auth.md)。
+
 ## 本地启动
 
 从仓库根目录执行：
@@ -29,11 +31,11 @@ vp run @app/template-api#test
 vp run @app/template-api#test:integration
 ```
 
-`test` 默认排除 `*.integration.test.ts`；集成测试需要可用的 PostgreSQL、Redis、测试环境变量和已执行的迁移。
+`test` 默认排除 `*.integration.test.ts`；集成测试需要专用 PostgreSQL、Redis，以及已执行的迁移和 seed。必须显式设置 `TEST_DATABASE_URL`、`TEST_REDIS_URL`，缺少地址会在加载测试前终止。
 
 ## 可复用边界
 
-框架级能力位于 `@monorepo/server-core`，Refine 查询位于 `@monorepo/server-refine-query`，Vite 服务端插件位于 `@monorepo/server-vite-plugin`，纯工具位于 `@monorepo/utils`。数据库连接、业务 Schema、日志、Redis/BullMQ 与 Casbin 保持在 app 内。
+框架级能力位于 `@monorepo/server-core`，Refine 查询位于 `@monorepo/server-refine-query`，小程序平台身份验证位于 `@monorepo/server-miniapp-auth`，Vite 服务端插件位于 `@monorepo/server-vite-plugin`，纯工具位于 `@monorepo/utils`。数据库连接、业务 Schema、账号注册、会话、日志、Redis/BullMQ 与 Casbin 保持在 app 内。
 
 后续创建 API app 时，应显式向 `createApplication(config, runtime)` 提供环境、版本、route/middleware globs 和 app 根 Hono 实例。
 

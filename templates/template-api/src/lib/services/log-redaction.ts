@@ -19,6 +19,13 @@ const sensitiveFields = new Set([
   'clientsecret',
   'secretaccesskey',
   'apikey',
+  'code',
+  'authcode',
+  'jscode',
+  'sessionkey',
+  'appsecret',
+  'privatekey',
+  'miniappapps',
 ])
 
 function redactValue(value: unknown, seen: WeakMap<object, unknown>): unknown {

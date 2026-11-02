@@ -4,6 +4,20 @@ import { describe, expect, it } from 'vite-plus/test'
 import { redactLogObject } from './log-redaction'
 
 describe('log redaction', () => {
+  it('redacts mini program one-use credentials and server application configuration', () => {
+    const input = {
+      body: { code: 'one-use-login-code', auth_code: 'ali-code' },
+      provider: { session_key: 'wechat-session-key', appSecret: 'wechat-secret', privateKey: 'private-key' },
+      MINIAPP_APPS: '{"privateKey":"private-key"}',
+    }
+    const redacted = redactLogObject(input)
+    expect(JSON.stringify(redacted)).not.toContain('one-use-login-code')
+    expect(JSON.stringify(redacted)).not.toContain('ali-code')
+    expect(JSON.stringify(redacted)).not.toContain('wechat-secret')
+    expect(JSON.stringify(redacted)).not.toContain('wechat-session-key')
+    expect(JSON.stringify(redacted)).not.toContain('private-key')
+  })
+
   it('redacts nested credentials, headers and tokens without changing source data', () => {
     const source = {
       body: { username: 'alice', password: 'plain-password', users: [{ new_password: 'new-secret' }] },

@@ -1,6 +1,5 @@
-import { jwt } from 'hono/jwt'
-
-import env from '@/env'
 import { defineMiddleware } from '@monorepo/server-core'
+import { createClientAuthentication } from '@/middlewares/client-authenticate'
+import { clientSessions } from '@/lib/services/client-auth'
 
-export default defineMiddleware([jwt({ secret: env.CLIENT_JWT_SECRET, alg: 'HS256' })])
+export default defineMiddleware([createClientAuthentication(clientSessions.authenticate)])

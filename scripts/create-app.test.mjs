@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { createApp } from './create-app.mjs'
 
@@ -52,4 +53,35 @@ test('rejects invalid names and never overwrites an existing app', async (t) => 
   await assert.rejects(createApp('api', 'template-api', root), /重名/)
   await createApp('api', 'sample', root)
   await assert.rejects(createApp('api', 'sample', root), /已存在/)
+})
+
+test('the real API template creates an independent generic app with optional storage and no miniapp business', async (t) => {
+  const root = await fixture(t)
+  const template = join(root, 'templates', 'template-api')
+  await rm(template, { recursive: true })
+  await cp(fileURLToPath(new URL('../templates/template-api/', import.meta.url)), template, {
+    recursive: true,
+    filter: (path) => {
+      const name = basename(path)
+      return !['node_modules', 'dist', 'coverage', '.env'].includes(name) && (!name.startsWith('.env.') || name.endsWith('.example'))
+    },
+  })
+  const app = await createApp('api', 'generic-api', root)
+  const packageJson = JSON.parse(await readFile(join(app, 'package.json'), 'utf8'))
+  assert.equal(packageJson.name, '@app/generic-api')
+  assert.equal(packageJson.dependencies['@monorepo/server-miniapp-auth'], undefined)
+  assert.doesNotMatch(await readFile(join(app, '.env.example'), 'utf8'), /MINIAPP_APPS|USER_UID_PREFIX|CLIENT_SESSION_SECONDS/)
+  assert.doesNotMatch(await readFile(join(app, 'src/env.ts'), 'utf8'), /server-miniapp-auth/)
+  await assert.rejects(readFile(join(app, 'src/routes/client/auth/auth.index.ts')))
+  await assert.rejects(readFile(join(app, 'src/db/schema/client/users/users.ts')))
+  const migrations = await readdir(join(app, 'migrations'), { withFileTypes: true })
+  for (const migration of migrations.filter((entry) => entry.isDirectory() && /^\d/.test(entry.name))) {
+    if (!(await readdir(join(app, 'migrations', migration.name))).length) continue
+    const sql = await readFile(join(app, 'migrations', migration.name, 'migration.sql'), 'utf8')
+    assert.match(sql, /CREATE TABLE "system_users"/)
+    assert.doesNotMatch(sql, /client_users|user_identities|uid_counters|DROP TABLE/)
+  }
+  assert.ok(migrations.some((entry) => entry.name.endsWith('_generic-api-baseline')))
+  assert.match(await readFile(join(app, 'compose.rustfs.yaml'), 'utf8'), /dockerfile: apps\/generic-api\/Dockerfile/)
+  assert.match(await readFile(join(app, 'src/lib/services/object-storage/config.ts'), 'utf8'), /STORAGE_PROVIDER/)
 })

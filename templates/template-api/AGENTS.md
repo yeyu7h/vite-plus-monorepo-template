@@ -33,6 +33,7 @@ vp run @app/template-api#seed
 - 响应使用 `Resp` 与 `HttpStatusCodes`。
 - 日志数据对象在前，消息在后；除环境校验、singleton、测试和脚本外不使用 `console`。
 - Schema 变更后，开发环境用 `push`，需要迁移文件时用 `generate`。
+- 表声明前用于数据库表注释的 JSDoc 应简洁说明表的用途或保存的数据，仅使用中文且末尾不加句号；字段 JSDoc 继续遵循仓库注释规范。
 - 优先从 Zod Schema 推导类型；避免显式 `any`，底层框架类型桥接只允许窄范围 lint 说明。
 - 数据库时间戳使用 `date-fns` 按部署时区格式化，不用 `toISOString()` 写入本地时间字段。
 - CRUD、Schema、tier、Drizzle v1、BullMQ 和 Effect 变更遵循仓库 `.agents/skills` 中对应技能。

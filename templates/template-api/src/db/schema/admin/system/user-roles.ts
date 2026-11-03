@@ -3,6 +3,7 @@ import { index, primaryKey, snakeCase, uuid, varchar } from 'drizzle-orm/pg-core
 import { systemRoles } from './roles'
 import { systemUsers } from './users'
 
+/** 管理端用户与角色关联表 */
 export const systemUserRoles = snakeCase.table(
   'system_user_roles',
   {

@@ -3,7 +3,7 @@ import { index, primaryKey, snakeCase, varchar } from 'drizzle-orm/pg-core'
 import { systemMenus } from './menus'
 import { systemRoles } from './roles'
 
-/** 菜单与角色的多对多关联。没有关联角色的菜单视为公共菜单。 */
+/** 管理端菜单与角色关联表 */
 export const systemMenuRoles = snakeCase.table(
   'system_menu_roles',
   {

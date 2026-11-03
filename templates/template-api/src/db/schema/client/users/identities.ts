@@ -3,7 +3,7 @@ import type { MiniappIdentity } from '@/lib/services/miniapp-auth/config'
 import { baseColumns } from '../../_shard/base-columns'
 import { clientUsers } from './users'
 
-/** Verified business login identities; cannot reference an administration account. */
+/** 客户端用户登录身份表 */
 export const clientUserIdentities = snakeCase.table(
   'client_user_identities',
   {

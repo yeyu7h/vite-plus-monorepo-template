@@ -3,6 +3,7 @@ import { index, primaryKey, snakeCase, varchar } from 'drizzle-orm/pg-core'
 
 import { createSelectSchema } from 'drizzle-orm/zod'
 
+/** 权限策略和角色继承规则表 */
 export const casbinRule = snakeCase.table(
   'casbin_rule',
   {

@@ -5,7 +5,7 @@ import { baseColumns } from '../../_shard/base-columns'
 import { Status } from '@/lib/enums'
 import type { StatusType } from '@/lib/enums'
 
-/** Business accounts independent of administration accounts. */
+/** 客户端用户表 */
 export const clientUsers = snakeCase.table(
   'client_users',
   {

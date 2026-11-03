@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { bigint, check, snakeCase, varchar } from 'drizzle-orm/pg-core'
 
-/** Durable atomic business UID sequence, independent of administration accounts. */
+/** 客户端用户编号计数表 */
 export const clientUserUidCounters = snakeCase.table(
   'client_user_uid_counters',
   {

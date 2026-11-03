@@ -26,14 +26,7 @@ export type DictItem = {
   color?: string
 }
 
-/**
- * Business dictionary table
- * Used for dynamic configuration of various dictionary data (e.g., user status, order types)
- * Dictionary items are stored as JSONB arrays, no separate dictionary items table needed
- * 业务字典表
- * 用于动态配置各种字典数据（如用户状态、订单类型等）
- * 字典项使用 JSONB 数组存储，无需额外的字典项表
- */
+/** 系统字典配置表 */
 export const systemDicts = snakeCase.table(
   'system_dicts',
   {

@@ -45,6 +45,7 @@ import { users } from "@/db/schema";  // Schema 定义
 - 表名：`{tier}_{feature}s`（如 `system_users`）
 - 索引名：`{表名}_{字段名}_idx`
 - 主键：统一命名为 `id`
+- 表声明前用于数据库表注释的 JSDoc 应简洁说明表的用途或保存的数据，仅使用中文且末尾不加句号；字段 JSDoc 继续遵循仓库注释规范。
 
 ### 批量插入
 

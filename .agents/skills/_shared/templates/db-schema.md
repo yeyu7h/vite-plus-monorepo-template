@@ -94,7 +94,7 @@ import { Status } from "@/lib/enums";
 import { StatusDescriptions } from "@/lib/schemas";
 
 /**
- * {Feature} 表
+ * {功能中文名}表
  */
 export const {feature}s = snakeCase.table("{tier}_{feature}s", {
   ...baseColumns,

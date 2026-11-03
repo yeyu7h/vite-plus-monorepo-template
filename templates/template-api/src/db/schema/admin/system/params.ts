@@ -9,12 +9,7 @@ import { baseColumns } from '@/db/schema/_shard/base-columns'
 import { ParamValueType, Status } from '@/lib/enums'
 import { StatusDescriptions } from '@/lib/schemas'
 
-/**
- * System parameters table
- * Used for dynamic configuration of various system parameters (e.g., SMS signature, payment config, system switches)
- * 系统参数表
- * 用于动态配置各种系统参数（如短信签名、支付配置、系统开关等）
- */
+/** 系统参数配置表 */
 export const systemParams = snakeCase.table(
   'system_params',
   {

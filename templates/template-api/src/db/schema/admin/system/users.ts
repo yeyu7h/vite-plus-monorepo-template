@@ -9,6 +9,7 @@ import { baseColumns } from '@/db/schema/_shard/base-columns'
 import { Status } from '@/lib/enums'
 import { nicknameField, passwordField, StatusDescriptions, usernameField } from '@/lib/schemas'
 
+/** 管理端用户表 */
 export const systemUsers = snakeCase.table(
   'system_users',
   {

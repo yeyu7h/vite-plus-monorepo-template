@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { baseColumns } from '@/db/schema/_shard/base-columns'
 import { Status } from '@/lib/enums'
 
+/** 管理端角色表 */
 export const systemRoles = snakeCase.table('system_roles', {
   ...baseColumns,
   id: varchar({ length: 64 }).notNull().primaryKey(),

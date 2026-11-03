@@ -16,7 +16,7 @@ export type AdminMenuType = (typeof adminMenuTypes)[number]
 
 export type AdminMenuIcon = string | { dark?: string; light: string }
 
-/** 管理端菜单分组、路由菜单和按钮节点。 */
+/** 管理端菜单节点表 */
 export const systemMenus = snakeCase.table(
   'system_menus',
   {

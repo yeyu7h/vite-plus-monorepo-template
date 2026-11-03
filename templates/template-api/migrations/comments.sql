@@ -3,7 +3,7 @@
 
 BEGIN;
 
-COMMENT ON TABLE "casbin_rule" IS NULL;
+COMMENT ON TABLE "casbin_rule" IS '权限策略和角色继承规则表';
 COMMENT ON COLUMN "casbin_rule"."ptype" IS 'Policy type: p (permission policy) / g (role inheritance) / 策略类型：p（权限策略）/g（角色继承）';
 COMMENT ON COLUMN "casbin_rule"."v0" IS 'Subject: role or user (p=sub, g=parent role/user) / 主体：角色或用户（p策略=sub，g策略=上级角色/用户）';
 COMMENT ON COLUMN "casbin_rule"."v1" IS 'Object: business resource (p=obj, g=child role/user) / 对象：业务资源（p策略=obj，g策略=下级角色/用户）';
@@ -12,7 +12,7 @@ COMMENT ON COLUMN "casbin_rule"."v3" IS 'Reserved field (not in use, defaults to
 COMMENT ON COLUMN "casbin_rule"."v4" IS 'Reserved field (not in use, defaults to empty string) / 保留字段（暂不使用，默认空字符串）';
 COMMENT ON COLUMN "casbin_rule"."v5" IS 'Reserved field (not in use, defaults to empty string) / 保留字段（暂不使用，默认空字符串）';
 
-COMMENT ON TABLE "client_user_identities" IS 'Verified business login identities; cannot reference an administration account.';
+COMMENT ON TABLE "client_user_identities" IS '客户端用户登录身份表';
 COMMENT ON COLUMN "client_user_identities"."app_id" IS NULL;
 COMMENT ON COLUMN "client_user_identities"."created_at" IS NULL;
 COMMENT ON COLUMN "client_user_identities"."id" IS NULL;
@@ -23,11 +23,11 @@ COMMENT ON COLUMN "client_user_identities"."subject_type" IS NULL;
 COMMENT ON COLUMN "client_user_identities"."union_id" IS NULL;
 COMMENT ON COLUMN "client_user_identities"."user_id" IS NULL;
 
-COMMENT ON TABLE "client_user_uid_counters" IS 'Durable atomic business UID sequence, independent of administration accounts.';
+COMMENT ON TABLE "client_user_uid_counters" IS '客户端用户编号计数表';
 COMMENT ON COLUMN "client_user_uid_counters"."id" IS NULL;
 COMMENT ON COLUMN "client_user_uid_counters"."value" IS NULL;
 
-COMMENT ON TABLE "client_users" IS 'Business accounts independent of administration accounts.';
+COMMENT ON TABLE "client_users" IS '客户端用户表';
 COMMENT ON COLUMN "client_users"."avatar" IS NULL;
 COMMENT ON COLUMN "client_users"."created_at" IS 'Creation time / 创建时间';
 COMMENT ON COLUMN "client_users"."created_by" IS 'Created by / 创建人';
@@ -40,7 +40,7 @@ COMMENT ON COLUMN "client_users"."uid" IS 'Public business UID; immutable and in
 COMMENT ON COLUMN "client_users"."updated_at" IS 'Update time (with auto-update) / 更新时间 包含自动更新';
 COMMENT ON COLUMN "client_users"."updated_by" IS 'Updated by / 更新人';
 
-COMMENT ON TABLE "system_dicts" IS 'Business dictionary table Used for dynamic configuration of various dictionary data (e.g., user status, order types) Dictionary items are stored as JSONB arrays, no separate dictionary items table needed 业务字典表 用于动态配置各种字典数据（如用户状态、订单类型等） 字典项使用 JSONB 数组存储，无需额外的字典项表';
+COMMENT ON TABLE "system_dicts" IS '系统字典配置表';
 COMMENT ON COLUMN "system_dicts"."code" IS 'Dictionary code (unique identifier, e.g., "user_status") / 字典编码（唯一标识，如 "user_status"）';
 COMMENT ON COLUMN "system_dicts"."created_at" IS 'Creation time / 创建时间';
 COMMENT ON COLUMN "system_dicts"."created_by" IS 'Created by / 创建人';
@@ -52,11 +52,11 @@ COMMENT ON COLUMN "system_dicts"."status" IS 'Enabled/disabled status / 启用/�
 COMMENT ON COLUMN "system_dicts"."updated_at" IS 'Update time (with auto-update) / 更新时间 包含自动更新';
 COMMENT ON COLUMN "system_dicts"."updated_by" IS 'Updated by / 更新人';
 
-COMMENT ON TABLE "system_menu_roles" IS '菜单与角色的多对多关联。没有关联角色的菜单视为公共菜单。';
+COMMENT ON TABLE "system_menu_roles" IS '管理端菜单与角色关联表';
 COMMENT ON COLUMN "system_menu_roles"."menu_id" IS NULL;
 COMMENT ON COLUMN "system_menu_roles"."role_id" IS NULL;
 
-COMMENT ON TABLE "system_menus" IS '管理端菜单分组、路由菜单和按钮节点。';
+COMMENT ON TABLE "system_menus" IS '管理端菜单节点表';
 COMMENT ON COLUMN "system_menus"."active_path" IS NULL;
 COMMENT ON COLUMN "system_menus"."created_at" IS 'Creation time / 创建时间';
 COMMENT ON COLUMN "system_menus"."created_by" IS 'Created by / 创建人';
@@ -83,7 +83,7 @@ COMMENT ON COLUMN "system_menus"."type" IS NULL;
 COMMENT ON COLUMN "system_menus"."updated_at" IS 'Update time (with auto-update) / 更新时间 包含自动更新';
 COMMENT ON COLUMN "system_menus"."updated_by" IS 'Updated by / 更新人';
 
-COMMENT ON TABLE "system_params" IS 'System parameters table Used for dynamic configuration of various system parameters (e.g., SMS signature, payment config, system switches) 系统参数表 用于动态配置各种系统参数（如短信签名、支付配置、系统开关等）';
+COMMENT ON TABLE "system_params" IS '系统参数配置表';
 COMMENT ON COLUMN "system_params"."created_at" IS 'Creation time / 创建时间';
 COMMENT ON COLUMN "system_params"."created_by" IS 'Created by / 创建人';
 COMMENT ON COLUMN "system_params"."description" IS 'Parameter description / 参数描述';
@@ -96,7 +96,7 @@ COMMENT ON COLUMN "system_params"."updated_by" IS 'Updated by / 更新人';
 COMMENT ON COLUMN "system_params"."value" IS 'Parameter value (stored as string) / 参数值（字符串存储）';
 COMMENT ON COLUMN "system_params"."value_type" IS 'Parameter value type (for frontend parsing) / 参数值类型（供前端解析）';
 
-COMMENT ON TABLE "system_roles" IS NULL;
+COMMENT ON TABLE "system_roles" IS '管理端角色表';
 COMMENT ON COLUMN "system_roles"."created_at" IS 'Creation time / 创建时间';
 COMMENT ON COLUMN "system_roles"."created_by" IS 'Created by / 创建人';
 COMMENT ON COLUMN "system_roles"."description" IS NULL;
@@ -106,11 +106,11 @@ COMMENT ON COLUMN "system_roles"."status" IS NULL;
 COMMENT ON COLUMN "system_roles"."updated_at" IS 'Update time (with auto-update) / 更新时间 包含自动更新';
 COMMENT ON COLUMN "system_roles"."updated_by" IS 'Updated by / 更新人';
 
-COMMENT ON TABLE "system_user_roles" IS NULL;
+COMMENT ON TABLE "system_user_roles" IS '管理端用户与角色关联表';
 COMMENT ON COLUMN "system_user_roles"."role_id" IS NULL;
 COMMENT ON COLUMN "system_user_roles"."user_id" IS NULL;
 
-COMMENT ON TABLE "system_users" IS NULL;
+COMMENT ON TABLE "system_users" IS '管理端用户表';
 COMMENT ON COLUMN "system_users"."avatar" IS NULL;
 COMMENT ON COLUMN "system_users"."built_in" IS NULL;
 COMMENT ON COLUMN "system_users"."created_at" IS 'Creation time / 创建时间';

@@ -4,6 +4,16 @@
 
 ## 选择存储服务
 
+新应用的 `.env.example` 显式关闭对象存储：
+
+```dotenv
+STORAGE_PROVIDER=none
+```
+
+关闭时无需存储凭据，不创建 S3 客户端；残留的存储地址和凭据不会被使用或校验。已通过认证与权限校验的存储签名请求返回 `503` 和 `对象存储未启用`，直接调用 `getObjectStorage()` 同样抛出带 `status: 503` 的错误。
+
+使用 R2 时配置：
+
 ```dotenv
 STORAGE_PROVIDER=r2
 ACCESS_KEY_ID=your-access-key-id
@@ -22,7 +32,7 @@ ENDPOINT=http://localhost:9000
 BUCKET_NAME=app-files
 ```
 
-`STORAGE_PROVIDER` 未设置时默认为 `r2`，旧版四项存储配置可继续使用。只接受 `r2`、`rustfs`；类型拼错、凭据为空或地址无效时启动校验失败。修改环境配置后重启 API。
+`STORAGE_PROVIDER` 未设置时仍默认为 `r2`，兼容旧版配置；关闭存储必须显式设置 `none`。只接受 `none`、`r2`、`rustfs`；服务名称拼错、启用后凭据为空或地址无效时启动校验失败。修改环境配置后重启 API，切换配置不会迁移或删除已有对象。
 
 | 配置                       | R2 默认值 | RustFS 默认值 |
 | -------------------------- | --------- | ------------- |

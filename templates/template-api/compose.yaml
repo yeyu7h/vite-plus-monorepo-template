@@ -64,7 +64,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [CMD, curl, --fail, --silent, 'http://127.0.0.1:9999/api/health']
+      test: [CMD, curl, --fail, --silent, 'http://127.0.0.1:9999/api/health/ready']
       interval: 15s
       timeout: 5s
       retries: 5

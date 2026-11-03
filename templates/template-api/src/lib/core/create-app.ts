@@ -46,13 +46,13 @@ export default function createApp() {
   app.use(timeout(30000))
 
   /** 5. Rate limiting - intercept before parsing request body / 速率限制 - 在解析请求体之前拦截 */
-  app.use(
-    createRateLimiter({
-      windowMs: RATE_LIMIT_WINDOW_MS,
-      limit: RATE_LIMIT_MAX_REQUESTS,
-      prefix: 'rl:global:',
-    }),
-  )
+  const globalRateLimit = createRateLimiter({ windowMs: RATE_LIMIT_WINDOW_MS, limit: RATE_LIMIT_MAX_REQUESTS, prefix: 'rl:global:' })
+  app.use((c, next) => {
+    const path = c.req.path.replace(/\/+$/, '')
+    // Probes must remain reachable when the Redis-backed limiter is unavailable.
+    if ((c.req.method === 'GET' || c.req.method === 'HEAD') && (path === '/api/health' || path === '/api/health/ready')) return next()
+    return globalRateLimit(c, next)
+  })
 
   /** 6. Basic features / 基础功能 */
   app.use(trimTrailingSlash())

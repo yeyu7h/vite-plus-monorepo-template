@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vite-plus/test'
 import { ZodError } from 'zod'
-import { objectStorageEnvSchema, objectStorageSummary, resolveObjectStorageConfig } from './config'
+import { ObjectStorageDisabledError, objectStorageEnvSchema, objectStorageSummary, requireObjectStorageConfig, resolveObjectStorageConfig } from './config'
 import { parseStorageCorsOrigins } from './initialization'
 
 const legacy = { ACCESS_KEY_ID: 'test-key', SECRET_ACCESS_KEY: 'test-secret', ENDPOINT: 'https://account.r2.cloudflarestorage.com', BUCKET_NAME: 'app-files' }
 
 describe('object storage configuration', () => {
+  it('explicitly disables storage without requiring or using inactive settings', () => {
+    const env = objectStorageEnvSchema.parse({ STORAGE_PROVIDER: 'none', ENDPOINT: 'unused', SECRET_ACCESS_KEY: '' })
+    expect(env).toEqual({ STORAGE_PROVIDER: 'none' })
+    expect(resolveObjectStorageConfig(env)).toBeNull()
+    expect(objectStorageSummary(null)).toEqual({ provider: 'none' })
+    expect(() => requireObjectStorageConfig(null)).toThrow(ObjectStorageDisabledError)
+    expect(new ObjectStorageDisabledError().status).toBe(503)
+  })
+
   it('keeps legacy R2 configuration valid without a provider', () => {
     expect(resolveObjectStorageConfig(objectStorageEnvSchema.parse(legacy))).toMatchObject({
       provider: 'r2',

@@ -16,8 +16,8 @@ const httpUrl = z
 const optional = <T extends z.ZodType>(schema: T) => z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), schema.optional())
 
 /** Shared with the standalone RustFS initializer; keep independent of app infrastructure. */
-export const objectStorageEnvSchema = z.object({
-  STORAGE_PROVIDER: z.enum(['r2', 'rustfs']).default('r2'),
+const enabledStorageEnvSchema = z.object({
+  STORAGE_PROVIDER: z.enum(['r2', 'rustfs']),
   ACCESS_KEY_ID: z.string().trim().min(1, '对象存储访问密钥不能为空'),
   SECRET_ACCESS_KEY: z
     .string()
@@ -31,9 +31,20 @@ export const objectStorageEnvSchema = z.object({
   STORAGE_PUBLIC_BASE_URL: optional(httpUrl),
 })
 
+export const objectStorageEnvSchema = z.preprocess(
+  (value) => {
+    if (value && typeof value === 'object' && (!('STORAGE_PROVIDER' in value) || value.STORAGE_PROVIDER === undefined)) {
+      return { ...value, STORAGE_PROVIDER: 'r2' }
+    }
+    return value
+  },
+  z.discriminatedUnion('STORAGE_PROVIDER', [z.object({ STORAGE_PROVIDER: z.literal('none') }), enabledStorageEnvSchema]),
+)
+
 export type ObjectStorageEnv = z.infer<typeof objectStorageEnvSchema>
 
 export function resolveObjectStorageConfig(env: ObjectStorageEnv) {
+  if (env.STORAGE_PROVIDER === 'none') return null
   return {
     provider: env.STORAGE_PROVIDER,
     endpoint: env.ENDPOINT,
@@ -46,7 +57,21 @@ export function resolveObjectStorageConfig(env: ObjectStorageEnv) {
   }
 }
 
-export type ObjectStorageConfig = ReturnType<typeof resolveObjectStorageConfig>
+export type ObjectStorageConfig = NonNullable<ReturnType<typeof resolveObjectStorageConfig>>
+
+export class ObjectStorageDisabledError extends Error {
+  readonly status = 503
+
+  constructor() {
+    super('对象存储未启用')
+    this.name = 'ObjectStorageDisabledError'
+  }
+}
+
+export function requireObjectStorageConfig(config: ObjectStorageConfig | null): ObjectStorageConfig {
+  if (!config) throw new ObjectStorageDisabledError()
+  return config
+}
 
 export function storageClientConfig(config: ObjectStorageConfig, endpoint = config.endpoint): S3ClientConfig {
   return {
@@ -60,7 +85,8 @@ export function storageClientConfig(config: ObjectStorageConfig, endpoint = conf
 }
 
 /** Safe to log: access credentials and signed URLs are deliberately omitted. */
-export function objectStorageSummary(config: ObjectStorageConfig) {
+export function objectStorageSummary(config: ObjectStorageConfig | null) {
+  if (!config) return { provider: 'none' }
   return {
     provider: config.provider,
     endpointHost: new URL(config.endpoint).host,

@@ -1,18 +1,20 @@
 import { afterEach, describe, expect, it } from 'vite-plus/test'
 import { createObjectStorage } from './storage'
-import { objectStorageEnvSchema, resolveObjectStorageConfig } from './config'
+import { objectStorageEnvSchema, requireObjectStorageConfig, resolveObjectStorageConfig } from './config'
 
 const instances: ReturnType<typeof createObjectStorage>[] = []
 function setup(settings: Record<string, string> = {}) {
   const storage = createObjectStorage(
-    resolveObjectStorageConfig(
-      objectStorageEnvSchema.parse({
-        ACCESS_KEY_ID: 'test-key',
-        SECRET_ACCESS_KEY: 'test-secret',
-        ENDPOINT: 'https://account.r2.cloudflarestorage.com',
-        BUCKET_NAME: 'app-files',
-        ...settings,
-      }),
+    requireObjectStorageConfig(
+      resolveObjectStorageConfig(
+        objectStorageEnvSchema.parse({
+          ACCESS_KEY_ID: 'test-key',
+          SECRET_ACCESS_KEY: 'test-secret',
+          ENDPOINT: 'https://account.r2.cloudflarestorage.com',
+          BUCKET_NAME: 'app-files',
+          ...settings,
+        }),
+      ),
     ),
   )
   instances.push(storage)

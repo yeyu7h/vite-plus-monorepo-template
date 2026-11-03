@@ -24,6 +24,7 @@ export const getUploadToken = createRoute({
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(tokenResponseSchema), '获取成功'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '请求参数错误'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, '参数验证失败'),
+    [HttpStatusCodes.SERVICE_UNAVAILABLE]: jsonContent(respErrSchema, '对象存储未启用'),
   },
 })
 
@@ -41,5 +42,6 @@ export const getDownloadToken = createRoute({
     [HttpStatusCodes.OK]: jsonContent(RefineResultSchema(tokenResponseSchema), '获取成功'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(respErrSchema, '请求参数错误'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(respErrSchema, '参数验证失败'),
+    [HttpStatusCodes.SERVICE_UNAVAILABLE]: jsonContent(respErrSchema, '对象存储未启用'),
   },
 })

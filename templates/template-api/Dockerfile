@@ -43,6 +43,6 @@ USER node
 EXPOSE 9999
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD curl --fail --silent http://127.0.0.1:9999/api/health >/dev/null || exit 1
+  CMD curl --fail --silent http://127.0.0.1:9999/api/health/ready >/dev/null || exit 1
 
 CMD ["node", "dist/index.js"]

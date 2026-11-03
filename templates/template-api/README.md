@@ -8,7 +8,7 @@ Scalar 首页位于 `/`，三组 OpenAPI JSON 分别位于 `/api/doc`、`/api/cl
 
 默认模板提供管理端账号与认证，不预设客户端的业务用户表、注册方式、UID 或资料生成规则。客户端认证接入方式见 [客户端认证](docs/client-auth.md)。微信、支付宝的完整业务实现已迁至独立的 [小程序示例](../../examples/miniapp-api/README.md)。
 
-对象存储通过 `STORAGE_PROVIDER=r2|rustfs` 选择，默认兼容现有 R2 配置。RustFS 可选部署、公开图片域名和服务端上传方法见 [对象存储](docs/object-storage.md)。
+对象存储通过 `STORAGE_PROVIDER=none|r2|rustfs` 关闭或选择服务。新应用示例配置为 `none`，省略该变量时保持旧版 R2 行为。RustFS 可选部署、公开图片域名和服务端上传方法见 [对象存储](docs/object-storage.md)。
 
 ## 本地启动
 
@@ -20,7 +20,7 @@ cp templates/template-api/.env.example templates/template-api/.env
 vp run @app/template-api#dev
 ```
 
-本地运行 PostgreSQL/Redis 时，请将 `.env` 中服务主机名从 `postgres`/`redis` 改为 `localhost`。如使用 Compose，保留默认服务名即可。
+启动前填写至少 32 字符的随机 `ADMIN_JWT_SECRET`。本地运行 PostgreSQL/Redis 时，请将 `.env` 中服务主机名从 `postgres`/`redis` 改为 `localhost`。如使用 Compose，保留默认服务名即可。配置校验与存活、就绪检查见 [运行配置](docs/runtime.md)。
 
 ## 数据库与测试
 

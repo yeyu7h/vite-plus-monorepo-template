@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test'
 import { GetBucketCorsCommand, S3Client } from '@aws-sdk/client-s3'
 import { getObjectStorage, objectStorageConfig } from './index'
-import { storageClientConfig } from './config'
+import { requireObjectStorageConfig, storageClientConfig } from './config'
 import { initializeRustfsBucket } from './initialization'
 
 // Only loaded by the dedicated, fail-closed test:storage configuration.
 const storage = getObjectStorage()
+const config = requireObjectStorageConfig(objectStorageConfig)
 const keys: string[] = []
 const key = () => {
   const value = `integration/${randomUUID()}/白兔 #1.png`
@@ -16,7 +17,7 @@ const key = () => {
 const png = new Uint8Array(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+iJ1kAAAAASUVORK5CYII=', 'base64'))
 const origin = 'http://localhost:5173'
 
-beforeAll(async () => initializeRustfsBucket(objectStorageConfig, [origin]))
+beforeAll(async () => initializeRustfsBucket(config, [origin]))
 afterAll(async () => {
   try {
     await Promise.all(keys.map((value) => storage.deleteObject(value)))
@@ -27,10 +28,10 @@ afterAll(async () => {
 
 describe('RustFS S3 compatibility', () => {
   it('initializes an existing bucket repeatedly and configures browser CORS', async () => {
-    await initializeRustfsBucket(objectStorageConfig, [origin])
-    const client = new S3Client(storageClientConfig(objectStorageConfig))
+    await initializeRustfsBucket(config, [origin])
+    const client = new S3Client(storageClientConfig(config))
     try {
-      const result = await client.send(new GetBucketCorsCommand({ Bucket: objectStorageConfig.bucket }))
+      const result = await client.send(new GetBucketCorsCommand({ Bucket: config.bucket }))
       expect(result.CORSRules).toEqual(expect.arrayContaining([expect.objectContaining({ AllowedOrigins: [origin], AllowedMethods: expect.arrayContaining(['GET', 'PUT', 'HEAD']) })]))
     } finally {
       client.destroy()

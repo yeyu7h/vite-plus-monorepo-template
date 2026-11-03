@@ -39,7 +39,7 @@ vp install
 vp run @app/customer-web#dev
 ```
 
-可用模板为 `web`、`admin`、`api`，应用名使用小写字母、数字和连字符。命令会创建 `apps/<应用名>`，修改包名及模板内与自身名称相关的路径，并跳过依赖、构建产物和本地 `.env`。已有目录不会被覆盖。新建 API 应用时，从其 `.env.example` 复制环境文件，再启动数据库与 Redis；Docker 配置中的构建路径也会指向新目录。
+可用模板为 `web`、`admin`、`api`，应用名使用小写字母、数字和连字符。命令会创建 `apps/<应用名>`，修改包名及模板内与自身名称相关的路径，并跳过依赖、构建产物和本地 `.env`。已有目录不会被覆盖。新建 API 应用时，从其 `.env.example` 复制环境文件，填写随机管理端 JWT 密钥，再启动数据库与 Redis；对象存储默认显式关闭，可按需选择 R2 或 RustFS。Docker 配置中的构建路径也会指向新目录。
 
 运行 `vp run create:app -- --list` 可查看可用模板。新应用是创建时的独立副本，之后修改 `templates/` 不会自动覆盖它。
 
@@ -76,10 +76,11 @@ vp run ready
 
 ```bash
 cp templates/template-api/.env.example templates/template-api/.env
-docker compose -f templates/template-api/compose.yaml up --build
+# Fill ADMIN_JWT_SECRET in the copied file before starting.
+docker compose --env-file templates/template-api/.env -f templates/template-api/compose.yaml up --build
 ```
 
-Compose 使用仓库根目录作为构建上下文，并等待 PostgreSQL、Redis 和 API 健康检查。
+Compose 使用仓库根目录作为构建上下文，并等待 PostgreSQL、Redis 和 API 健康检查。API 的 `/api/health` 用于进程存活检查，`/api/health/ready` 探测数据库与 Redis；容器使用后者判断就绪。详细配置见 [运行配置](templates/template-api/docs/runtime.md)。
 
 ## 来源与许可
 

@@ -29,3 +29,5 @@ release. Add a tool name to select part of the graph. For example, run
 ## 仓库开发规范
 
 业务应用、共享包和模板的开发与维护遵循 [开发规范](docs/development.md)。同时遵循目标目录下更具体的 `AGENTS.md` 和适用的仓库技能。
+
+本地验证范围按开发规范第 8 节执行；上方 Review Checklist 中的 `vp check`、`vp test` 按该节的改动范围选择。目标目录明确要求的额外检查仍须执行。

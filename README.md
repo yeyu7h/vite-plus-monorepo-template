@@ -8,8 +8,9 @@
 - `templates/template-web`：面向普通 Web App 的前台模板，包含文件路由、Nuxt UI 和可选的公开 API 请求示例。
 - `templates/template-api`：Hono + OpenAPI + Drizzle + Redis + BullMQ + Casbin 后端模板，默认监听 `9999`。
 - `apps/`：通过创建命令生成的应用，仍属于同一 pnpm 工作区。
+- `examples/miniapp-api`：独立的小程序业务示例，保留微信／支付宝登录、业务账号、UID 和会话；默认创建的 API 应用不包含这些业务能力。
 - `packages/server-core`：Hono 类型、路由工厂、OpenAPI、响应模型、应用装配和 singleton 生命周期。
-- `packages/server-miniapp-auth`：可复用的微信、支付宝小程序服务端身份验证及 UID 格式规则。
+- `packages/server-miniapp-auth`：按需使用的微信、支付宝小程序服务端身份验证包，只由需要平台登录的业务应用依赖。
 - `packages/server-refine-query`：通过依赖注入绑定 Drizzle 的 Refine 查询转换与执行器。
 - `packages/server-vite-plugin`：服务端构建、Bull Board 静态资源、HMR 通知、资源监控和 Zod hoist 插件。
 - `packages/utils`：与运行时无关的通用工具。
@@ -43,6 +44,10 @@ vp run @app/customer-web#dev
 运行 `vp run create:app -- --list` 可查看可用模板。新应用是创建时的独立副本，之后修改 `templates/` 不会自动覆盖它。
 
 API 路由分为 `/api/*`、`/api/client/*` 和 `/api/admin/*`，Scalar 文档首页位于 `http://localhost:9999/`。三组 OpenAPI 文档分别位于 `/api/doc`、`/api/client/doc` 和 `/api/admin/doc`。
+
+默认 API 模板提供管理端认证与通用客户端认证接入点。客户端路由在配置业务认证适配器前拒绝访问，不预设业务用户表、注册方式、UID 或头像昵称规则。微信／支付宝的完整接入参考 [小程序业务示例](examples/miniapp-api/README.md)。
+
+通用模板的数据库迁移从新的初始结构开始，只用于新数据库。原有已执行的迁移 SQL 和快照完整保存在小程序示例中；已有应用沿用自己的迁移历史，详见 [迁移边界](templates/template-api/migrations/README.md)。
 
 常用数据库命令：
 

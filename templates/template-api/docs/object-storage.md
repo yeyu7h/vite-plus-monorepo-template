@@ -53,7 +53,7 @@ Docker 服务名 `rustfs` 仅供容器内部访问。网页、小程序使用预
 cp templates/template-api/.env.rustfs.example templates/template-api/.env.rustfs
 ```
 
-填写 `ACCESS_KEY_ID`、`SECRET_ACCESS_KEY`、两个 JWT 密钥。访问密钥供此示例创建 RustFS 实例并连接使用，须使用独立值；生产应用可在 RustFS 中创建专用账号并授予目标桶所需权限。设置浏览器实际使用的 `STORAGE_CORS_ALLOWED_ORIGINS`，多个源站用逗号分隔，例如 `http://localhost:5173,https://admin.example.com`。源站包含协议、主机和端口，不含路径或结尾斜杠。
+填写 `ACCESS_KEY_ID`、`SECRET_ACCESS_KEY`、管理端 JWT 密钥。访问密钥供此示例创建 RustFS 实例并连接使用，须使用独立值；生产应用可在 RustFS 中创建专用账号并授予目标桶所需权限。设置浏览器实际使用的 `STORAGE_CORS_ALLOWED_ORIGINS`，多个源站用逗号分隔，例如 `http://localhost:5173,https://admin.example.com`。源站包含协议、主机和端口，不含路径或结尾斜杠。
 
 首次部署 API 时，数据库需按原有流程完成迁移与初始化；可以先启动依赖服务，完成数据库准备后再启动 API。此附加配置只自动初始化对象存储的桶与 CORS。
 

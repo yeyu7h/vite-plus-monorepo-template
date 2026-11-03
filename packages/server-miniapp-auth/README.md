@@ -30,7 +30,7 @@ const identity = await auth.verify('wechat-main', code)
 - 默认平台请求超时 8 秒。不会重试一次性 code，也不返回 SDK 原始异常、平台 Token、`session_key` 或密钥。
 - 稳定错误码：`APP_NOT_CONFIGURED`、`INVALID_CODE`、`PROVIDER_UNAVAILABLE`、`INVALID_PROVIDER_RESPONSE`。
 
-`formatUserUid(prefix, sequence)` 将一位非零数字前缀与至少八位递增序号拼接：`1 + 00000001 = 100000001`，`1 + 100000000 = 1100000000`。调用方负责持久化、原子分配序号和 UID 唯一约束。序号使用 `bigint`，UID 为字符串。
+本包只处理平台身份验证，不导出业务 UID、账号注册、头像昵称或会话策略。完整业务示例见 [`examples/miniapp-api`](../../examples/miniapp-api/README.md)，其中 UID 规则由业务自身管理。
 
 应用配置 Schema 输出类型为 `MiniappApps`；接收原始配置时先调用 `miniappAppsSchema.parse`，以应用默认值并校验凭据。
 

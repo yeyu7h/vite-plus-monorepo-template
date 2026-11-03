@@ -6,7 +6,7 @@
 
 Scalar 首页位于 `/`，三组 OpenAPI JSON 分别位于 `/api/doc`、`/api/client/doc` 和 `/api/admin/doc`。
 
-微信、支付宝小程序共用业务用户表及固定前缀 UID，业务账号与后台管理账号独立。接入配置、接口和原生调用示例见 [小程序登录](docs/miniapp-auth.md)。
+默认模板提供管理端账号与认证，不预设客户端的业务用户表、注册方式、UID 或资料生成规则。客户端认证接入方式见 [客户端认证](docs/client-auth.md)。微信、支付宝的完整业务实现已迁至独立的 [小程序示例](../../examples/miniapp-api/README.md)。
 
 对象存储通过 `STORAGE_PROVIDER=r2|rustfs` 选择，默认兼容现有 R2 配置。RustFS 可选部署、公开图片域名和服务端上传方法见 [对象存储](docs/object-storage.md)。
 
@@ -24,6 +24,8 @@ vp run @app/template-api#dev
 
 ## 数据库与测试
 
+当前初始迁移只面向新数据库。原有迁移历史完整保存在小程序示例中，已有数据库继续使用原来的迁移链，见 [迁移边界](migrations/README.md)。本模板的迁移不会为已有数据库执行小程序表清理。
+
 ```bash
 vp run @app/template-api#generate
 vp run @app/template-api#migrate
@@ -40,7 +42,7 @@ vp run @app/template-api#test:storage
 
 ## 可复用边界
 
-框架级能力位于 `@monorepo/server-core`，Refine 查询位于 `@monorepo/server-refine-query`，小程序平台身份验证位于 `@monorepo/server-miniapp-auth`，Vite 服务端插件位于 `@monorepo/server-vite-plugin`，纯工具位于 `@monorepo/utils`。数据库连接、业务 Schema、账号注册、会话、日志、Redis/BullMQ 与 Casbin 保持在 app 内。
+框架级能力位于 `@monorepo/server-core`，Refine 查询位于 `@monorepo/server-refine-query`，Vite 服务端插件位于 `@monorepo/server-vite-plugin`，纯工具位于 `@monorepo/utils`。数据库连接、日志、Redis/BullMQ、Casbin 与可配置对象存储保持在 app 内；具体业务应用管理自己的用户、注册和客户端会话。
 
 后续创建 API app 时，应显式向 `createApplication(config, runtime)` 提供环境、版本、route/middleware globs 和 app 根 Hono 实例。
 

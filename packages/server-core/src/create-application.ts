@@ -1,9 +1,12 @@
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { ApiReferenceConfiguration } from '@scalar/hono-api-reference'
+import type { RouterRoute } from 'hono/types'
 import type { AppConfig, MiddlewareWithExcept, OpenAPIConfig, RouteModule, TierConfig, TierMiddleware } from './config.ts'
 import type { BaseBindings } from './types.ts'
 import { Scalar as scalarHonoApiReference } from '@scalar/hono-api-reference'
 import { except } from 'hono/combine'
+import { baseRoutePath, matchedRoutes } from 'hono/route'
+import { mergePath } from 'hono/utils/url'
 import { createRouter } from './router.ts'
 
 // Hono's route schema generic is invariant; composition intentionally erases it at this boundary.
@@ -47,6 +50,11 @@ function resolveTierMiddlewares(tier: TierConfig, allMiddlewares: Record<string,
 
 function isMiddlewareWithExcept(middleware: TierMiddleware): middleware is MiddlewareWithExcept {
   return typeof middleware === 'object' && 'handler' in middleware && 'except' in middleware
+}
+
+function getTierRouteKey({ method, path }: RouterRoute, prefix: string): string {
+  if (path !== prefix && !path.startsWith(`${prefix}/`)) return ''
+  return `${method} ${path.slice(prefix.length)}`
 }
 
 function resolveEnabled<TEnv>(enabled: OpenAPIConfig<TEnv>['enabled'], env: TEnv): boolean {
@@ -111,6 +119,8 @@ export async function createApplication<TEnv>(config: AppConfig<TEnv>, runtime: 
   for (const tier of config.tiers) {
     const basePath = resolveTierBasePath(tier, config)
     const tierApp = createRouter().basePath(basePath)
+    const tierPrefix = mergePath('/', basePath).replace(/\/$/, '')
+    const routeKeys = new Set<string>()
 
     if (openapiEnabled) {
       configureAppDocument(tierApp, tier, config, documentEndpoint, runtime.version)
@@ -122,11 +132,20 @@ export async function createApplication<TEnv>(config: AppConfig<TEnv>, runtime: 
     })
 
     for (const middleware of resolveTierMiddlewares(tier, runtime.middlewares)) {
-      tierApp.use('/*', isMiddlewareWithExcept(middleware) ? except(middleware.except, middleware.handler) : middleware)
+      const handler = isMiddlewareWithExcept(middleware) ? except(middleware.except, middleware.handler) : middleware
+      tierApp.use('/*', (context, next) => {
+        // Let the root app handle missing routes while protecting every matched tier route,
+        // using tier-relative patterns so subsequent mounts keep authentication intact.
+        const mountedPrefix = baseRoutePath(context).replace(/\/$/, '')
+        if (!matchedRoutes(context).some((route) => routeKeys.has(getTierRouteKey(route, mountedPrefix)))) return next()
+        return handler(context, next)
+      })
     }
 
     for (const module of Object.values(resolveTierRoutes(tier, runtime.routes))) {
+      const firstRoute = tierApp.routes.length
       tierApp.route('/', module.default)
+      for (let index = firstRoute; index < tierApp.routes.length; index++) routeKeys.add(getTierRouteKey(tierApp.routes[index]!, tierPrefix))
     }
 
     tierApps.push({ tierApp, tier, basePath })

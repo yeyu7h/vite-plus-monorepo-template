@@ -2,6 +2,8 @@
 
 包含独立的 Vue 前台、Vue 管理端与 Clhoria/Hono API 的 Vite+ monorepo 模板。模板源码集中在 `templates/`，用命令复制到 `apps/` 创建新应用。
 
+多业务开发、协作与发布约定见 [开发规范](docs/development.md)。
+
 ## 工作区
 
 - `templates/template-admin`：现有管理端模板，保持原有 mock/API 行为。
@@ -83,7 +85,3 @@ docker compose --env-file templates/template-api/.env -f templates/template-api/
 ```
 
 Compose 使用仓库根目录作为构建上下文，并等待 PostgreSQL、Redis 和 API 健康检查。API 的 `/api/health` 用于进程存活检查，`/api/health/ready` 探测数据库与 Redis；容器使用后者判断就绪。详细配置见 [运行配置](templates/template-api/docs/runtime.md)。
-
-## 来源与许可
-
-后端 app 和部分服务端 packages 基于 Clhoria Template 集成并重构。第三方版权与 MIT 许可见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。

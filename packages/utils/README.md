@@ -15,5 +15,3 @@ import { parseEnvOrExit, safeParseEnv } from '@monorepo/utils/node'
 vp run @monorepo/utils#test
 vp run @monorepo/utils#build
 ```
-
-部分代码源自 Clhoria Template，许可见仓库根目录 `THIRD_PARTY_NOTICES.md`。

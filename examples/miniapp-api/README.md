@@ -53,7 +53,3 @@ vp run @example/miniapp-api#test:storage
 框架级能力位于 `@monorepo/server-core`，Refine 查询位于 `@monorepo/server-refine-query`，小程序平台身份验证位于 `@monorepo/server-miniapp-auth`，Vite 服务端插件位于 `@monorepo/server-vite-plugin`，纯工具位于 `@monorepo/utils`。数据库连接、业务 Schema、账号注册、会话、日志、Redis/BullMQ 与 Casbin 保持在 app 内。
 
 后续创建 API app 时，应显式向 `createApplication(config, runtime)` 提供环境、版本、route/middleware globs 和 app 根 Hono 实例。
-
-## 来源
-
-本 app 基于 Clhoria Template 重构。版权和 MIT 许可见仓库根目录 `THIRD_PARTY_NOTICES.md`。

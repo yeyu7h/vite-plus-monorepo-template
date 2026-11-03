@@ -8,5 +8,3 @@
 vp run @monorepo/server-core#test
 vp run @monorepo/server-core#build
 ```
-
-部分代码源自 Clhoria Template，许可见仓库根目录 `THIRD_PARTY_NOTICES.md`。

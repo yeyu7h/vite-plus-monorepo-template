@@ -11,5 +11,3 @@ gracefulShutdown: {
   timeoutMs: 10_000,
 }
 ```
-
-部分代码源自 Clhoria Template，许可见仓库根目录 `THIRD_PARTY_NOTICES.md`。

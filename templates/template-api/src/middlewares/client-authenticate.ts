@@ -9,7 +9,7 @@ export type ClientAuthenticate = (token: string) => Promise<{ payload: ClientJwt
 /** Only login and refresh are public; all other client routes require an active session. */
 export function createClientAuthentication(authenticate: ClientAuthenticate): MiddlewareHandler<ClientBindings> {
   return async (c, next) => {
-    // Resolve nested and parameterized mounts before matching tier-relative public routes.
+    // Resolve nested and parameterized mounts before matching tier-relative public routes / 匹配 tier 相对路径的公共路由前，先解析嵌套及参数化挂载
     const prefix = basePath(c).replace(/\/+$/, '')
     const path = c.req.path.slice(prefix.length).replace(/\/+$/, '')
     if (c.req.method === 'POST' && ['/auth/login', '/auth/refresh'].includes(path)) return next()

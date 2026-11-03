@@ -13,15 +13,15 @@ export type QueueNameType = (typeof QueueName)[keyof typeof QueueName]
  * 定义所有 Job 名称为常量枚举
  */
 export const JobName = {
-  // Email queue jobs
+  // Email queue jobs / 邮件队列任务
   EMAIL_SEND_WELCOME: 'send-welcome',
   EMAIL_SEND_RESET_PASSWORD: 'send-reset-password',
 
-  // Cleanup queue jobs
+  // Cleanup queue jobs / 清理队列任务
   CLEANUP_DAILY: 'daily-cleanup',
   CLEANUP_OLD_LOGS: 'old-logs-cleanup',
 
-  // Notification queue jobs
+  // Notification queue jobs / 通知队列任务
   NOTIFICATION_PUSH: 'push-notification',
 } as const
 

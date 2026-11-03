@@ -39,7 +39,7 @@ function mergeBackendMenuWithFileRoute(
   const canCreateIframeRoute = Boolean(iframeSrc && options.iframeComponent)
   const canCreateExternalLinkRoute = Boolean(externalLink && options.externalLinkComponent)
 
-  // 普通菜单继续要求存在文件路由；iframe、外链和包含有效子路由的目录可以由后端配置生成
+  // Regular menus still require file routes; iframe, external-link and directory entries with valid children can come from backend configuration / 普通菜单仍要求存在文件路由；iframe、外链和包含有效子路由的目录可以由后端配置生成
   if (!fileRoute && !canCreateIframeRoute && !canCreateExternalLinkRoute && !children?.length) {
     return void 0
   }

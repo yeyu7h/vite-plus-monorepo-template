@@ -58,7 +58,7 @@ async function loadCache(reset = false) {
     cursor.value = result.cursor
     hasMore.value = result.hasMore
   } catch {
-    // The shared request interceptor shows the failure.
+    // The shared request interceptor shows the failure / 共享请求拦截器负责显示错误
   } finally {
     if (version === requestVersion) loading.value = false
   }

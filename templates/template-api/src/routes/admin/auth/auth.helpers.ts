@@ -70,8 +70,8 @@ export async function generateAccessToken(user: UserTokenInfo) {
 
 // ===== Refresh Token generation / Refresh Token 生成 =====
 export async function generateRefreshToken(user: UserTokenInfo) {
-  const randomPart = crypto.randomBytes(32).toString('hex') // 256 bit
-  const token = `${user.id}:${randomPart}` // Contains userId for easy parsing / 包含 userId 便于解析
+  const randomPart = crypto.randomBytes(32).toString('hex') // 256 bits / 256 位
+  const token = `${user.id}:${randomPart}` // Contains `userId` for easy parsing / 包含 `userId` 便于解析
 
   const pipeline = redisClient.pipeline()
   pipeline.set(refreshKey(user.id, randomPart), JSON.stringify(user), 'EX', REFRESH_TTL_SECONDS)
@@ -102,7 +102,7 @@ export async function generateTokens(user: UserTokenInfo) {
  * 刷新 Access Token
  */
 export async function refreshAccessToken(refreshToken: string) {
-  // Parse token to get userId / 解析 token 获取 userId
+  // Parse token to get `userId` / 解析 token 获取 `userId`
   const separatorIndex = refreshToken.indexOf(':')
   if (separatorIndex === -1) {
     throw new Error('Invalid refresh token format')
@@ -122,7 +122,7 @@ export async function refreshAccessToken(refreshToken: string) {
 
   const user: UserTokenInfo = JSON.parse(userDataStr)
 
-  // Verify userId in token matches stored data / 验证 token 中的 userId 与存储的一致
+  // Verify `userId` in token matches stored data / 验证 token 中的 `userId` 与存储的一致
   if (String(user.id) !== userId) {
     throw new Error('Token user mismatch')
   }
@@ -150,7 +150,7 @@ export async function logout(userId: string | number) {
 
   if (tokens.length > 0) {
     const pipeline = redisClient.pipeline()
-    // All keys share the same Hash Tag {user.${userId}}, ensuring they are in the same slot / 所有 key 都带有相同的 Hash Tag {user.${userId}}，确保在同一 slot
+    // All keys share the same Hash Tag `{user.${userId}}`, ensuring they are in the same slot / 所有 key 都带有相同的 Hash Tag `{user.${userId}}`，确保在同一 slot
     tokens.forEach((t) => pipeline.del(refreshKey(userId, t)))
     pipeline.del(refreshIndexKey(userId))
     await pipeline.exec()
@@ -173,7 +173,7 @@ export async function validateCaptcha(captchaToken: string): Promise<string | nu
 
 /**
  * Login validation
- * @returns On success returns user info, on failure returns { error, status } / 成功返回用户信息，失败返回 { error, status }
+ * @returns On success returns user info, on failure returns `{ error, status }` / 成功返回用户信息，失败返回 `{ error, status }`
  * 登录验证
  */
 export async function validateLogin(username: string, password: string): Promise<ValidateLoginResult> {

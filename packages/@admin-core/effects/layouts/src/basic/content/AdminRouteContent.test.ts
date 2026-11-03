@@ -203,7 +203,7 @@ test('restores shared and nested scroll containers independently for each cached
   expect(Object.values(store.getScrollPositions('/scroll-a'))).toContainEqual({ left: 0, top: 200 })
   const scrollB = wrapper.get('[data-testid="scroll-b"]').element as HTMLElement
 
-  // 模拟浏览器把移入 KeepAlive 隐藏容器的滚动元素重置
+  // Simulate the browser resetting a scroll element moved into the hidden KeepAlive container / 模拟浏览器重置移入 KeepAlive 隐藏容器的滚动元素
   scrollA.scrollLeft = 0
   scrollA.scrollTop = 0
   document.body.scrollTop = 65

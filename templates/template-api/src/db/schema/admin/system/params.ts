@@ -33,8 +33,8 @@ export const systemParams = snakeCase.table(
     status: varchar({ length: 16 }).$type<StatusType>().default(Status.ENABLED).notNull(),
   },
   (table) => [
-    // Unique constraint on key field already includes an index / key 字段的唯一约束已经包含了索引
-    // Add index on status field for querying enabled parameters / 为 status 字段添加索引，用于查询启用的参数
+    // Unique constraint on `key` field already includes an index / `key` 字段的唯一约束已经包含了索引
+    // Add index on `status` field for querying enabled parameters / 为 `status` 字段添加索引，用于查询启用的参数
     index('system_params_status_idx').on(table.status),
   ],
 )

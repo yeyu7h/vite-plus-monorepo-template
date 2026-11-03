@@ -1,4 +1,4 @@
-# Opt in: docker compose --env-file .env.rustfs -f compose.yaml -f compose.rustfs.yaml up -d --build
+# Opt in / 按需启用：docker compose --env-file .env.rustfs -f compose.yaml -f compose.rustfs.yaml up -d --build
 services:
   rustfs:
     image: rustfs/rustfs:1.0.4

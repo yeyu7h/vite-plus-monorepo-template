@@ -108,7 +108,7 @@ function rolePermissionKey(permission: RolePermissionInput): string {
 export function normalizeRolePermission(permission: RolePermissionInput): RolePermissionInput {
   const resource = permission.resource.trim()
   const rawAction = permission.action.trim()
-  // Casbin actions can be regular expressions; uppercasing would change \w to \W.
+  // Casbin actions can be regular expressions; uppercasing would change \w to \W / Casbin action 可以是正则表达式，转为大写会将 \w 改成 \W
   const action = /^(GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS|CONNECT|TRACE)$/i.test(rawAction) ? rawAction.toUpperCase() : rawAction
   const summary = permission.summary?.trim()
   return summary ? { resource, action, summary } : { resource, action }

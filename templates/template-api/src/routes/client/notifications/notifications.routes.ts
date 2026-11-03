@@ -9,7 +9,7 @@ import { respErrSchema } from '@/utils'
 const routePrefix = '/notifications'
 const tags = [`${routePrefix}（通知）`]
 
-// SSE 单 IP 并发上限：每分钟最多 60 个新连接，避免恶意客户端拖死 worker
+// Limit new SSE connections per IP to 60 per minute to protect the worker from malicious clients / SSE 每个 IP 每分钟最多建立 60 个新连接，避免恶意客户端拖垮 worker
 const sseRateLimit = createRateLimiter({
   windowMs: SSE_RATE_LIMIT_WINDOW_MS,
   limit: SSE_RATE_LIMIT_MAX_REQUESTS,

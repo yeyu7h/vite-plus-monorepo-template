@@ -45,8 +45,7 @@ export function useServerTable<Item, Query>(options: ServerTableOptions<Item, Qu
         retry: false,
         refetchOnWindowFocus: false,
         queryFn: () => options.queryFn(params),
-        // A new callback per key also prevents TanStack Query from reusing a
-        // memoized placeholder when switching scope during an unfinished page load.
+        // A new callback per `key` prevents TanStack Query from reusing a memoized placeholder when scope changes during an unfinished page load / 每个 `key` 使用新回调，避免 TanStack Query 在页面加载未完成时切换范围而复用缓存的占位数据
         placeholderData: ((previousData, previousQuery) =>
           previousQuery && hashKey(previousQuery.queryKey.slice(0, -1)) === hashKey(prefix) ? previousData : undefined) satisfies PlaceholderDataFunction<ServerTableResult<Item>>,
       }

@@ -5,7 +5,7 @@
  *
  * HMR Cache Guide
  *
- * To determine whether to cache in globalThis, ask yourself these 3 questions:
+ * To determine whether to cache in `globalThis`, ask yourself these 3 questions:
  *
  * 1. Does it maintain TCP/WebSocket long connections?
  *    Yes -> Must cache (PostgreSQL, Redis, WebSocket, gRPC)
@@ -24,7 +24,7 @@
  *
  * HMR 缓存指南
  *
- * 判断是否需要缓存到 globalThis，问自己这 3 个问题：
+ * 判断是否需要缓存到 `globalThis`，问自己这 3 个问题：
  *
  * 1. 是否维护 TCP/WebSocket 长连接？
  *    ✅ 是 → 必须缓存（PostgreSQL, Redis, WebSocket, gRPC）
@@ -50,8 +50,7 @@ type SingletonEntry = {
   destroy?: DestroyFn<unknown>
 }
 
-// Use Symbol.for to ensure cross-module uniqueness, avoids maintaining types in global.d.ts
-// 使用 Symbol.for 保证跨模块唯一性，避免在 global.d.ts 中维护类型
+// Use Symbol.for to ensure cross-module uniqueness and avoid maintaining types in global.d.ts / 使用 Symbol.for 保证跨模块唯一性，避免在 global.d.ts 中维护类型
 const SINGLETON_REGISTRY_KEY = Symbol.for('__singleton_registry__')
 
 type GlobalWithRegistry = typeof globalThis & {
@@ -124,8 +123,7 @@ export function createAsyncSingleton<T>(key: string, factory: () => Promise<T>, 
   const registry = getRegistry()
 
   if (!registry.has(key)) {
-    // Store Promise immediately to avoid duplicate initialization on concurrent calls
-    // 立即存入 Promise，避免并发调用时重复初始化
+    // Store Promise immediately to avoid duplicate initialization on concurrent calls / 立即存入 Promise，避免并发调用时重复初始化
     const promise = factory().then((instance) => {
       // Update with resolved instance / 更新为已解析的实例
       registry.set(key, {
@@ -155,8 +153,7 @@ export async function destroySingleton(key: string): Promise<void> {
 
   if (entry) {
     if (entry.destroy) {
-      // If instance is a Promise, wait for resolution before destroying
-      // 如果实例是 Promise，等待其解析后再销毁
+      // If instance is a Promise, wait for resolution before destroying / 如果实例是 Promise，等待其解析后再销毁
       const instance = entry.instance instanceof Promise ? await entry.instance : entry.instance
       await entry.destroy(instance)
     }
@@ -171,7 +168,7 @@ export async function destroySingleton(key: string): Promise<void> {
 export async function destroyAllSingletons(): Promise<void> {
   const registry = getRegistry()
 
-  // 逆序销毁：后创建的先销毁，确保依赖关系正确（如 BullMQ → Redis）
+  // Destroy in reverse creation order to respect dependencies (e.g., BullMQ → Redis) / 按创建顺序逆序销毁以保证依赖关系正确（如 BullMQ → Redis）
   const keys = [...registry.keys()].toReversed()
   for (const key of keys) {
     await destroySingleton(key).catch((error) => {

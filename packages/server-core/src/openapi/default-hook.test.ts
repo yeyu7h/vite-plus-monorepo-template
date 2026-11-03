@@ -45,7 +45,7 @@ describe('default-hook', () => {
       }),
       // @ts-expect-error will not reach here
       (c) => {
-        // Should not reach here if validation fails
+        // Should not reach here if validation fails / 验证失败时不应执行到这里
         return c.json({ ok: true })
       },
     )

@@ -21,7 +21,7 @@ const router = createRouter({
 
 if (import.meta.env.DEV && import.meta.hot) {
   handleHotUpdate(router, (nextFileRoutes) => {
-    // 修复文件路由热更新使用原始路由替换路由表后，Layout 包装和已授权动态路由丢失的问题
+    // Restore Layout wrapping and authorized dynamic routes after file-route HMR replaces the route table / 文件路由热更新使用原始路由替换路由表后，恢复 Layout 包装和已授权动态路由
     router.clearRoutes()
 
     for (const route of setupLayouts(selectInitialFileRoutes(nextFileRoutes))) {

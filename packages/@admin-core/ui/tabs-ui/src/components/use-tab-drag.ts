@@ -63,7 +63,7 @@ export function useTabDrag(options: UseTabDragOptions) {
     try {
       element.setPointerCapture(event.pointerId)
     } catch {
-      // 合成指针事件可能没有可捕获的活动指针，窗口监听仍能处理拖动。
+      // Synthetic pointer events may have no active pointer to capture; window listeners can still handle the drag / 合成指针事件可能没有可捕获的活动指针，窗口监听仍能处理拖动
     }
     window.addEventListener('pointermove', moveTabPointer, { passive: false })
     window.addEventListener('pointerup', finishTabPointer)
@@ -203,7 +203,7 @@ export function useTabDrag(options: UseTabDragOptions) {
       try {
         drag.element.releasePointerCapture(drag.pointerId)
       } catch {
-        // 指针捕获可能已因元素换位而自动释放。
+        // Pointer capture may already have been released when elements moved / 指针捕获可能已因元素换位而自动释放
       }
     }
     dragShield?.remove()

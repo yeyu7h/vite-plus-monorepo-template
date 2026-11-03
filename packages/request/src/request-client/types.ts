@@ -11,7 +11,7 @@ export interface ExtendOptions<T = unknown> {
    * - repeat: ids=1&ids=2
    */
   paramsSerializer?: AxiosRequestConfig<T>['paramsSerializer'] | ParamsSerializerMode
-  /** raw returns AxiosResponse, body returns `response.data`, and data unwraps the configured data field after checking the business success code when present. */
+  /** `raw` returns AxiosResponse, `body` returns `response.data`, and `data` unwraps the configured data field after checking the business success code when present. */
   responseReturn?: 'body' | 'data' | 'raw'
   /** Internal retry marker used by the authentication interceptor. */
   __isRetryRequest?: boolean

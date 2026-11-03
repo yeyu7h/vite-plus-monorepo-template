@@ -153,7 +153,7 @@ export function defineUserRouteTests({ app, getAdminToken, getUserToken, enforce
 
         expect(responseJson.data.username).toBe(newUsername)
         expect(responseJson.data.nickName).toBe(testUser.nickName)
-        expect(responseJson.data).not.toHaveProperty('password') // Password should not be returned
+        expect(responseJson.data).not.toHaveProperty('password') // Password should not be returned / 不应返回密码
       })
 
       it('should return 409 for duplicate username', async () => {
@@ -211,7 +211,7 @@ export function defineUserRouteTests({ app, getAdminToken, getUserToken, enforce
 
         expect(responseJson.data.id).toBe(userId)
         expect(responseJson.data.username).toBe(`${testUsername}_gettest`)
-        expect(responseJson.data).not.toHaveProperty('password') // Password should not be returned
+        expect(responseJson.data).not.toHaveProperty('password') // Password should not be returned / 不应返回密码
       })
     })
 

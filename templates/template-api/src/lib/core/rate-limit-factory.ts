@@ -19,10 +19,10 @@ import redisClient from '@/lib/services/redis'
 const isBun = 'Bun' in globalThis
 
 /**
- * Dynamically load getConnInfo for the corresponding runtime
+ * Dynamically load `getConnInfo` for the corresponding runtime
  * - Bun: hono/bun
  * - Node.js: @hono/node-server/conninfo
- * 动态加载对应运行时的 getConnInfo
+ * 动态加载对应运行时的 `getConnInfo`
  */
 const getConnInfo = (await (async () => {
   if (isBun) {
@@ -85,7 +85,7 @@ function getSocketIp(c: Context<BaseBindings>): string | null {
     const ip = info.remote.address
     return ip ? normalizeIp(ip) : null
   } catch {
-    // 测试环境无 socket（vitest fetch），返回 null 由上层兜底
+    // Tests have no socket (vitest fetch); return null for the caller to handle / 测试环境无 socket（vitest fetch），返回 null 由上层兜底
     return null
   }
 }
@@ -94,10 +94,10 @@ const TRUSTED_PROXY_IPS = env.TRUSTED_PROXY_IPS.split(',')
   .map((s) => s.trim())
   .filter(Boolean)
 
-// 特殊模式：
-// - "none"    → 不信任任何代理（直接暴露端口的部署）
-// - "private" → 信任所有私有/回环 IP（1Panel/K8s/Docker 容器网络、Aliyun SLB 等反代场景）
-// - 其他       → 仅信任精确匹配的 IP 白名单
+// Special modes / 特殊模式：
+// - "none" → Trust no proxies (directly exposed port) / 不信任任何代理（直接暴露端口）
+// - "private" → Trust private and loopback IPs (1Panel/K8s/Docker container networks, Aliyun SLB, etc.) / 信任私有和回环 IP（1Panel/K8s/Docker 容器网络、阿里云 SLB 等场景）
+// - Other values → Trust only exact IP matches / 其他值：仅信任精确匹配的 IP
 const TRUST_MODE: 'none' | 'private' | 'list' = (() => {
   if (TRUSTED_PROXY_IPS.length === 1 && TRUSTED_PROXY_IPS[0] === 'none') return 'none'
   if (TRUSTED_PROXY_IPS.length === 1 && TRUSTED_PROXY_IPS[0] === 'private') return 'private'
@@ -119,7 +119,7 @@ function isPrivateIpv4(ip: string) {
 
   const [a, b] = nums
 
-  // RFC1918 + loopback
+  // RFC1918 + loopback / RFC1918 私有地址和回环地址
   if (a === 10) return true
   if (a === 172 && b !== undefined && b >= 16 && b <= 31) return true
   if (a === 192 && b === 168) return true
@@ -130,20 +130,20 @@ function isPrivateIpv4(ip: string) {
 
 function isPrivateIpv6(ip: string) {
   const lower = ip.toLowerCase()
-  // loopback
+  // Loopback / 回环地址
   if (lower === '::1') return true
 
-  // Unique local addresses: fc00::/7
+  // Unique local addresses: fc00::/7 / 唯一本地地址：fc00::/7
   if (lower.startsWith('fc') || lower.startsWith('fd')) return true
 
-  // Link-local: fe80::/10
+  // Link-local: fe80::/10 / 链路本地地址：fe80::/10
   if (lower.startsWith('fe8') || lower.startsWith('fe9') || lower.startsWith('fea') || lower.startsWith('feb')) return true
 
   return false
 }
 
 function isPrivateIp(ip: string) {
-  // Note: normalizeIp already converts ::ffff:x.x.x.x to IPv4 / 注意：normalizeIp 已把 ::ffff:x.x.x.x 转成 IPv4
+  // Note: `normalizeIp` already converts ::ffff:x.x.x.x to IPv4 / 注意：`normalizeIp` 已把 ::ffff:x.x.x.x 转成 IPv4
   return ip.includes('.') ? isPrivateIpv4(ip) : isPrivateIpv6(ip)
 }
 
@@ -156,7 +156,7 @@ function isTrustedProxy(ip: string | null) {
 
   if (TRUST_MODE === 'list') return TRUSTED_PROXY_IPS.includes(ip)
 
-  // dev/test 未配置时：内网/本机地址默认信任，方便本地反代/容器调试
+  // When unconfigured in dev/test, trust private and local addresses for proxy or container debugging / dev/test 未配置时默认信任内网和本机地址，方便本地反代或容器调试
   return isPrivateIp(ip)
 }
 
@@ -174,32 +174,26 @@ function getClientIdentifier(c: Context<BaseBindings>) {
 
   // Only read headers from trusted proxies (SLB, Nginx, etc.) / 只有来自可信代理（SLB、Nginx等）才读取头部
   if (remote && isTrustedProxy(remote)) {
-    // 1) SLB overwrites X-Real-IP: prefer it (anti-forgery key: only read under trusted proxy)
-    // SLB 会覆盖 X-Real-IP：优先用它（防伪造关键点：只在 trusted proxy 下读取）
+    // 1) Prefer X-Real-IP, which SLB overwrites; only read it under a trusted proxy / 1）优先使用 SLB 覆盖的 X-Real-IP；仅在可信代理下读取，防止伪造
     const real = c.req.header('X-Real-IP')
     const realIp = real ? validateIp(normalizeIp(real.trim())) : null
     if (realIp) return wrapIpv6(realIp)
 
-    // 2) Optional: fallback to XFF (not recommended to use first entry unless SLB has sanitized the chain)
-    // 可选：再兜底 XFF（不建议取第一个；除非你能保证链路已被 SLB 清洗）
+    // 2) Optionally fall back to XFF; the first entry is not recommended unless SLB has sanitized the chain / 2）可选回退到 XFF；除非 SLB 已清洗代理链，否则不建议使用第一个地址
     const xff = c.req.header('X-Forwarded-For')
     if (xff) {
       const parts = xff.split(',').map((s) => normalizeIp(s.trim()))
-      // With multiple proxies, rightmost is usually "closest proxy"; but without a full trusted proxy list, this is hard to get absolutely right
-      // Most conservative approach: only use parts[0] when you confirm SLB has sanitized/rewritten XFF
-      // 多层代理时，最右侧一般是"离你最近的代理"；但如果你没维护完整可信代理列表，这里很难绝对正确
-      // 最保守做法：只在你确认 SLB 已清洗/重写 XFF 的情况下，才用 parts[0]
+      // With multiple proxies the rightmost is usually closest, but this is uncertain without a complete trusted proxy list / 多层代理时最右侧通常是最近的代理，但没有完整的可信代理列表时无法绝对确定
+      // Conservatively use `parts[0]` only after confirming SLB has sanitized or rewritten XFF / 保守起见，仅在确认 SLB 已清洗或重写 XFF 后使用 `parts[0]`
       const ip = validateIp(parts[0] ?? '')
       if (ip) return wrapIpv6(ip)
     }
   }
 
-  // Untrusted source: ignore headers, use socket remoteAddress directly (at least not forgeable via headers)
-  // 非可信来源：忽略头部，直接用 socket remoteAddress（至少不可由 Header 伪造）
+  // For an untrusted source, ignore headers and use socket `remoteAddress`, which cannot be forged through headers / 非可信来源忽略头部，直接使用 socket `remoteAddress`，避免通过头部伪造
   if (remote) return wrapIpv6(remote)
 
-  // If all above fail, return 0.0.0.0; in production this path is essentially unreachable
-  // 如果以上都失败，则返回 0.0.0.0，生产环境中基本走不到这里
+  // If all above fail, return 0.0.0.0; this is essentially unreachable in production / 如果以上都失败则返回 0.0.0.0，生产环境中基本走不到这里
   return '0.0.0.0'
 }
 
@@ -214,7 +208,7 @@ export function getClientIp(c: Context): string {
     const remoteRaw = getSocketIp(c as Context<BaseBindings>)
     remote = remoteRaw ? validateIp(remoteRaw) : null
   } catch {
-    // getConnInfo unavailable (e.g. test environment) — fall through to header check
+    // `getConnInfo` unavailable (e.g. in tests) — fall through to header check / `getConnInfo` 不可用（如测试环境）时继续检查请求头
   }
 
   if (remote && isTrustedProxy(remote)) {
@@ -259,9 +253,9 @@ export type RateLimitOptions = {
  * 创建速率限制中间件
  */
 export function createRateLimiter(options: RateLimitOptions) {
-  // 非生产环境跳过限流：
-  // - test：用例需要快速连发请求，且共享 socket 会导致 IP key 相同迅速触发 429
-  // - development：本地联调频繁，避免被限流打断
+  // Skip rate limiting in non-production environments / 非生产环境跳过限流：
+  // - test: Tests send rapid requests and a shared socket would quickly trigger 429 for the same IP key / test：用例需要快速连发请求，共享 socket 会导致相同 IP key 迅速触发 429
+  // - development: Avoid interrupting frequent local integration work / development：避免频繁的本地联调被限流打断
   if (env.NODE_ENV !== 'production') {
     return async (_c: Context<BaseBindings>, next: () => Promise<void>) => next()
   }

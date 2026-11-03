@@ -50,22 +50,22 @@ export class Resp {
   /**
    * Failure response, supports string, Error, ZodError
    * @param input Error source (string/Error/ZodError) / 错误源（字符串/Error/ZodError）
-   * @param extra Extra extension fields (spread at the same level as message) / 额外扩展字段（与 message 平级展开）
+   * @param extra Extra extension fields (spread at the same level as `message`) / 额外扩展字段（与 `message` 平级展开）
    * @returns Normalized error response object (conforms to RespErr type) / 标准化的错误响应对象（符合 RespErr 类型）
    * 失败响应，支持 字符串、Error、ZodError
    */
   static fail(input: string | Error | ZodError, extra?: Record<string, unknown>): RespErr {
-    // Initialize response object, merge extra upfront to avoid multiple spreads / 初始化响应对象，提前合并 extra，避免多次展开
+    // Initialize response object, merge `extra` upfront to avoid multiple spreads / 初始化响应对象，提前合并 `extra`，避免多次展开
     const response: RespErr = { ...extra }
 
-    // Branch logic: centralize message/error/stack field handling, resolve uninitialized variable issue / 分支逻辑：集中处理 message/error/stack 字段，解决变量未初始化问题
+    // Branch logic: centralize `message`/`error`/`stack` field handling, resolve uninitialized variable issue / 分支逻辑：集中处理 `message`/`error`/`stack` 字段，解决变量未初始化问题
     switch (true) {
       case typeof input === 'string':
-        // String input: only set message / 字符串输入：仅设置 message
+        // String input: only set `message` / 字符串输入：仅设置 `message`
         response.message = input as string
         break
       case input instanceof ZodError:
-        // ZodError input: format message + error fields / ZodError 输入：格式化 message + error 字段
+        // ZodError input: format `message` + `error` fields / ZodError 输入：格式化 `message` + `error` 字段
         response.message = z.prettifyError(input as ZodError)
         response.error = {
           name: (input as ZodError).name,
@@ -77,7 +77,7 @@ export class Resp {
         }
         break
       default: {
-        // Error instance: extract message + optional stack / Error 实例：提取 message + 可选 stack
+        // Error instance: extract `message` + optional `stack` / Error 实例：提取 `message` + 可选 `stack`
         const err = input as Error
         response.message = err.message || '未知错误'
         if (err.stack) {
@@ -87,7 +87,7 @@ export class Resp {
       }
     }
 
-    // Fallback: ensure message always has a value (avoid Zod validation failure) / 兜底：确保 message 必有值（避免 Zod 校验失败）
+    // Fallback: ensure `message` always has a value (avoid Zod validation failure) / 兜底：确保 `message` 必有值（避免 Zod 校验失败）
     if (!response.message) {
       response.message = '未知错误'
     }
@@ -98,7 +98,7 @@ export class Resp {
   /**
    * Success response
    * @param data Response body data / 响应主体数据
-   * @param extra Extra extension fields (spread at the same level as data) / 额外扩展字段（与 data 平级展开）
+   * @param extra Extra extension fields (spread at the same level as `data`) / 额外扩展字段（与 `data` 平级展开）
    * @returns Normalized success response object / 标准化的成功响应对象
    * 成功响应
    */

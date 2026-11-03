@@ -25,7 +25,7 @@ export const authorize = createAdminMiddleware(async (c, next) => {
   if (sessionId && !session) return c.json(Resp.fail(HttpStatusPhrases.UNAUTHORIZED), HttpStatusCodes.UNAUTHORIZED)
   const directRoles = session?.roles ?? roles
 
-  // admin 自动拥有管理端接口权限，不依赖 seed 中的静态策略。
+  // admin automatically has access to admin endpoints without relying on static seed policies / admin 自动拥有管理端接口权限，不依赖 seed 中的静态策略
   if (directRoles.includes('admin')) {
     await next()
     return
@@ -34,8 +34,7 @@ export const authorize = createAdminMiddleware(async (c, next) => {
   // Strip API prefix to get the actual request path / 去除 API 前缀，获取实际请求路径
   const path = stripPrefix(c.req.path, c.get('tierBasePath') ?? '')
 
-  // New logins use the Redis permission snapshot. Tokens issued before the
-  // session migration retain their former Casbin behavior until expiry.
+  // New logins use the Redis permission snapshot; tokens issued before the session migration retain their former Casbin behavior until expiry / 新登录使用 Redis 权限快照；会话迁移前签发的令牌在过期前保留原有 Casbin 行为
   let hasPermission: boolean
   if (session) {
     hasPermission = session.permissions.some(([, resource, action]) => !!resource && !!action && Util.keyMatch3Func(path, resource) && Util.regexMatchFunc(c.req.method, action))

@@ -11,7 +11,7 @@ export function filterRoutesByAuthority(routes: readonly RouteRecordRaw[], roles
     if (!allowed && !meta?.menuVisibleWithForbidden) return []
 
     const children = route.children ? filterRoutesByAuthority(route.children, roles, forbiddenComponent) : undefined
-    // 子路由全部被移除后，纯目录也应从注册路由中移除。403 入口仍有实际页面。
+    // Remove directory-only routes when all children are removed; 403 entries still have a page / 子路由全部移除后也移除纯目录路由；403 入口仍有实际页面
     if (meta?.menuType === 'directory' && !hasAdminRouteTarget(route) && !children?.length && allowed) return []
 
     const nextRoute = { ...route } as RouteRecordRaw

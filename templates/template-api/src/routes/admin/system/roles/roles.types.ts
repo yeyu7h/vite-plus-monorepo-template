@@ -13,7 +13,7 @@ type RouteTypes = {
 
 export type SystemRolesRouteHandlerType<T extends keyof RouteTypes> = AdminRouteHandler<RouteTypes[T]>
 
-// Services types
+// Service types / 服务类型
 export type SavePermissionsResult = { success: true } & z.infer<typeof savePermissionsResponseSchema>
 export type SavePermissionsError = { success: false; error: string }
 export type UpdateRoleParentsResult = { success: true } | { success: false; error: string }

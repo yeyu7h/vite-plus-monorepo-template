@@ -9,7 +9,7 @@ export type BaseVariables = {
   logger: PinoLogger
   /** Request ID / 请求 ID */
   requestId: string
-  /** Current tier's basePath, auto-injected by framework / 当前 tier 的 basePath，由框架自动注入 */
+  /** Current tier's base path, auto-injected by framework / 当前 tier 的基础路径，由框架自动注入 */
   tierBasePath: string
 }
 
@@ -24,7 +24,7 @@ export type BaseJwtPayload = JWTPayload & {
 /** Client JWT payload / 客户端 JWT 载荷 */
 export type ClientJwtPayload = BaseJwtPayload
 
-/** Admin JWT payload (with roles for RBAC) / 管理端 JWT 载荷（含 RBAC 角色） */
+/** Admin JWT payload (with `roles` for RBAC) / 管理端 JWT 载荷（含 RBAC 角色） */
 export type AdminJwtPayload = BaseJwtPayload & {
   /** User roles / 用户角色 */
   roles: string[]
@@ -52,10 +52,10 @@ export type JwtBindings<TPayload extends BaseJwtPayload = BaseJwtPayload> = {
   Variables: BaseVariables & { jwtPayload: TPayload }
 }
 
-/** Admin tier bindings (JWT with roles + RBAC) / 管理端绑定（带角色的 JWT + RBAC） */
+/** Admin tier bindings (JWT with `roles` + RBAC) / 管理端绑定（带角色的 JWT + RBAC） */
 export type AdminBindings = JwtBindings<AdminJwtPayload>
 
-/** Client tier bindings (JWT with sub only) / 客户端绑定（仅含 sub 的 JWT） */
+/** Client tier bindings (JWT with `sub` only) / 客户端绑定（仅含 `sub` 的 JWT） */
 export type ClientBindings = JwtBindings<ClientJwtPayload>
 
 /** Public tier bindings (no JWT) / 公开端绑定（无 JWT） */

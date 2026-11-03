@@ -5,7 +5,7 @@ import { getObjectStorage, objectStorageConfig } from './index'
 import { requireObjectStorageConfig, storageClientConfig } from './config'
 import { initializeRustfsBucket } from './initialization'
 
-// Only loaded by the dedicated, fail-closed test:storage configuration.
+// Only loaded by the dedicated, fail-closed test:storage configuration / 仅由专用且默认拒绝的 test:storage 配置加载
 const storage = getObjectStorage()
 const config = requireObjectStorageConfig(objectStorageConfig)
 const keys: string[] = []

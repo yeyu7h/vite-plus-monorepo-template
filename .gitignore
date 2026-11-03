@@ -1,4 +1,4 @@
-# Logs
+# Logs / 日志
 logs
 *.log
 npm-debug.log*
@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Editor directories and files
+# Editor directories and files / 编辑器目录和文件
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
@@ -24,12 +24,12 @@ dist-ssr
 *.sln
 *.sw?
 
-# AI agent worktrees
+# AI agent worktrees / AI 代理工作树
 .claude/worktrees/
 !.vscode/
 !.vscode/settings.json
 !.vscode/extensions.json
 
-# Auto-generated type declarations
+# Auto-generated type declarations / 自动生成的类型声明
 auto-imports.d.ts
 components.d.ts

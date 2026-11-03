@@ -9,7 +9,7 @@ import { baseRoutePath, matchedRoutes } from 'hono/route'
 import { mergePath } from 'hono/utils/url'
 import { createRouter } from './router.ts'
 
-// Hono's route schema generic is invariant; composition intentionally erases it at this boundary.
+// Hono's route schema generic is invariant; composition intentionally erases it at this boundary / Hono 的路由 Schema 泛型是不变的，组合时在此边界有意擦除它
 // oxlint-disable-next-line typescript/no-explicit-any
 type AnyRouter = OpenAPIHono<any>
 type MiddlewareModule = { default: TierMiddleware[] }
@@ -134,8 +134,7 @@ export async function createApplication<TEnv>(config: AppConfig<TEnv>, runtime: 
     for (const middleware of resolveTierMiddlewares(tier, runtime.middlewares)) {
       const handler = isMiddlewareWithExcept(middleware) ? except(middleware.except, middleware.handler) : middleware
       tierApp.use('/*', (context, next) => {
-        // Let the root app handle missing routes while protecting every matched tier route,
-        // using tier-relative patterns so subsequent mounts keep authentication intact.
+        // Let the root app handle missing routes while protecting matched tier routes with tier-relative patterns, preserving authentication across mounts / 未匹配路由由根应用处理；已匹配的 tier 路由使用相对路径保护，确保后续挂载保留认证
         const mountedPrefix = baseRoutePath(context).replace(/\/$/, '')
         if (!matchedRoutes(context).some((route) => routeKeys.has(getTierRouteKey(route, mountedPrefix)))) return next()
         return handler(context, next)

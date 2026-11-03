@@ -17,8 +17,8 @@ const adminFactory = createTierFactory<AdminBindings>()
 
 /**
  * Create admin middleware with AdminBindings type
- * c.get('jwtPayload') includes roles and sub
- * 创建管理端中间件，c.get('jwtPayload') 包含 roles 和 sub
+ * `c.get('jwtPayload')` includes `roles` and `sub`
+ * 创建管理端中间件，`c.get('jwtPayload')` 包含 `roles` 和 `sub`
  */
 export const createAdminMiddleware = adminFactory.createMiddleware
 export const createAdminHandlers = adminFactory.createHandlers
@@ -28,8 +28,8 @@ const clientFactory = createTierFactory<ClientBindings>()
 
 /**
  * Create client middleware with ClientBindings type
- * c.get('jwtPayload') includes sub only
- * 创建客户端中间件，c.get('jwtPayload') 仅包含 sub
+ * `c.get('jwtPayload')` includes `sub` only
+ * 创建客户端中间件，`c.get('jwtPayload')` 仅包含 `sub`
  */
 export const createClientMiddleware = clientFactory.createMiddleware
 export const createClientHandlers = clientFactory.createHandlers

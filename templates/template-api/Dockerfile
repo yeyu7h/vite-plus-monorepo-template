@@ -15,12 +15,12 @@ COPY . .
 
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
-# Filesystem tracing used by the task cache is unsupported under some cross-architecture builders.
+# Filesystem tracing used by the task cache is unsupported under some cross-architecture builders / 部分跨架构构建器不支持任务缓存使用的文件系统追踪
 RUN ./node_modules/.bin/vp run --no-cache -t @app/template-api#build
 RUN pnpm --config.inject-workspace-packages=true \
     --filter @app/template-api deploy --prod /opt/template-api
 RUN cp -R templates/template-api/dist /opt/template-api/dist
-# Node 24 runs the standalone initializer with native TypeScript support.
+# Node 24 runs the standalone initializer with native TypeScript support / Node 24 使用原生 TypeScript 支持运行独立初始化脚本
 RUN mkdir -p /opt/template-api/scripts /opt/template-api/src/lib/services/object-storage \
     && cp templates/template-api/scripts/init-object-storage.ts /opt/template-api/scripts/ \
     && cp templates/template-api/src/lib/services/object-storage/config.ts \

@@ -17,7 +17,7 @@ import { parseSync } from 'oxc-parser'
 
 import { findMissingTableDeclarations, isTableDeclarationCall } from './sync-comments.helpers'
 
-// ─── Types ──────────────────────────────────────────────────────────
+// Types / 类型
 
 type AstComment = {
   type: string
@@ -29,7 +29,7 @@ type AstComment = {
 type TableAstInfo = {
   variableName: string
   tableComment: string | undefined
-  /** propertyKey → comment text (undefined = no JSDoc found) */
+  /** `propertyKey` → comment text (undefined = no JSDoc found) */
   columnComments: Map<string, string | undefined>
 }
 
@@ -44,14 +44,14 @@ type RuntimeTableInfo = {
   columns: RuntimeColumnInfo[]
 }
 
-// ─── Configuration ──────────────────────────────────────────────────
+// Configuration / 配置
 
 const PROJECT_ROOT = resolve(import.meta.dirname, '..')
 const SCHEMA_DIR = resolve(PROJECT_ROOT, 'src/db/schema')
 const OUTPUT_FILE = resolve(PROJECT_ROOT, 'migrations/comments.sql')
 const DRY_RUN = process.argv.includes('--dry-run')
 
-// ─── JSDoc Helpers ──────────────────────────────────────────────────
+// JSDoc helpers / JSDoc 辅助函数
 
 const RE_LEADING_STARS = /^\*+/
 const RE_LINE_STAR_PREFIX = /^\s*\*\s?/
@@ -87,14 +87,14 @@ function findJSDocBefore(comments: AstComment[], nodeStart: number, source: stri
   return text || undefined
 }
 
-// ─── Import Path Resolution ─────────────────────────────────────────
+// Import path resolution / 导入路径解析
 
 function resolveImportPath(importPath: string, fromFile: string): string {
   if (importPath.startsWith('@/')) return resolve(PROJECT_ROOT, 'src', `${importPath.slice(2)}.ts`)
   return resolve(dirname(fromFile), `${importPath}.ts`)
 }
 
-// ─── Spread Resolution ──────────────────────────────────────────────
+// Spread resolution / 展开项解析
 
 /** Cache parsed spread sources to avoid re-parsing the same file. */
 const spreadCache = new Map<string, Map<string, string | undefined>>()
@@ -111,7 +111,7 @@ function resolveSpreadComments(currentFilePath: string, spreadArgument: any, pro
 
   const identName: string = spreadArgument.name
 
-  // Find the import declaration
+  // Find the import declaration / 查找导入声明
   let importPath: string | undefined
   for (const node of program.body) {
     if (node.type !== 'ImportDeclaration') continue
@@ -171,7 +171,7 @@ function resolveSpreadComments(currentFilePath: string, spreadArgument: any, pro
   return result
 }
 
-// ─── File-Level AST Extraction ──────────────────────────────────────
+// File-level AST extraction / 文件级 AST 提取
 
 function extractFileComments(filePath: string): TableAstInfo[] {
   const source = readFileSync(filePath, 'utf-8')
@@ -186,7 +186,7 @@ function extractFileComments(filePath: string): TableAstInfo[] {
     return []
   }
 
-  // Don't return early for empty comments — spreads may reference files that DO have comments
+  // Do not return early for empty comments; spreads may reference files with comments / 注释为空时不要提前返回，展开项可能引用有注释的文件
   const sorted = [...(comments ?? [])].sort((a, b) => a.start - b.start)
   const results: TableAstInfo[] = []
 
@@ -204,10 +204,10 @@ function extractFileComments(filePath: string): TableAstInfo[] {
       const variableName: string | undefined = declarator.id?.name
       if (!variableName) continue
 
-      // Table-level JSDoc: before the top-level statement (export or variable declaration)
+      // Table-level JSDoc: before the top-level statement (export or variable declaration) / 表级 JSDoc：位于顶层语句（导出或变量声明）之前
       const tableComment = findJSDocBefore(sorted, topNodeStart, source)
 
-      // Column-level JSDoc: from the 2nd argument (ObjectExpression)
+      // Column-level JSDoc: from the 2nd argument (ObjectExpression) / 列级 JSDoc：来自第二个参数（ObjectExpression）
       const columnComments = new Map<string, string | undefined>()
       const args = declarator.init.arguments
 
@@ -221,7 +221,7 @@ function extractFileComments(filePath: string): TableAstInfo[] {
           } else if (prop.type === 'Property') {
             const key: string | undefined = prop.key?.name ?? prop.key?.value
             if (!key) continue
-            // Override any spread comment for the same key
+            // Override any spread comment for the same key / 覆盖相同键的展开项注释
             columnComments.set(key, findJSDocBefore(sorted, prop.start, source))
           }
         }
@@ -234,7 +234,7 @@ function extractFileComments(filePath: string): TableAstInfo[] {
   return results
 }
 
-// ─── Source Layer Orchestration ──────────────────────────────────────
+// Source layer orchestration / 源码层编排
 
 function extractAllSourceComments(): Map<string, TableAstInfo> {
   const files = globSync('**/*.ts', { cwd: SCHEMA_DIR, absolute: true })
@@ -253,7 +253,7 @@ function extractAllSourceComments(): Map<string, TableAstInfo> {
   return result
 }
 
-// ─── Runtime Metadata Layer ─────────────────────────────────────────
+// Runtime metadata layer / 运行时元数据层
 
 async function getRuntimeMetadata(): Promise<Map<string, RuntimeTableInfo>> {
   const schema = await import('@/db/schema')
@@ -284,7 +284,7 @@ async function getRuntimeMetadata(): Promise<Map<string, RuntimeTableInfo>> {
   return result
 }
 
-// ─── SQL Generation ─────────────────────────────────────────────────
+// SQL generation / SQL 生成
 
 function escapeSQLString(text: string): string {
   return text.replace(/'/g, "''")
@@ -300,14 +300,14 @@ function generateSQL(astComments: Map<string, TableAstInfo>, runtimeMeta: Map<st
   let columnComments = 0
   let nullClears = 0
 
-  // Collect all entries sorted by table name for stable output
+  // Collect entries sorted by table name for stable output / 按表名排序收集条目，保证输出稳定
   const entries = [...runtimeMeta.entries()].sort((a, b) => a[1].tableName.localeCompare(b[1].tableName))
 
   for (const [varName, runtime] of entries) {
     const ast = astComments.get(varName)
     const fqTable = qualifiedTable(runtime.schemaName, runtime.tableName)
 
-    // Table comment
+    // Table comment / 表注释
     if (ast?.tableComment) {
       lines.push(`COMMENT ON TABLE ${fqTable} IS '${escapeSQLString(ast.tableComment)}';`)
       tableComments++
@@ -316,7 +316,7 @@ function generateSQL(astComments: Map<string, TableAstInfo>, runtimeMeta: Map<st
       nullClears++
     }
 
-    // Column comments – sorted by DB column name for stability
+    // Column comments sorted by database column name for stable output / 列注释按数据库列名排序，保证输出稳定
     const sortedCols = [...runtime.columns].sort((a, b) => a.dbColumnName.localeCompare(b.dbColumnName))
 
     for (const col of sortedCols) {
@@ -330,7 +330,7 @@ function generateSQL(astComments: Map<string, TableAstInfo>, runtimeMeta: Map<st
       }
     }
 
-    lines.push('') // blank line between tables
+    lines.push('') // blank line between tables / 表之间的空行
   }
 
   console.log(`[sync-comments] Generated: ${tableComments} table comments, ${columnComments} column comments, ${nullClears} NULL clears`)
@@ -338,15 +338,15 @@ function generateSQL(astComments: Map<string, TableAstInfo>, runtimeMeta: Map<st
   return ['-- Auto-generated by scripts/sync-comments.ts', '-- DO NOT EDIT MANUALLY', '', 'BEGIN;', '', ...lines, 'COMMIT;', ''].join('\n')
 }
 
-// ─── Main ───────────────────────────────────────────────────────────
+// Main / 主流程
 
 async function main() {
   console.log('[sync-comments] Starting schema comment sync...')
 
-  // Step 1: Extract JSDoc from source
+  // Step 1: Extract JSDoc from source / 第一步：从源码提取 JSDoc
   const astComments = extractAllSourceComments()
 
-  // Step 2: Get runtime metadata from Drizzle
+  // Step 2: Get runtime metadata from Drizzle / 第二步：从 Drizzle 获取运行时元数据
   const runtimeMeta = await getRuntimeMetadata()
 
   const missingTableDeclarations = findMissingTableDeclarations(astComments.keys(), runtimeMeta.keys())
@@ -354,16 +354,16 @@ async function main() {
     throw new Error(`Missing source declarations for runtime tables: ${missingTableDeclarations.join(', ')}. ` + 'Refusing to generate SQL that would clear their comments.')
   }
 
-  // Step 3: Generate SQL
+  // Step 3: Generate SQL / 第三步：生成 SQL
   const sql = generateSQL(astComments, runtimeMeta)
 
-  // Step 4: Write to file
+  // Step 4: Write to file / 第四步：写入文件
   const outputDir = dirname(OUTPUT_FILE)
   if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true })
   writeFileSync(OUTPUT_FILE, sql, 'utf-8')
   console.log(`[sync-comments] Written to ${OUTPUT_FILE}`)
 
-  // Step 5: Execute against database (unless --dry-run)
+  // Step 5: Execute against database (unless --dry-run) / 第五步：在数据库执行（除非指定 --dry-run）
   if (DRY_RUN) {
     console.log('[sync-comments] --dry-run: skipping database execution')
     return

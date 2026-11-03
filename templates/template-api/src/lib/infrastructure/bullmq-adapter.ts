@@ -18,12 +18,12 @@ import { JobSchemaRegistry } from './bullmq/job-registry'
  * 解决 TypeScript ExtractNameType/ExtractDataType 类型推断问题
  */
 function addToQueue<T>(queue: Queue<T>, jobName: string, data: T, opts?: JobsOptions) {
-  // 类型断言：jobName 和 data 的类型在运行时是正确的
+  // Type assertion: `jobName` and `data` have the correct types at runtime / 类型断言：`jobName` 和 `data` 的类型在运行时是正确的
   return queue.add(jobName as Parameters<typeof queue.add>[0], data as Parameters<typeof queue.add>[1], opts)
 }
 
 /**
- * 根据 job name 获取对应的 data 类型
+ * 根据 job name 获取对应的 `data` 类型
  */
 type JobDataByName<N extends JobNameType> = N extends keyof JobDefinitionRegistry ? JobDefinitionRegistry[N] : never
 
@@ -53,7 +53,7 @@ class QueueManager {
       const queue = new BullQueue<T>(name, {
         connection: this.bullConnection,
         prefix: `{bull}`,
-        // 托管 Redis（如阿里云）无法改 maxmemory-policy，跳过 INFO 检查以静默 eviction 警告
+        // Managed Redis (e.g. Alibaba Cloud) cannot change maxmemory-policy; skip the INFO check to suppress eviction warnings / 托管 Redis（如阿里云）无法修改 maxmemory-policy，跳过 INFO 检查以静默 eviction 警告
         skipVersionCheck: true,
         ...options,
       })
@@ -68,7 +68,7 @@ class QueueManager {
   addJob = <Q extends QueueNameType, N extends QueueJobsMapping[Q]>(queueName: Q, jobName: N, data: JobDataByName<N>, opts?: JobsOptions) =>
     Effect.tryPromise({
       try: async () => {
-        // Runtime validation with Zod
+        // Runtime validation with Zod / 使用 Zod 进行运行时校验
         const schema = JobSchemaRegistry[jobName]
         const validatedData = schema.parse(data)
 
@@ -91,7 +91,7 @@ class QueueManager {
       const worker = new BullWorker<JobDataByName<QueueJobsMapping[Q]>>(
         queueName,
         async (job) => {
-          // Runtime validation before processing
+          // Runtime validation before processing / 处理前进行运行时校验
           const schema = JobSchemaRegistry[job.name as JobNameType]
           if (schema) job.data = schema.parse(job.data) as JobDataByName<QueueJobsMapping[Q]>
           return processor(job)
@@ -113,7 +113,7 @@ class QueueManager {
       })
 
       worker.on('stalled', (jobId) => {
-        // 任务被判定卡死（worker 未及时心跳），会被另一 worker 抢占重跑；计分流水线非完全幂等，需 warn 关注
+        // A stalled job (worker heartbeat missed) can be retried by another worker; the scoring pipeline is not fully idempotent, so warn / 任务被判定卡死（worker 未及时心跳）后可能由另一 worker 抢占重跑；计分流水线非完全幂等，需发出警告
         logger.warn({ queueName, jobId }, '[BullMQ]: 任务卡死被抢占')
       })
 
@@ -129,13 +129,13 @@ class QueueManager {
   scheduleJob = <Q extends QueueNameType, N extends QueueJobsMapping[Q]>(queueName: Q, jobName: N, data: JobDataByName<N>, repeatOptions: RepeatOptions) =>
     Effect.tryPromise({
       try: async () => {
-        // Runtime validation with Zod
+        // Runtime validation with Zod / 使用 Zod 进行运行时校验
         const schema = JobSchemaRegistry[jobName]
         const validatedData = schema.parse(data)
 
         const queue = this.getQueue<JobDataByName<N>>(queueName)
 
-        // 使用 Job Schedulers API (schedulerId = queueName:jobName)
+        // Use the Job Schedulers API (`schedulerId` = `queueName`:`jobName`) / 使用 Job Schedulers API（`schedulerId` = `queueName`:`jobName`）
         const schedulerId = `${queueName}:${jobName}` as Parameters<typeof queue.upsertJobScheduler>[0]
         const jobTemplate = {
           name: jobName,
@@ -182,7 +182,7 @@ class QueueManager {
     Effect.gen({ self: this }, function* () {
       const closeEffects: Effect.Effect<void, Error>[] = []
 
-      // 关闭所有 Workers
+      // Close all Workers / 关闭所有 Workers
       for (const [name, worker] of this.workers.entries()) {
         closeEffects.push(
           Effect.tryPromise({
@@ -192,7 +192,7 @@ class QueueManager {
         )
       }
 
-      // 关闭所有队列
+      // Close all queues / 关闭所有队列
       for (const [name, queue] of this.queues.entries()) {
         closeEffects.push(
           Effect.tryPromise({
@@ -202,13 +202,13 @@ class QueueManager {
         )
       }
 
-      // 带超时的并行关闭
+      // Close in parallel with a timeout / 带超时的并行关闭
       yield* Effect.all(closeEffects, { concurrency: 'unbounded' }).pipe(Effect.timeout(`${timeoutMs} millis`), Effect.ignore)
 
       this.workers.clear()
       this.queues.clear()
 
-      // 关闭 Redis 连接（检查状态避免重复关闭）
+      // Close the Redis connection, checking its status to avoid closing it twice / 关闭 Redis 连接，检查状态避免重复关闭
       yield* Effect.tryPromise({
         try: async () => {
           if (!['close', 'end'].includes(this.connection.status)) {
@@ -238,7 +238,7 @@ class QueueManager {
 
 /**
  * 创建 BullMQ 专用 Redis 连接
- * BullMQ Worker 需要 maxRetriesPerRequest: null 用于阻塞操作
+ * BullMQ Worker 需要 `maxRetriesPerRequest`: null 用于阻塞操作
  */
 function createBullMQRedis() {
   const connectionOptions = parseURL(env.REDIS_URL)
@@ -261,7 +261,7 @@ export const queueManager = createSingleton(
   },
   {
     destroy: async (manager) => {
-      // close() 方法会关闭所有队列、Worker 和 Redis 连接
+      // close() closes all queues, Workers and Redis connections / close() 方法会关闭所有队列、Worker 和 Redis 连接
       await Effect.runPromise(manager.close(10000))
     },
   },

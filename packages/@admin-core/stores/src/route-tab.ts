@@ -9,7 +9,7 @@ export interface AdminTabRouteRecord extends AdminNavigationRouteRecord {
 
 /** 读取路由显式指定的标签页标识
  * @param route 当前路由记录
- * @returns pageKey 参数值
+ * @returns `pageKey` 参数值
  */
 function pageKeyOf(route: AdminTabRouteRecord) {
   const fullPath = route.fullPath ?? route.path
@@ -18,16 +18,16 @@ function pageKeyOf(route: AdminTabRouteRecord) {
   return Array.isArray(pageKey) ? pageKey[0] : pageKey
 }
 
-/** 在未指定新标识规则时读取兼容的 tabPath
+/** 在未指定新标识规则时读取兼容的 `tabPath`
  * @param route 当前路由记录
  * @returns 兼容的标签页地址
  */
 function legacyTabPath(route: AdminTabRouteRecord) {
-  // pageKey 和 fullPathKey 优先；未显式配置标识规则时继续支持 tabPath
+  // Prefer `pageKey` and `fullPathKey`; keep supporting `tabPath` when no identity rule is configured / `pageKey` 和 `fullPathKey` 优先；未显式配置标识规则时继续支持 `tabPath`
   return !pageKeyOf(route) && route.meta.fullPathKey === undefined ? (route.tabPath ?? route.meta.tabPath) : undefined
 }
 
-/** 按 pageKey 和 fullPathKey 规则生成标签页标识
+/** 按 `pageKey` 和 `fullPathKey` 规则生成标签页标识
  * @param route 当前路由记录
  * @returns 解码后的标签页标识
  */
@@ -65,7 +65,7 @@ export function createAdminTab(route: AdminTabRouteRecord, options: CreateAdminT
   if (route.meta.externalLink || route.meta.hideInTab) return void 0
 
   const tabTarget = legacyTabPath(route) ?? route.fullPath ?? route.path
-  // 使用解析后的父级路由补全标签标题和图标
+  // Use resolved parent routes to fill in the tab title and icon / 使用解析后的父级路由补全标签标题和图标
   const resolvedRoute = legacyTabPath(route) && tabTarget !== route.path ? (options.resolveRoute?.(tabTarget) ?? route) : route
   const title = resolvedRoute?.meta.title ?? route.meta.title
 
@@ -90,7 +90,7 @@ export function createAdminTabRecord(route: AdminTabRouteRecord, options: Create
   const tab = createAdminTab(route, options)
   if (!tab) return void 0
 
-  const iframeSrc = route.meta.iframeSrc?.trim() // 只保存非空的 `iframeSrc`，避免渲染空 iframe
+  const iframeSrc = route.meta.iframeSrc?.trim() // Only store a nonempty `iframeSrc` to avoid rendering an empty iframe / 只保存非空的 `iframeSrc`，避免渲染空 iframe
 
   return {
     ...tab,
@@ -139,7 +139,7 @@ export function closeAdminTab<T extends AdminTabItem>(tabs: readonly T[], key: s
   const index = tabs.findIndex((tab) => tab.key === key)
   if (index === -1 || tabs[index]?.closable === false) return { tabs: [...tabs] }
 
-  const nextTab = tabs[index + 1] ?? tabs[index - 1] // 关闭当前 `Tab` 时优先切右边，没有右边再退回左边
+  const nextTab = tabs[index + 1] ?? tabs[index - 1] // When closing the current `Tab`, prefer the tab to its right and fall back to the left / 关闭当前 `Tab` 时优先切换到右侧，没有右侧标签再回退到左侧
   const nextTabs = tabs.filter((tab) => tab.key !== key)
 
   return {

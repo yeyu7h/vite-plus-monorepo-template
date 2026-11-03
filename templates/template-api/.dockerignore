@@ -15,27 +15,27 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Build outputs
+# Build outputs / 构建产物
 dist
 build
 .next
 .nuxt
 
-# Environment files
+# Environment files / 环境文件
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# IDE and editors
+# IDE and editors / IDE 和编辑器
 .vscode
 .idea
 *.swp
 *.swo
 *~
 
-# OS generated files
+# OS generated files / 操作系统生成的文件
 .DS_Store
 .DS_Store?
 ._*
@@ -44,48 +44,48 @@ build
 ehthumbs.db
 Thumbs.db
 
-# Logs
+# Logs / 日志
 logs
 *.log
 
-# Runtime data
+# Runtime data / 运行时数据
 pids
 *.pid
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
+# Coverage directory used by tools like istanbul / istanbul 等工具使用的覆盖率目录
 coverage
 .nyc_output
 
-# ESLint cache
+# ESLint cache / ESLint 缓存
 .eslintcache
 
-# Optional npm cache directory
+# Optional npm cache directory / 可选的 npm 缓存目录
 .npm
 
-# Optional REPL history
+# Optional REPL history / 可选的 REPL 历史记录
 .node_repl_history
 
-# Output of 'npm pack'
+# Output of 'npm pack' / 'npm pack' 的输出
 *.tgz
 
-# Yarn Integrity file
+# Yarn Integrity file / Yarn 完整性文件
 .yarn-integrity
 
-# dotenv environment variables file
+# dotenv environment variables file / dotenv 环境变量文件
 .env
 
-# Testing
+# Testing / 测试
 .vitest
 
-# Documentation
+# Documentation / 文档
 README.md
 LICENSE
 CHANGELOG.md
 *.md
 
-# Development files
+# Development files / 开发文件
 .serena
 .claude
 src/**/*.test.ts
@@ -96,15 +96,15 @@ src/**/*.spec.ts
 # TypeScript
 *.tsbuildinfo
 
-# Docker optimization files
+# Docker optimization files / Docker 优化文件
 Dockerfile.optimized
 Dockerfile.distroless
 Dockerfile.k8s
 
-# Kubernetes files
+# Kubernetes files / Kubernetes 文件
 k8s/
 
-# Development tools
+# Development tools / 开发工具
 .eslintrc*
 .prettierrc*
 vitest.config.ts

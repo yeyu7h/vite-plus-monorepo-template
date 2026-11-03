@@ -109,7 +109,7 @@ export function buildAdminAccessPayload(rows: readonly AdminAccessMenuRecord[], 
     selectedIds.add(row.id)
   }
 
-  // A visible child must always have its directory ancestors so the client can mount a complete route tree.
+  // A visible child must retain its directory ancestors so the client can mount a complete route tree / 可见子节点必须保留其目录祖先，客户端才能挂载完整路由树
   for (const row of enabledRows) {
     if (!selectedIds.has(row.id)) continue
 

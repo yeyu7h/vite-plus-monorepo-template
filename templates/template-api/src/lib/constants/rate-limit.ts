@@ -4,8 +4,8 @@ export const RATE_LIMIT_WINDOW_MS = 60 * 1000
 /** Rate limit maximum requests / 限流最大请求数 */
 export const RATE_LIMIT_MAX_REQUESTS = 500
 
-// ── 敏感端点专用限流 ──
-// 全局桶对凭证类接口太宽，需要单独的严格桶（防爆破/枚举）
+// Rate limits for sensitive endpoints / 敏感端点专用限流
+// The global bucket is too permissive for credential endpoints; use a stricter bucket against brute force and enumeration / 全局桶对凭证类接口太宽，需要单独的严格桶以防爆破和枚举
 
 /** auth login / refresh / redeem 等凭证端点：1 分钟 30 次 */
 export const AUTH_RATE_LIMIT_WINDOW_MS = 60 * 1000

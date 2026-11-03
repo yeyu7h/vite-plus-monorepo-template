@@ -1,9 +1,9 @@
 import type { RouteRecordRaw, Router } from 'vue-router'
 import { setupLayouts } from 'virtual:generated-layouts'
 
-// 保存当前批次 router.addRoute() 返回的移除函数，确保替换或退出登录时能完整清理动态路由
+// Save the removal functions returned by this batch of `router.addRoute()` calls to fully clear dynamic routes on replacement or logout / 保存当前批次 `router.addRoute()` 返回的移除函数，确保替换或退出登录时完整清理动态路由
 const dynamicRouteRemovers: Array<() => void> = []
-// 保存未经 Layout 包装的授权路由快照，供开发环境 HMR 清空路由表后恢复
+// Save authorized routes before Layout wrapping so development HMR can restore them after clearing the route table / 保存未经 Layout 包装的授权路由快照，供开发环境 HMR 清空路由表后恢复
 let registeredAccessRoutes: RouteRecordRaw[] = []
 
 /** 使用最新的权限计算结果替换当前动态路由。 */
@@ -21,7 +21,7 @@ export function resetAdminAccessRoutes() {
 }
 
 function addAdminAccessRoutes(router: Router, routes: readonly RouteRecordRaw[]) {
-  // `setupLayouts()` 会改写嵌套 `children`，因此每次都基于新副本进行包装
+  // `setupLayouts()` rewrites nested `children`, so wrap a fresh copy each time / `setupLayouts()` 会改写嵌套 `children`，因此每次都基于新副本进行包装
   for (const route of setupLayouts(cloneRouteRecords(routes))) {
     dynamicRouteRemovers.push(router.addRoute(route))
   }
@@ -41,7 +41,7 @@ function cloneRouteRecords(routes: readonly RouteRecordRaw[]): RouteRecordRaw[] 
 }
 
 function removeAdminAccessRoutes() {
-  while (dynamicRouteRemovers.length) dynamicRouteRemovers.pop()?.() // 使用 `pop()` 同时清空移除函数，防止后续重复调用旧回调
+  while (dynamicRouteRemovers.length) dynamicRouteRemovers.pop()?.() // Use `pop()` to clear removal functions and prevent calling old callbacks again / 使用 `pop()` 同时清空移除函数，防止后续重复调用旧回调
 }
 
 /**

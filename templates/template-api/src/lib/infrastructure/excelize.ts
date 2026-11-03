@@ -11,7 +11,7 @@ export type Excelize = Awaited<ReturnType<typeof init>>
 const KEY = 'excelize'
 
 function getWasmPath(): string {
-  // 1. native/ subdirectory (bundleDeps mode) / native/ 子目录（bundleDeps 模式）
+  // 1. native/ subdirectory (`bundleDeps` mode) / native/ 子目录（`bundleDeps` 模式）
   const bundledPath = path.resolve(import.meta.dirname, 'native', 'excelize.wasm.gz')
   if (fs.existsSync(bundledPath)) return bundledPath
 

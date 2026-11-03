@@ -15,7 +15,7 @@ export function createAdminNavigationTree(routes: readonly RouteRecordRaw[], par
       navigable: hasAdminRouteTarget(route),
       activePath,
       meta,
-      // 菜单层级只来自路由树（即后端菜单 children），不能从 URL 片段反推
+      // Menu hierarchy comes only from the route tree (backend menu children), not from URL segments / 菜单层级只来自路由树（即后端菜单 children），不能从 URL 片段反推
       parentPath: parentPath ? normalizeAdminPath(parentPath) : void 0,
       path,
       source: meta.source,

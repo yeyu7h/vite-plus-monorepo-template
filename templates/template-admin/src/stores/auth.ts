@@ -82,7 +82,7 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     try {
       if (accessStore.accessToken) await coreAuthApi.logout()
     } catch {
-      // Local session cleanup must complete even when the remote logout endpoint is unavailable.
+      // Local session cleanup must complete even when the remote logout endpoint is unavailable / 即使远程退出登录接口不可用，也必须完成本地会话清理
     }
 
     if (!redirect) {
@@ -121,7 +121,7 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     const nextSetupPromise = (async () => {
       const [nextUserInfo, accessPayload] = await Promise.all([requestUserInfo(), coreAuthApi.getAccess()])
 
-      // 请求期间可能已经退出登录或切换账号，旧结果不能覆盖新会话
+      // The user may have logged out or changed accounts during the request; stale results must not overwrite the new session / 请求期间可能已经退出登录或切换账号，旧结果不能覆盖新会话
       if (accessStore.sessionVersion !== setupSessionVersion) return false
 
       userStore.setUserInfo(nextUserInfo)

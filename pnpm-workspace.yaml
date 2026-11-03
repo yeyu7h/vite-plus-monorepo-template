@@ -65,7 +65,7 @@ overrides:
   'vite@*': npm:@voidzero-dev/vite-plus-core@0.3.0
   'vitest@*': 4.1.11
 
-# The published plugin types import Vite; bind them to the consuming application's version.
+# The published plugin types import Vite; bind them to the consuming application's version / 已发布的插件类型会导入 Vite，将其绑定到消费应用的版本
 packageExtensions:
   '@hono/vite-dev-server@0.26.1':
     peerDependencies:

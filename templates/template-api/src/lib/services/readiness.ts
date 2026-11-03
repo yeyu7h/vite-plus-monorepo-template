@@ -12,7 +12,7 @@ function boundedProbe(probe: Probe, timeoutMs: number) {
   let pending: Promise<boolean> | undefined
 
   return async () => {
-    // Reuse unfinished work after a timeout so polling cannot accumulate queries.
+    // Reuse unfinished work after a timeout so polling cannot accumulate queries / 超时后复用未完成的任务，避免轮询累积查询
     pending ??= Promise.resolve()
       .then(probe)
       .then(

@@ -116,7 +116,7 @@ export const useAdminAccessStore = defineStore('admin-access', () => {
 })
 
 function matchesPermissionCode(pattern: string, code: string) {
-  // 后端以 *:*:* 表示管理员全权限，不受业务权限码段数限制。
+  // The backend uses *:*:* for full administrator access, regardless of the number of permission-code segments / 后端以 *:*:* 表示管理员全权限，不受业务权限码段数限制
   if (pattern === '*:*:*') return true
 
   const patternSegments = pattern.split(':')

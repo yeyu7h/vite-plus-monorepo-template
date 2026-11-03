@@ -38,7 +38,7 @@ export const envSchema = z
           const parsed = miniappAppsSchema.safeParse(JSON.parse(value.trim() || '{}'))
           if (parsed.success) return parsed.data
         } catch {
-          // Do not expose configuration values in errors.
+          // Do not expose configuration values in errors / 不要在错误中暴露配置值
         }
         ctx.addIssue({ code: 'custom', message: 'MINIAPP_APPS 必须是有效的微信小程序配置 JSON，详情见登录接入文档' })
         return z.NEVER

@@ -2,8 +2,7 @@ import { createPublicRouter } from '@/lib/core/create-app'
 
 const queueBoard = createPublicRouter()
 
-// Bull Board UI only in non-production (devDependency)
-// Bull Board UI 仅在非生产环境加载（devDependency）
+// Bull Board UI only in non-production (devDependency) / Bull Board UI 仅在非生产环境加载（devDependency）
 if (process.env.NODE_ENV !== 'production') {
   const { createBullBoard } = await import('@bull-board/api')
   const { BullMQAdapter } = await import('@bull-board/api/bullMQAdapter')

@@ -39,7 +39,7 @@ export function transform(code: string, id: string, analyzeResult: AnalyzeResult
   s.appendRight(insertPosition, insertContent)
 
   // Replace original schema positions with variable references / 替换原位置的 schema 为变量引用
-  // Note: hoistableSchemas are already sorted from back to front by position / 注意：hoistableSchemas 已按位置从后向前排序
+  // Note: `hoistableSchemas` are already sorted from back to front by position / 注意：`hoistableSchemas` 已按位置从后向前排序
   for (const schema of hoistableSchemas) {
     s.overwrite(schema.start, schema.end, schema.variableName)
   }

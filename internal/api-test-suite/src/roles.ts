@@ -555,7 +555,7 @@ export function defineRoleRouteTests({ app, getAdminToken, getUserToken, enforce
         const responseJson = await readResponse<PermissionChanges>(response)
 
         expect(responseJson.data.total).toBe(2)
-        expect(responseJson.data.removed).toBeGreaterThan(0) // Should have removed previous permissions
+        expect(responseJson.data.removed).toBeGreaterThan(0) // Should have removed previous permissions / 应已移除旧权限
 
         const verifyResponse = await request('GET', '/:id/permissions', { param: { id: roleId } })
 

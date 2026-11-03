@@ -27,7 +27,7 @@ function createAuthApp() {
 const client = testClient(createAuthApp())
 
 // ===== Utility functions / 工具函数 =====
-/** Extract refreshToken cookie value from response headers / 从响应头提取 refreshToken cookie 值 */
+/** Extract `refreshToken` cookie value from response headers / 从响应头提取 `refreshToken` cookie 值 */
 function extractRefreshToken(response: { headers: Headers }): string | null {
   const setCookie = response.headers.get('set-cookie')
   if (!setCookie) return null
@@ -36,7 +36,7 @@ function extractRefreshToken(response: { headers: Headers }): string | null {
   return match ? match[1] : null
 }
 
-/** Login and return accessToken and refreshToken / 登录并返回 accessToken 和 refreshToken */
+/** Login and return `accessToken` and `refreshToken` / 登录并返回 `accessToken` 和 `refreshToken` */
 async function loginAs(credentials: { username: string; password: string }) {
   const response = await client.auth.login.$post({
     json: { ...credentials, captchaToken: 'test' },
@@ -224,7 +224,7 @@ describe('auth routes', () => {
     })
 
     it('should return 401 with revoked refresh token', async () => {
-      // Login to get refreshToken / 登录获取 refreshToken
+      // Login to get `refreshToken` / 登录获取 `refreshToken`
       const { accessToken, refreshToken } = await loginAs(ADMIN_CREDENTIALS)
 
       expect(refreshToken).toBeDefined()
@@ -232,7 +232,7 @@ describe('auth routes', () => {
       // Logout, revoke all refresh tokens / 退出登录，吊销所有 refresh token
       await client.auth.logout.$post({}, { headers: { Authorization: `Bearer ${accessToken}` } })
 
-      // Attempt to refresh with revoked refreshToken / 使用已吊销的 refreshToken 尝试刷新
+      // Attempt to refresh with revoked `refreshToken` / 使用已吊销的 `refreshToken` 尝试刷新
       const response = await client.auth.refresh.$post({}, { headers: { Cookie: `refreshToken=${refreshToken}` } })
 
       expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED)
@@ -268,14 +268,14 @@ describe('auth routes', () => {
     })
 
     it('should revoke all refresh tokens (subsequent refresh fails)', async () => {
-      // Login twice to generate two refreshTokens / 登录两次生成两个 refreshToken
+      // Login twice to generate two `refreshToken` values / 登录两次生成两个 `refreshToken`
       const login1 = await loginAs(ADMIN_CREDENTIALS)
       const login2 = await loginAs(ADMIN_CREDENTIALS)
 
-      // Logout using the first login's accessToken / 使用第一次登录的 accessToken 退出
+      // Logout using the first login's `accessToken` / 使用第一次登录的 `accessToken` 退出
       await client.auth.logout.$post({}, { headers: { Authorization: `Bearer ${login1.accessToken}` } })
 
-      // Both old refreshTokens should be invalidated / 两个旧 refreshToken 都应该失效
+      // Both old `refreshToken` values should be invalidated / 两个旧 `refreshToken` 都应该失效
       const refresh1 = await client.auth.refresh.$post({}, { headers: { Cookie: `refreshToken=${login1.refreshToken}` } })
 
       expect(refresh1.status).toBe(HttpStatusCodes.UNAUTHORIZED)

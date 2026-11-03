@@ -27,13 +27,13 @@ export interface AdminAccessGuardOptions {
 export async function resolveAdminAccessGuard(to: RouteLocationNormalized, accessState: AdminAccessGuardState, options: AdminAccessGuardOptions): Promise<RouteLocationRaw | true> {
   const normalizedPath = normalizeAdminPath(to.path)
 
-  // 根路径不是实际页面，根据当前登录状态进入首页或登录页
+  // The root path is not a page; navigate to the home or login page based on the session / 根路径不是实际页面，根据当前登录状态进入首页或登录页
   if (normalizedPath === '/') {
     return accessState.isLoggedIn ? accessState.homePath : LOGIN_ROUTE_PATH
   }
 
   if (isPublicRoutePath(normalizedPath)) {
-    // 已登录用户访问登录页时先恢复权限路由；会话失效时允许停留在登录页
+    // Restore authorized routes when a signed-in user visits the login page; allow the login page if the session has expired / 已登录用户访问登录页时先恢复权限路由；会话失效时允许停留在登录页
     if (normalizedPath === LOGIN_ROUTE_PATH && accessState.isLoggedIn) {
       try {
         await accessState.restoreAccess()
@@ -46,8 +46,8 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
     return true
   }
 
-  // 文件路由的兜底页面也声明了 ignoreAccess，若目标实际属于权限路由
-  // 必须继续执行权限恢复，不能被首次匹配到的兜底页面提前放行
+  // File-route fallback pages also declare `ignoreAccess`; if the target is an authorized route / 文件路由的兜底页面也声明了 `ignoreAccess`，若目标实际属于权限路由
+  // Continue restoring access instead of allowing the initially matched fallback page through / 必须继续执行权限恢复，不能被首次匹配到的兜底页面提前放行
   const shouldResolveFallbackRoute = to.meta?.source === 'fallback' && (accessState.isLoggedIn || isKnownAccessRoutePath(normalizedPath, options.matchesAccessPath))
   if (to.meta?.ignoreAccess && !shouldResolveFallbackRoute) {
     return true
@@ -63,7 +63,7 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
     }
   }
 
-  // restoreAccess 返回 true 表示本次导航刚注册了动态路由
+  // A true result from `restoreAccess` means this navigation just registered dynamic routes / `restoreAccess` 返回 true 表示本次导航刚注册了动态路由
   let accessGenerated = false
   try {
     accessGenerated = await accessState.restoreAccess()
@@ -78,13 +78,13 @@ export async function resolveAdminAccessGuard(to: RouteLocationNormalized, acces
   }
 
   if (!isAccessibleRoutePath(normalizedPath, accessState.canAccessPath)) {
-    // 未注册到当前用户路由表的页面统一交给 404 兜底。
-    // menuVisibleWithForbidden 路由会保留在可访问路由中，并在权限解析阶段替换成 403 组件。
+    // Pages absent from the current user's route table fall back to 404 / 未注册到当前用户路由表的页面统一交给 404 兜底
+    // Routes with `menuVisibleWithForbidden` remain accessible and are replaced with the 403 component during access resolution / `menuVisibleWithForbidden` 路由保留在可访问路由中，并在权限解析阶段替换成 403 组件
     return true
   }
 
-  // 动态路由注册后重新解析原始地址，确保首次导航命中新加入的路由记录
-  // 同时保留原有 query 和 hash
+  // Resolve the original address again after registering dynamic routes so the initial navigation matches them / 动态路由注册后重新解析原始地址，确保首次导航命中新加入的路由记录
+  // Preserve the original `query` and `hash` / 同时保留原有 `query` 和 `hash`
   if (accessGenerated) {
     return {
       ...asRouteLocationObject(options.resolveRoute(to.fullPath)),

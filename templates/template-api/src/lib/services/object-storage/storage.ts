@@ -16,7 +16,7 @@ function validateKey(key: string) {
 
 export function createObjectStorage(config: ObjectStorageConfig) {
   const client = new S3Client(storageClientConfig(config))
-  // Sign the exact URL the caller will use; replacing its hostname later invalidates SigV4.
+  // Sign the exact URL the caller will use; replacing its hostname later invalidates SigV4 / 对调用方实际使用的 URL 签名；之后替换主机名会使 SigV4 失效
   const signer = config.presignEndpoint === config.endpoint ? client : new S3Client(storageClientConfig(config, config.presignEndpoint))
 
   function getPublicUrl(key: string): string | null {

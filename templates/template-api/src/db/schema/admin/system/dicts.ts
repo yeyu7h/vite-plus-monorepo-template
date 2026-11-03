@@ -50,8 +50,8 @@ export const systemDicts = snakeCase.table(
     status: varchar({ length: 16 }).$type<StatusType>().default(Status.ENABLED).notNull(),
   },
   (table) => [
-    // Unique constraint on code field already includes an index / code 字段的唯一约束已经包含了索引
-    // Add index on status field for querying enabled dictionaries / 为 status 字段添加索引，用于查询启用的字典
+    // Unique constraint on `code` field already includes an index / `code` 字段的唯一约束已经包含了索引
+    // Add index on `status` field for querying enabled dictionaries / 为 `status` 字段添加索引，用于查询启用的字典
     index('system_dicts_status_idx').on(table.status),
   ],
 )

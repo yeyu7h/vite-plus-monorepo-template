@@ -164,7 +164,7 @@ describe('BullMQ Type Safety', () => {
       const program = queueManager.addJob(
         QueueName.EMAIL,
         JobName.EMAIL_SEND_WELCOME,
-        { email: 'user@example.com' } as any, // Missing 'username'
+        { email: 'user@example.com' } as any, // Missing 'username' / 缺少 'username'
       )
 
       await expect(Effect.runPromise(program)).rejects.toThrow()
@@ -201,7 +201,7 @@ describe('BullMQ Type Safety', () => {
 
     it('should reject job with invalid date format', async () => {
       const program = queueManager.addJob(QueueName.CLEANUP, JobName.CLEANUP_DAILY, {
-        targetDate: '2024-13-45', // Invalid date
+        targetDate: '2024-13-45', // Invalid date / 无效日期
       } as any)
 
       await expect(Effect.runPromise(program)).rejects.toThrow()
@@ -237,7 +237,7 @@ describe('BullMQ Type Safety', () => {
     })
 
     it('should not register duplicate worker', () => {
-      // Worker already registered in previous test
+      // Worker already registered in previous test / Worker 已在前一个测试中注册
       const mockProcessor = vi.fn(async () => ({ success: true }))
 
       const program = queueManager.registerWorker(QueueName.EMAIL, mockProcessor)
@@ -245,7 +245,7 @@ describe('BullMQ Type Safety', () => {
       const worker = Effect.runSync(program)
 
       expect(worker).toBeDefined()
-      // Should still only have one EMAIL worker
+      // Should still only have one EMAIL worker / 仍应只有一个 EMAIL Worker
       expect(queueManager.getWorkerNames().filter((name) => name === QueueName.EMAIL)).toHaveLength(1)
     })
 
@@ -295,14 +295,14 @@ describe('BullMQ Type Safety', () => {
 
     it('should process EMAIL_SEND_WELCOME job with correct data type', async () => {
       const mockProcessor = vi.fn(async (job) => {
-        // TypeScript should infer job.data type
+        // TypeScript should infer `job.data` type / TypeScript 应推断 `job.data` 类型
         expect(job.data.email).toBeDefined()
         expect(job.data.username).toBeDefined()
 
         return { success: true }
       })
 
-      // Add job
+      // Add job / 添加任务
       const addProgram = queueManager.addJob(QueueName.EMAIL, JobName.EMAIL_SEND_WELCOME, {
         email: 'test@example.com',
         username: 'testuser',
@@ -310,7 +310,7 @@ describe('BullMQ Type Safety', () => {
 
       const job = await Effect.runPromise(addProgram)
 
-      // Process job manually (simulating worker processing)
+      // Process job manually (simulating worker processing) / 手动处理任务（模拟 Worker 处理）
       await mockProcessor(job)
 
       expect(mockProcessor).toHaveBeenCalledTimes(1)
@@ -340,7 +340,7 @@ describe('BullMQ Type Safety', () => {
         return { success: true }
       })
 
-      // Add different job types
+      // Add different job types / 添加不同类型的任务
       const job1 = await Effect.runPromise(
         queueManager.addJob(QueueName.EMAIL, JobName.EMAIL_SEND_WELCOME, {
           email: 'user1@example.com',
@@ -356,7 +356,7 @@ describe('BullMQ Type Safety', () => {
         }),
       )
 
-      // Process jobs
+      // Process jobs / 处理任务
       await mockProcessor(job1)
       await mockProcessor(job2)
 
@@ -372,13 +372,13 @@ describe('BullMQ Type Safety', () => {
         JobName.CLEANUP_DAILY,
         {},
         {
-          pattern: '0 0 * * *', // Daily at midnight
+          pattern: '0 0 * * *', // Daily at midnight / 每天午夜
         },
       )
 
       await Effect.runPromise(program)
 
-      // Verify scheduled jobs (使用新的 Job Schedulers API)
+      // Verify scheduled jobs with the new Job Schedulers API / 使用新的 Job Schedulers API 验证定时任务
       const scheduledJobsProgram = queueManager.getScheduledJobs(QueueName.CLEANUP)
       const scheduledJobs = await Effect.runPromise(scheduledJobsProgram)
 
@@ -401,7 +401,7 @@ describe('BullMQ Type Safety', () => {
           daysToKeep: 7,
         },
         {
-          every: 3600000, // Every hour
+          every: 3600000, // Every hour / 每小时
         },
       )
 
@@ -418,7 +418,7 @@ describe('BullMQ Type Safety', () => {
         QueueName.EMAIL,
         JobName.EMAIL_SEND_WELCOME,
         {
-          email: 'invalid-email', // Invalid email
+          email: 'invalid-email', // Invalid email / 无效邮箱
           username: 'testuser',
         } as any,
         {
@@ -432,24 +432,24 @@ describe('BullMQ Type Safety', () => {
 
   describe('unscheduleJob', () => {
     it('should remove scheduled job', async () => {
-      // Use unique pattern to avoid conflicts with other tests
+      // Use a unique pattern to avoid conflicts with other tests / 使用唯一的调度表达式，避免与其他测试冲突
       const repeatOptions = {
-        pattern: '0 23 * * *', // Daily at 11pm (unique pattern)
+        pattern: '0 23 * * *', // Daily at 11pm (unique pattern) / 每天晚上 11 点（唯一调度表达式）
       }
 
       await Effect.runPromise(queueManager.scheduleJob(QueueName.CLEANUP, JobName.CLEANUP_DAILY, {}, repeatOptions))
 
-      // Verify it exists
+      // Verify it exists / 验证其存在
       let scheduledJobs = await Effect.runPromise(queueManager.getScheduledJobs(QueueName.CLEANUP))
       const schedulerId = `${QueueName.CLEANUP}:${JobName.CLEANUP_DAILY}`
       const jobExists = scheduledJobs.some((job) => job.key === schedulerId)
 
       expect(jobExists).toBe(true)
 
-      // Remove it (新 API 不需要 repeatOptions)
+      // Remove it (the new API does not require `repeatOptions`) / 移除任务（新 API 不需要 `repeatOptions`）
       await Effect.runPromise(queueManager.unscheduleJob(QueueName.CLEANUP, JobName.CLEANUP_DAILY))
 
-      // Verify it's removed
+      // Verify it is removed / 验证其已移除
       scheduledJobs = await Effect.runPromise(queueManager.getScheduledJobs(QueueName.CLEANUP))
       const jobStillExists = scheduledJobs.some((job) => job.key === schedulerId)
 
@@ -480,7 +480,7 @@ describe('BullMQ Type Safety', () => {
 
   describe('Error Handling', () => {
     it('should handle scheduleJob errors gracefully', async () => {
-      // Use invalid repeat options to trigger error
+      // Use invalid repeat options to trigger an error / 使用无效的重复选项触发错误
       const program = queueManager.scheduleJob(
         QueueName.EMAIL,
         JobName.EMAIL_SEND_WELCOME,
@@ -488,29 +488,29 @@ describe('BullMQ Type Safety', () => {
           email: 'test@example.com',
           username: 'testuser',
         },
-        {} as any, // Invalid repeat options
+        {} as any, // Invalid repeat options / 无效的重复选项
       )
 
       await expect(Effect.runPromise(program)).rejects.toThrow()
     })
 
     it('should handle unscheduleJob with non-existent job', async () => {
-      // Try to remove a non-existent scheduled job (新 API 只需要 queueName 和 jobName)
+      // Try to remove a nonexistent scheduled job (the new API only requires `queueName` and `jobName`) / 尝试移除不存在的定时任务（新 API 只需要 `queueName` 和 `jobName`）
       const program = queueManager.unscheduleJob(QueueName.EMAIL, 'non-existent-job')
 
-      // Should return false if scheduler doesn't exist
+      // Should return false if the scheduler does not exist / 调度器不存在时应返回 false
       const result = await Effect.runPromise(program)
 
       expect(typeof result).toBe('boolean')
     })
 
     it('should handle getScheduledJobs errors gracefully', async () => {
-      // Get scheduled jobs from valid queue
+      // Get scheduled jobs from a valid queue / 从有效队列获取定时任务
       const program = queueManager.getScheduledJobs(QueueName.EMAIL)
 
       const jobs = await Effect.runPromise(program)
 
-      // Should return array (even if empty)
+      // Should return an array (even if empty) / 应返回数组（即使为空）
       expect(Array.isArray(jobs)).toBe(true)
     })
   })

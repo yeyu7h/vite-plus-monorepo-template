@@ -45,7 +45,7 @@ const testParam = {
  */
 async function cleanupTestParams(): Promise<void> {
   try {
-    // Delete all test params from database (key starts with test_) / 从数据库删除所有测试参数（key 以 test_ 开头）
+    // Delete all test params from database (`key` starts with `test_`) / 从数据库删除所有测试参数（`key` 以 `test_` 开头）
     await db.delete(systemParams).where(like(systemParams.key, 'test_%'))
 
     // Clean up Redis cache / 清理 Redis 缓存
@@ -215,7 +215,7 @@ describe('system params routes', () => {
         { headers: getAuthHeaders(adminToken) },
       )
 
-      // Database unique constraint error handled by global onError, returns 409 / 数据库唯一约束错误由全局 onError 处理，返回 409
+      // Database unique constraint error handled by global `onError`, returns 409 / 数据库唯一约束错误由全局 `onError` 处理，返回 409
       expect(response2.status).toBe(HttpStatusCodes.CONFLICT)
 
       const json = (await response2.json()) as { message: string }

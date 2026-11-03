@@ -35,7 +35,7 @@ function buildMenuGroups(routes: readonly AdminNavigationRouteNode[], options: B
 
   function visit(route: AdminNavigationRouteNode, parent?: MenuParent) {
     if (!isMenuRoute(route)) {
-      // 隐藏的是当前菜单节点；可见后代仍独立展示，路由树保持原样。
+      // Hide only the current menu node; visible descendants remain displayed and the route tree is unchanged / 只隐藏当前菜单节点；可见后代仍独立展示，路由树保持原样
       route.children?.forEach((child) => visit(child))
       return
     }
@@ -47,7 +47,7 @@ function buildMenuGroups(routes: readonly AdminNavigationRouteNode[], options: B
       groups.set(meta.id, group)
     }
 
-    // 子节点显式切换分组时成为新分组的根菜单。
+    // A child that explicitly changes groups becomes the root menu of the new group / 子节点显式切换分组时成为新分组的根菜单
     const sameParent = parent?.groupId === group.id ? parent : undefined
     const originalDepth = sameParent ? sameParent.depth + 1 : 1
     const promoted = originalDepth > maxDepth
@@ -57,7 +57,7 @@ function buildMenuGroups(routes: readonly AdminNavigationRouteNode[], options: B
 
     route.children?.forEach((child) => visit(child, { groupId: group.id, depth, children, siblings }))
 
-    if (!route.navigable && children.length === 0) return // 纯目录没有页面目标，不能在过滤子项后退化为链接。
+    if (!route.navigable && children.length === 0) return // A directory has no page target and must not become a link after filtering its children / 纯目录没有页面目标，不能在过滤子项后退化为链接
 
     if (promoted) {
       console.warn(`[admin-menu] 路由 "${route.path}" 超过 ${maxDepth} 级菜单限制，已自动提升为第 ${maxDepth} 级菜单项；如无需展示，请设置 meta.hideInMenu`)
@@ -110,7 +110,7 @@ export function markActiveAdminMenuGroups(groups: readonly AdminMenuGroup[], act
 }
 
 function compareMenuItems(a: AdminMenuItem, b: AdminMenuItem) {
-  // 保持原先同权重、同标题时按路由路径排序的行为，后端 ID 只用于节点身份。
+  // Keep sorting equal-weight, equal-title routes by path; backend IDs identify nodes only / 保持同权重、同标题时按路由路径排序，后端 ID 只用于节点身份
   return (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title) || (a.activePath ?? a.path).localeCompare(b.activePath ?? b.path) || a.id.localeCompare(b.id)
 }
 

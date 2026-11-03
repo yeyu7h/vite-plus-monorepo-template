@@ -1,6 +1,6 @@
 // Auto-generated file, do not edit / 自动生成的文件，请勿编辑
-// Status codes fetched on Thu, 03 Oct 2024 12:05:14 GMT, from: https://raw.githubusercontent.com/prettymuchbryce/http-status-codes/refs/heads/master/codes.json
-// 状态码获取于 Thu, 03 Oct 2024 12:05:14 GMT，来源：https://raw.githubusercontent.com/prettymuchbryce/http-status-codes/refs/heads/master/codes.json
+// Status codes fetched on Thu, 03 Oct 2024 12:05:14 GMT / 状态码获取于 Thu, 03 Oct 2024 12:05:14 GMT
+// https://raw.githubusercontent.com/prettymuchbryce/http-status-codes/refs/heads/master/codes.json
 /**
  * Official docs @ https://tools.ietf.org/html/rfc7231#section-6.3.3
  *

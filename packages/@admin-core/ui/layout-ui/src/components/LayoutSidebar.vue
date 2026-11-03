@@ -32,7 +32,7 @@ function persistCollapsed(value: boolean) {
   try {
     if (typeof localStorage !== 'undefined') localStorage.setItem(props.storageKey, String(value))
   } catch {
-    // Storage can be unavailable in private or restricted browser contexts.
+    // Storage can be unavailable in private or restricted browser contexts / 隐私模式或受限的浏览器环境可能无法使用存储
   }
 }
 
@@ -127,7 +127,7 @@ function setOverlayOpen(value: boolean, closeReason?: SidebarOverlayCloseReason)
     return
   }
 
-  // Keep the overlay trigger stable until Nuxt UI finishes its exit animation.
+  // Keep the overlay trigger stable until Nuxt UI finishes its exit animation / 保持浮层触发器稳定，直到 Nuxt UI 退出动画结束
   overlayCloseTimer = setTimeout(() => {
     overlayCloseTimer = undefined
     overlayCloseFrame = requestAnimationFrame(() => {

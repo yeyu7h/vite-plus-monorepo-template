@@ -20,8 +20,8 @@ function calculateTtlSeconds(expires: number | Date): number {
 }
 
 const cap = createSingleton('cap', () => {
-  // Cap.js 会在构造函数中注册 SIGTERM/SIGINT/SIGQUIT 信号处理器并调用 process.exit
-  // 我们自己管理优雅关闭，需要阻止 Cap.js 劫持进程退出
+  // Cap.js registers SIGTERM/SIGINT/SIGQUIT handlers in its constructor and calls process.exit / Cap.js 会在构造函数中注册 SIGTERM/SIGINT/SIGQUIT 信号处理器并调用 process.exit
+  // Graceful shutdown is managed here, so prevent Cap.js from taking over process exit / 我们自行管理优雅关闭，需要阻止 Cap.js 接管进程退出
   const signals = ['SIGINT', 'SIGTERM', 'SIGQUIT'] as const
   const savedListeners = signals.map((s) => [s, process.listeners(s)] as const)
 
@@ -45,7 +45,7 @@ const cap = createSingleton('cap', () => {
           if (!data) return null
 
           const challengeData = JSON.parse(data)
-          // Optionally validate challengeData.expires with isValid for robustness / 此处可额外用isValid校验challengeData.expires，增强鲁棒性
+          // Optionally validate `challengeData.expires` with `isValid` for robustness / 此处可额外用`isValid`校验`challengeData.expires`，增强鲁棒性
           if (!isValid(new Date(challengeData.expires))) return null
 
           return {
@@ -99,7 +99,7 @@ const cap = createSingleton('cap', () => {
     },
   })
 
-  // 移除 Cap.js 注册的信号处理器，恢复原有的
+  // Remove signal handlers registered by Cap.js and restore the originals / 移除 Cap.js 注册的信号处理器，恢复原有处理器
   for (const [signal, listeners] of savedListeners) {
     process.removeAllListeners(signal)
     for (const listener of listeners) process.on(signal, listener as (...args: unknown[]) => void)

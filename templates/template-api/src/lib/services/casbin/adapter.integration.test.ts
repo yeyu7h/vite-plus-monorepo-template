@@ -90,7 +90,7 @@ describe('drizzle casbin adapter', () => {
     })
 
     it('应该从数据库加载策略', async () => {
-      // beforeEach already loaded the policies, verify directly here / beforeEach 已经加载了策略，这里直接验证
+      // `beforeEach` already loaded the policies, verify directly here / `beforeEach` 已经加载了策略，这里直接验证
       await testGetPolicy(enforcer, [
         ['alice', 'data1', 'read'],
         ['bob', 'data2', 'write'],

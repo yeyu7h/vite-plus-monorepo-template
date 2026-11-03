@@ -12,7 +12,7 @@ vi.mock('@/lib/services/redis', () => ({
   },
 }))
 
-// Mock iconv-lite
+// Mock iconv-lite / 模拟 iconv-lite
 vi.mock('iconv-lite', () => ({
   default: {
     decode: vi.fn((buffer: Buffer) => buffer.toString('utf8')),
@@ -64,7 +64,7 @@ describe('IP Service', () => {
         expect(await getIPAddress('192.168.0.1')).toBe('本地')
         expect(await getIPAddress('192.168.255.255')).toBe('本地')
 
-        // 169.254.0.0/16 link-local
+        // 169.254.0.0/16 link-local / 169.254.0.0/16 链路本地地址
         expect(await getIPAddress('169.254.0.1')).toBe('本地')
       })
 
@@ -74,11 +74,11 @@ describe('IP Service', () => {
       })
 
       it('IPv6 私有地址应返回本地', async () => {
-        // ULA fc00::/7
+        // ULA fc00::/7 / 唯一本地地址 fc00::/7
         expect(await getIPAddress('fc00::1')).toBe('本地')
         expect(await getIPAddress('fd00::1')).toBe('本地')
 
-        // link-local fe80::/10
+        // Link-local fe80::/10 / 链路本地地址 fe80::/10
         expect(await getIPAddress('fe80::1')).toBe('本地')
       })
 

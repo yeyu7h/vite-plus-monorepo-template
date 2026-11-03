@@ -94,7 +94,7 @@ export async function checkCircularInheritance(roleId: string, parentIds: string
   for (const parentId of parentIds) {
     // Cannot be its own parent / 自己不能是自己的上级
     if (parentId === roleId) return true
-    // Check if ancestor chain contains roleId / 检查祖先链中是否包含 roleId
+    // Check if ancestor chain contains `roleId` / 检查祖先链中是否包含 `roleId`
     if (hasCycle(parentId, new Set<string>())) return true
   }
 
@@ -148,10 +148,10 @@ export async function enrichRolesWithParents(roles: Role[]): Promise<RoleWithPar
 export async function cleanRoleInheritance(roleId: string): Promise<void> {
   const enforcer = await enforcerPromise
 
-  // Delete relationships as child role (roleId inherits from other roles) / 删除作为子角色的关系（roleId继承自其他角色）
+  // Delete relationships as child role (`roleId` inherits from other roles) / 删除作为子角色的关系（`roleId`继承自其他角色）
   await enforcer.removeFilteredGroupingPolicy(0, roleId)
 
-  // Delete relationships as parent role (other roles inherit from roleId) / 删除作为父角色的关系（其他角色继承自roleId）
+  // Delete relationships as parent role (other roles inherit from `roleId`) / 删除作为父角色的关系（其他角色继承自`roleId`）
   await enforcer.removeFilteredGroupingPolicy(1, roleId)
 }
 

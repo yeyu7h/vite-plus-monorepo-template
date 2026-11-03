@@ -32,7 +32,7 @@ export function buildAdminBreadcrumbs(route: AdminCurrentRouteRecord, routes: re
 
     const hasExplicitTitle = Boolean(meta?.title)
 
-    // layout 插件可能生成同路径的占位父级 路由存在但没有导航 meta 时不要把它当成真实层级
+    // The layout plugin can create placeholder parents at the same path; routes without navigation meta are not real hierarchy levels / layout 插件可能生成同路径的占位父级，没有导航 meta 的路由不应视为真实层级
     if (path !== currentPath && !hasExplicitTitle && route.meta.group) return []
 
     const title = path === currentPath ? (route.meta.title ?? meta?.title ?? formatAdminNavigationTitle(segment)) : (meta?.title ?? formatAdminNavigationTitle(segment))

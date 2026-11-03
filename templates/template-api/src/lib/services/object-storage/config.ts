@@ -79,7 +79,7 @@ export function storageClientConfig(config: ObjectStorageConfig, endpoint = conf
     region: config.region,
     forcePathStyle: config.forcePathStyle,
     credentials: config.credentials,
-    // Presigned PUTs have no body yet; do not sign the checksum of an empty body.
+    // Presigned PUTs have no body yet; do not sign the checksum of an empty body / 预签名 PUT 尚无请求体，不要对空请求体的校验和签名
     requestChecksumCalculation: 'WHEN_REQUIRED',
   }
 }

@@ -45,9 +45,9 @@ export type BuildOptions = {
   /**
    * Packages that contain native binaries (.node / .wasm).
    * Their JS code is bundled normally; binary files are copied to dist/native/.
-   * Only takes effect when bundleDeps is true.
+   * Only takes effect when `bundleDeps` is true.
    * 包含原生二进制（.node / .wasm）的包。
-   * JS 代码正常打包；二进制文件复制到 dist/native/。仅 bundleDeps: true 时生效。
+   * JS 代码正常打包；二进制文件复制到 dist/native/。仅 `bundleDeps`: true 时生效。
    * @example ["@node-rs/argon2", "excelize-wasm"]
    */
   nativeDeps?: string[]
@@ -108,7 +108,7 @@ export const defaultOptions: Required<
 
 /**
  * ncc-style native dependency extraction:
- * 1. Write a temp package.json with pinned versions of nativeDeps
+ * 1. Write a temp package.json with pinned versions of `nativeDeps`
  * 2. `npm install` to fetch platform-correct binaries
  * 3. Collect all .node/.wasm files and copy them to dist root
  * 4. Delete node_modules/, package.json, package-lock.json
@@ -116,16 +116,16 @@ export const defaultOptions: Required<
  * Result: dist/index.js + *.node + *.wasm (flat, zero node_modules)
  *
  * ncc 风格原生依赖提取：
- * 1. 写入临时 package.json（锁定 nativeDeps 版本）
+ * 1. 写入临时 package.json（锁定 `nativeDeps` 版本）
  * 2. npm install 拉取当前平台的二进制
  * 3. 将所有 .node/.wasm 文件提取到 dist 根目录
  * 4. 删除 node_modules/、package.json、package-lock.json
  */
 /**
- * Resolve platform-specific sub-packages from a package's optionalDependencies.
- * Matches sub-packages whose name contains both the target os and cpu.
- * e.g. targetPlatform "linux-x64" matches "@node-rs/argon2-linux-x64-gnu", "@node-rs/argon2-linux-x64-musl"
- * 从包的 optionalDependencies 中解析出目标平台的子包。
+ * Resolve platform-specific sub-packages from a package's `optionalDependencies`.
+ * Matches sub-packages whose name contains both the target `os` and `cpu`.
+ * e.g. `targetPlatform` "linux-x64" matches "@node-rs/argon2-linux-x64-gnu", "@node-rs/argon2-linux-x64-musl"
+ * 从包的 `optionalDependencies` 中解析出目标平台的子包。
  */
 function resolvePlatformSubPackages(rootDir: string, pkg: string, targetPlatform: TargetPlatform): Record<string, string> {
   const { os, cpu } = PLATFORM_MAP[targetPlatform]
@@ -137,8 +137,8 @@ function resolvePlatformSubPackages(rootDir: string, pkg: string, targetPlatform
     }
     const optDeps = pkgJson.optionalDependencies ?? {}
     for (const [depName, depVersion] of Object.entries(optDeps)) {
-      // napi-rs convention: @scope/name-{os}-{cpu}[-variant]
-      // Check that the sub-package name contains both os and cpu tokens
+      // napi-rs convention: @scope/name-{os}-{cpu}[-variant] / napi-rs 命名约定：@scope/name-{os}-{cpu}[-variant]
+      // Check that the sub-package name contains both `os` and `cpu` tokens / 检查子包名称是否同时包含 `os` 和 `cpu` 标识
       if (depName.includes(os) && depName.includes(cpu)) {
         result[depName] = depVersion
       }
@@ -159,15 +159,13 @@ function installAndExtractNativeDeps(rootDir: string, outDir: string, nativeDeps
     } catch {}
 
     if (targetPlatform) {
-      // When cross-compiling, resolve platform sub-packages and skip the main package
-      // (its JS is already bundled; we only need the binary sub-packages).
-      // 交叉编译时：解析平台子包，跳过主包（JS 已打包，只需二进制子包）。
+      // When cross-compiling, resolve platform sub-packages and skip the main package (its JS is already bundled) / 交叉编译时解析平台子包并跳过主包（JS 已打包，只需二进制子包）
       const subPkgs = resolvePlatformSubPackages(rootDir, pkg, targetPlatform)
       if (Object.keys(subPkgs).length > 0) {
-        // Has platform sub-packages (napi-rs style) → install only those
+        // Has platform sub-packages (napi-rs style) → install only those / 有平台子包（napi-rs 风格）→ 仅安装这些子包
         Object.assign(deps, subPkgs)
       } else {
-        // No platform sub-packages (e.g. excelize-wasm) → install normally
+        // No platform sub-packages (e.g. excelize-wasm) → install normally / 没有平台子包（如 excelize-wasm）→ 正常安装
         deps[pkg] = version
       }
     } else {
@@ -187,8 +185,7 @@ function installAndExtractNativeDeps(rootDir: string, outDir: string, nativeDeps
   } else {
     console.log(`[vite-build] 安装原生依赖: ${depList}`)
   }
-  // --force bypasses platform checks when cross-installing for a foreign os/cpu
-  // --force 跳过平台检查，允许在 macOS 上安装 linux 的 native 包
+  // --force bypasses platform checks when cross-installing for a foreign os/cpu / --force 跳过平台检查，允许跨操作系统或 CPU 安装原生包
   const forceFlag = targetPlatform ? ' --force' : ''
   execSync(`npm install --omit=dev --ignore-scripts=false${forceFlag}`, { cwd: outDir, stdio: 'inherit' })
 
@@ -304,9 +301,8 @@ const buildPlugin = (options: BuildOptions): Plugin => {
     renderChunk(code) {
       if (!bundleDeps || nativeDeps.length === 0) return
 
-      // Rewrite __require("./xxx.node") → __require("./native/xxx.node")
-      // napi-rs packages use this pattern for local .node file loading
-      // napi-rs 包使用此模式加载本地 .node 文件
+      // Rewrite __require("./xxx.node") → __require("./native/xxx.node") / 将 __require("./xxx.node") 改写为 __require("./native/xxx.node")
+      // napi-rs packages use this pattern for local .node file loading / napi-rs 包使用此模式加载本地 .node 文件
       return code.replace(/(__require|require)\(["']\.\/([^"']*\.node)["']\)/g, (_, fn, file) => {
         const baseName = file.split('/').pop()
         return `${fn}("./native/${baseName}")`
@@ -316,10 +312,8 @@ const buildPlugin = (options: BuildOptions): Plugin => {
       let externalList: (string | RegExp)[]
 
       if (bundleDeps) {
-        // Build regexes to mark platform-specific binary packages as external.
-        // e.g. "@node-rs/argon2" → matches "@node-rs/argon2-darwin-arm64", "@node-rs/argon2-linux-x64-musl" etc.
-        // The main package JS is still bundled; only the platform binary sub-packages are external.
-        // 构建正则将平台特定的二进制包标记为 external。主包 JS 仍然打包，仅排除平台二进制子包。
+        // Mark platform-specific binary packages as external; the main package JS is still bundled / 将平台特定的二进制子包标记为 external，主包 JS 仍然打包
+        // For example, "@node-rs/argon2" matches "@node-rs/argon2-darwin-arm64" and "@node-rs/argon2-linux-x64-musl" / 例如，"@node-rs/argon2" 匹配 "@node-rs/argon2-darwin-arm64" 和 "@node-rs/argon2-linux-x64-musl"
         const nativeBinaryPatterns = nativeDeps.map((pkg) => {
           const escaped = pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
           return new RegExp(`^${escaped}-`)
@@ -333,8 +327,7 @@ const buildPlugin = (options: BuildOptions): Plugin => {
       return {
         ssr: {
           target: 'node',
-          // When bundleDeps is true, inline all node_modules except nativeDeps
-          // bundleDeps 为 true 时，将所有 node_modules 打包进 bundle（nativeDeps 除外）
+          // When `bundleDeps` is true, inline all node_modules except `nativeDeps` / `bundleDeps` 为 true 时，将所有 node_modules 打包进 bundle（`nativeDeps` 除外）
           noExternal: bundleDeps ? true : undefined,
         },
         build: {

@@ -38,7 +38,7 @@ export function createRedisClientSessionStore(redis: Pick<Redis, 'get' | 'eval' 
       return (await redis.eval(rotateScript, 3, sessionKey(id), refreshKey(id, previousHash), refreshKey(id, nextHash))) === 1
     },
     async revoke(id) {
-      // Remaining refresh hashes expire naturally and cannot be used without the session.
+      // Remaining refresh hashes expire naturally and cannot be used without the session / 剩余的刷新令牌哈希会自然过期，且无法在没有会话的情况下使用
       await redis.del(sessionKey(id))
     },
   }

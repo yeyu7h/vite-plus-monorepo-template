@@ -84,7 +84,7 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
     initialize(key: string, restoredRecords: readonly AdminTabRecord[]) {
       if (this.initialized && this.storageKey === key) return
 
-      // 切换 `storageKey` 时重建所有运行时索引
+      // Rebuild all runtime indexes when `storageKey` changes / 切换 `storageKey` 时重建所有运行时索引
       this.storageKey = key
       this.records = dedupeRecords(restoredRecords)
       this.refreshVersions = {}
@@ -107,7 +107,7 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
 
         const state = JSON.parse(rawState) as unknown
         if (!isPersistedState(state)) {
-          // 无效快照直接清理，避免下次重复解析损坏数据
+          // Discard invalid snapshots to avoid repeatedly parsing corrupt data / 直接清理无效快照，避免下次重复解析损坏数据
           removePersistedState(key)
           return []
         }
@@ -236,7 +236,7 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
       const fallback = this.records.find((item) => item.key === fallbackKey)
       if (!fallback) return void 0
 
-      // 回退目标必须留在列表中；固定标签和声明不可关闭的标签也不会被批量关闭。
+      // Keep the fallback target in the list; pinned tabs and tabs marked unclosable also survive bulk close / 回退目标必须留在列表中；固定标签和声明不可关闭的标签也不会被批量关闭
       const closingKeys = new Set(keys)
       closingKeys.delete(fallbackKey)
       const removed = this.records.filter((item) => closingKeys.has(item.key) && !item.pinned && item.closable !== false)
@@ -244,7 +244,7 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
 
       const removedKeys = new Set(removed.map((item) => item.key))
       this.records = this.records.filter((item) => !removedKeys.has(item.key))
-      // 与单个关闭操作保持一致，释放已关闭页面的缓存和滚动状态。
+      // Release cache and scroll state for closed pages, consistent with single-tab close / 与单个关闭操作保持一致，释放已关闭页面的缓存和滚动状态
       for (const item of removed) {
         this.renderedKeys.delete(item.key)
         delete this.refreshVersions[item.key]
@@ -252,7 +252,7 @@ export const useAdminTabStore = defineStore('admin-layout-tabs', {
       }
 
       const activeClosed = removedKeys.has(this.activeKey)
-      // 仅在当前页被移除时切换激活项；调用方据此执行一次路由跳转。
+      // Change the active item only if the current page is removed; the caller then navigates once / 仅在当前页被移除时切换激活项；调用方据此执行一次路由跳转
       if (activeClosed) this.activeKey = fallbackKey
       persistTabs(this)
       return activeClosed ? fallback.viewPath : void 0
@@ -338,7 +338,7 @@ function dedupeRecords(records: readonly AdminTabRecord[]) {
  * @returns 更新后的标签页记录
  */
 function upsertRecord(records: readonly AdminTabRecord[], record: AdminTabRecord): AdminTabRecord[] {
-  // 复用 key 时替换完整快照，避免遗留上一页的 iframeSrc 或 routeName
+  // Replace the entire snapshot when reusing a key to avoid retaining the previous page's `iframeSrc` or `routeName` / 复用 key 时替换完整快照，避免遗留上一页的 `iframeSrc` 或 `routeName`
   const existingIndex = records.findIndex((item) => item.key === record.key)
   if (existingIndex !== -1) return records.map((item, index) => (index === existingIndex ? { ...record, pinned: records[index]?.pinned ?? record.pinned } : item))
   const limit = record.meta.maxNumOfOpenTab ?? -1
@@ -346,7 +346,7 @@ function upsertRecord(records: readonly AdminTabRecord[], record: AdminTabRecord
   if (limit > 0) {
     const siblings = records.filter((item) => item.routeName === record.routeName)
     if (siblings.length >= limit) {
-      // 固定标签不参与自动回收，优先淘汰最早的普通同路由标签
+      // Exclude pinned tabs from automatic eviction and remove the oldest regular tab on the same route first / 固定标签不参与自动回收，优先淘汰最早的普通同路由标签
       const evictable = siblings.find((item) => !item.pinned)
       if (evictable) remaining = remaining.filter((item) => item.key !== evictable.key)
     }
@@ -368,7 +368,7 @@ function orderPinnedRecords(records: readonly AdminTabRecord[]): AdminTabRecord[
 function persistTabs(storeState: Pick<AdminTabStoreState, 'initialized' | 'records' | 'storageKey'>) {
   if (!storeState.initialized || typeof sessionStorage === 'undefined') return
 
-  // 仅持久化用户设置的固定状态，唯一标签的强制固定由 tabs getter 计算
+  // Persist only user-set pinning; the tabs getter computes forced pinning for the sole tab / 仅持久化用户设置的固定状态，唯一标签的强制固定由 tabs getter 计算
   const state: PersistedAdminTabState = {
     tabs: storeState.records.map(({ pinned, to, viewPath }) => ({ ...(pinned ? { pinned: true } : {}), to, viewPath })),
     version: PERSISTENCE_VERSION,
@@ -377,7 +377,7 @@ function persistTabs(storeState: Pick<AdminTabStoreState, 'initialized' | 'recor
   try {
     sessionStorage.setItem(storeState.storageKey, JSON.stringify(state))
   } catch {
-    // 浏览器禁用存储或配额耗尽时，`Tab` 仍保持当前内存行为
+    // Keep the current in-memory `Tab` behavior when browser storage is disabled or full / 浏览器禁用存储或配额耗尽时，`Tab` 保持当前内存行为
   }
 }
 
@@ -426,6 +426,6 @@ function removePersistedState(key: string) {
   try {
     sessionStorage.removeItem(key)
   } catch {
-    // 浏览器禁用存储时只清理内存状态
+    // Only clear in-memory state when browser storage is disabled / 浏览器禁用存储时只清理内存状态
   }
 }

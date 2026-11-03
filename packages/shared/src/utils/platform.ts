@@ -1,13 +1,8 @@
-// Browser detection is based on Quasar's latest Platform implementation:
-//
-// 浏览器检测基于 Quasar 最新的 Platform 实现
+// Browser detection is based on Quasar's latest Platform implementation / 浏览器检测基于 Quasar 最新的 Platform 实现
 //
 // https://github.com/quasarframework/quasar/blob/dev/ui/src/plugins/platform/Platform.js
 //
-// This module deliberately has no runtime dependencies. It also avoids direct
-// access to DOM globals so that importing it during SSR is safe.
-//
-// 本模块有意保持零运行时依赖，同时避免直接访问 DOM 全局对象，以确保在 SSR 期间安全导入
+// This module has no runtime dependencies and avoids direct DOM globals for safe SSR imports / 本模块保持零运行时依赖并避免直接访问 DOM 全局对象，以确保 SSR 期间安全导入
 
 type BrowserToken = 'chrome' | 'crios' | 'edge' | 'edg' | 'edga' | 'edgios' | 'firefox' | 'fxios' | 'opera' | 'opr' | 'safari' | 'vivaldi' | 'webkit'
 type PlatformToken = 'android' | 'cros' | 'ipad' | 'iphone' | 'kindle' | 'linux' | 'mac' | 'silk' | 'win'
@@ -91,15 +86,15 @@ export interface PlatformEnvironment {
    */
   iframe?: boolean
   /**
-   * Value of navigator.maxTouchPoints.
+   * Value of `navigator.maxTouchPoints`.
    *
-   * navigator.maxTouchPoints 的值
+   * `navigator.maxTouchPoints` 的值
    */
   maxTouchPoints?: number
   /**
-   * Value of navigator.userAgentData.mobile.
+   * Value of `navigator.userAgentData.mobile`.
    *
-   * navigator.userAgentData.mobile 的值
+   * `navigator.userAgentData.mobile` 的值
    */
   mobileUserAgentData?: boolean
   /**
@@ -158,9 +153,9 @@ export interface PlatformEnvironment {
  *
  * 也可以通过 `NativeApp/<name>/<version>` 用户代理标识识别相同的元数据
  *
- * The platform field is optional and can usually be inferred from the user agent
+ * The `platform` field is optional and can usually be inferred from the user agent
  *
- * platform 字段是可选的，通常可以从用户代理中推断
+ * `platform` 字段是可选的，通常可以从用户代理中推断
  */
 export interface NativeAppMetadata {
   /**
@@ -668,24 +663,16 @@ export function parsePlatform(userAgentInput: unknown, environment: PlatformEnvi
   info.mobile = knownMobile || userAgent.includes('mobile')
   info.desktop = !info.mobile
 
-  // All browsers on an iOS device use WebKit. Chromium-based desktop browsers
-  // retain Quasar's historical webkit-family flag for compatibility.
-  //
-  // iOS 设备上的所有浏览器都使用 WebKit，基于 Chromium 的桌面浏览器则保留
-  // Quasar 历史上的 WebKit 浏览器家族兼容标识
+  // All iOS browsers use WebKit; Chromium-based desktop browsers retain Quasar's historical WebKit flag for compatibility / iOS 浏览器均使用 WebKit；基于 Chromium 的桌面浏览器保留 Quasar 历史上的 WebKit 兼容标识
   info.ios = info.ipad || info.iphone
   info.webkit = info.webkit || info.ios || info.chrome || info.opera || info.safari || info.vivaldi || (info.mobile && !info.ios && !knownMobile)
 
-  // Android stock browsers can carry a Safari token without being Safari.
-  //
-  // Android 原生浏览器可能包含 Safari 标识，但并不是真正的 Safari
+  // Android stock browsers can carry a Safari token without being Safari / Android 原生浏览器可能包含 Safari 标识，但并不是真正的 Safari
   if (info.safari && info.android) info.name = 'android'
   else if (info.safari && info.kindle) info.name = 'kindle'
   else if (info.safari && info.silk) info.name = 'silk'
 
-  // Prefer an explicitly injected marker and fall back to the NativeApp UA token.
-  //
-  // 优先使用明确注入的标识，未注入时回退到 NativeApp 用户代理标识
+  // Prefer an explicitly injected marker and fall back to the NativeApp UA token / 优先使用明确注入的标识，未注入时回退到 NativeApp 用户代理标识
   const nativeApp = environment.nativeApp ?? getUserAgentNativeApp(userAgent)
   if (nativeApp) {
     info.nativeApp = true
@@ -708,9 +695,7 @@ function readRuntimeEnvironment(): { environment: PlatformEnvironment; userAgent
   try {
     iframe = runtime.self !== void 0 && runtime.top !== void 0 && runtime.self !== runtime.top
   } catch {
-    // Access to window.top may be restricted by the host environment.
-    //
-    // 宿主环境可能会限制对 window.top 的访问
+    // Access to `window.top` may be restricted by the host environment / 宿主环境可能会限制对 `window.top` 的访问
   }
 
   return {

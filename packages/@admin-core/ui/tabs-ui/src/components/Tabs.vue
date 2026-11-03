@@ -302,7 +302,7 @@ function isActiveTab(tab: AdminTabItem) {
     outline: none;
   }
 
-  /* 用伪元素绘制激活指示线，默认收缩为 0，不占用 Tab 的布局空间 */
+  /* Draw the active indicator with a pseudo-element, collapsed to 0 so it takes no Tab layout space / 用伪元素绘制激活指示线，默认收缩为 0，不占用 Tab 的布局空间 */
   &::after {
     pointer-events: none;
     position: absolute;
@@ -314,7 +314,7 @@ function isActiveTab(tab: AdminTabItem) {
     content: '';
   }
 
-  /* 标题过长时在右侧渐隐，避免文字直接截断影响关闭按钮的视觉间距 */
+  /* Fade long titles on the right to preserve visual spacing around the close button / 标题过长时在右侧渐隐，避免文字直接截断影响关闭按钮的视觉间距 */
   .tab-title {
     mask-image: linear-gradient(to right, black calc(100% - 0.75rem), transparent);
     mask-repeat: no-repeat;

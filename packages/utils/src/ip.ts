@@ -14,7 +14,7 @@ export function normalizeIp(raw: string, unknownValue = 'unknown'): string {
     if (i > 0) return s.slice(1, i)
   }
 
-  // ::ffff:192.168.0.1 (IPv4-mapped IPv6)
+  // ::ffff:192.168.0.1 (IPv4-mapped IPv6) / ::ffff:192.168.0.1（IPv4 映射的 IPv6 地址）
   const t = s.replace(/^::ffff:/i, '')
 
   // 1.2.3.4:3000 (only truncate when matching "IPv4 + single port" pattern) / 1.2.3.4:3000（仅当符合"IPv4 + 单端口"的形态时才截断）

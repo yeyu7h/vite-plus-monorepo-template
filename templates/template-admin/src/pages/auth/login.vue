@@ -79,7 +79,7 @@ async function handleLogin(event: FormSubmitEvent<Credentials>) {
       },
     )
   } catch {
-    // 登录失败后验证码需要重新验证，请求错误由响应拦截器统一处理。
+    // After login fails, verify the captcha again; the response interceptor handles request errors / 登录失败后验证码需要重新验证，请求错误由响应拦截器统一处理
     resetCaptcha()
   }
 }

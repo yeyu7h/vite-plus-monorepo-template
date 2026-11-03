@@ -41,7 +41,7 @@ function createLockForKey(key: string, ttl: number) {
 /**
  * Execute Effect under distributed lock protection
  *
- * Uses Effect.acquireUseRelease to ensure safe lock acquisition and release
+ * Uses `Effect.acquireUseRelease` to ensure safe lock acquisition and release
  * Integrates redlock-universal's acquire/release API with Effect's resource management
  *
  * @param key Lock key name / 锁的键名
@@ -50,7 +50,7 @@ function createLockForKey(key: string, ttl: number) {
  *
  * 在分布式锁保护下执行 Effect
  *
- * 使用 Effect.acquireUseRelease 确保锁的安全获取与释放
+ * 使用 `Effect.acquireUseRelease` 确保锁的安全获取与释放
  * 将 redlock-universal 的 acquire/release API 与 Effect 的资源管理集成
  */
 export const withLock = <A, E, R>(key: string, effect: Effect.Effect<A, E, R>, options: LockOptions = {}): Effect.Effect<A, E | LockAcquisitionError, R> => {

@@ -15,7 +15,7 @@ export type AdminMenuIcon = AdminMenuImageIcon | string
 export interface AdminMenuItem {
   /** 当前菜单项是否处于激活态 */
   active?: boolean
-  /** 菜单项自身的路由路径，用于精确匹配；与后端菜单 id、外链跳转地址独立 */
+  /** 菜单项自身的路由路径，用于精确匹配；与后端菜单 `id`、外链跳转地址独立 */
   activePath?: string
   /** 当前菜单项要求的权限标识 */
   authority?: AdminMenuAuthority

@@ -65,6 +65,6 @@ export function saveThemePreferences(preferences: ThemePreferences) {
   try {
     localStorage.setItem(THEME_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
   } catch {
-    // Keep the applied preference for this session when storage is unavailable.
+    // Keep the applied preference for this session when storage is unavailable / 存储不可用时在当前会话保留已应用的偏好
   }
 }

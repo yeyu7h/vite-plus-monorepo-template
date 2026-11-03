@@ -24,9 +24,9 @@ export type NodeBuildOptions = {
     timeoutMs?: number
   }
   /**
-   * Whether to wrap the original app with mainApp
+   * Whether to wrap the original app with `mainApp`
    * When enabled, creates a Hono instance to wrap the original app for Edge Runtime compatibility
-   * 是否使用 mainApp 包装原始 app
+   * 是否使用 `mainApp` 包装原始 app
    * 启用后会创建一个 Hono 实例包装原始 app，兼容 Edge Runtime
    * @default false
    */

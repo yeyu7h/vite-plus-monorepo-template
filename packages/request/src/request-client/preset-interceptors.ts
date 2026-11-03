@@ -110,7 +110,7 @@ export const authenticateResponseInterceptor = ({ client, doReAuthenticate, doRe
       try {
         await doReAuthenticate()
       } catch {
-        // Keep the refresh error as the rejection reason; re-authentication is best effort cleanup.
+        // Keep the refresh error as the rejection reason; re-authentication is best-effort cleanup / 保留刷新错误作为拒绝原因；重新认证仅作为尽力执行的清理
       }
 
       throw refreshError

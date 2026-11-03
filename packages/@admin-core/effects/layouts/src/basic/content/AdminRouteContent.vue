@@ -222,7 +222,7 @@ function pruneDisconnectedScrollElements() {
   }
 
   for (const [elementKey, element] of scrollElements) {
-    // Hidden KeepAlive pages are detached too; only drop nodes from the active page or closed tabs.
+    // Hidden KeepAlive pages are detached too; only drop nodes from the active page or closed tabs / 隐藏的 KeepAlive 页面也会脱离文档；只移除活动页面或已关闭标签的节点
     if (element.isConnected || (!activePositions.has(elementKey) && retainedElementKeys.has(elementKey))) continue
 
     scrollElements.delete(elementKey)

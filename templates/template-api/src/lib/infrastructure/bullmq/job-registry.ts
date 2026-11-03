@@ -20,7 +20,7 @@ export const EmailSendWelcomeSchema = z.object({
 export const EmailSendResetPasswordSchema = z.object({
   email: z.email('邮箱格式不正确'),
   resetToken: z.string().min(1, '重置令牌不能为空'),
-  // ISO 8601 datetime string (e.g., "2024-01-01T12:00:00Z")
+  // ISO 8601 datetime string (e.g., "2024-01-01T12:00:00Z") / ISO 8601 日期时间字符串（如 "2024-01-01T12:00:00Z"）
   expiresAt: z.string().refine(
     (val) => {
       try {
@@ -35,7 +35,7 @@ export const EmailSendResetPasswordSchema = z.object({
 })
 
 export const CleanupDailySchema = z.object({
-  // YYYY-MM-DD format
+  // YYYY-MM-DD format / YYYY-MM-DD 格式
   targetDate: z
     .string()
     .refine(

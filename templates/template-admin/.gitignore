@@ -1,4 +1,4 @@
-# Logs
+# Logs / 日志
 logs
 *.log
 npm-debug.log*
@@ -14,7 +14,7 @@ dist-ssr
 coverage
 *.local
 
-# Editor directories and files
+# Editor directories and files / 编辑器目录和文件
 .vscode/*
 !.vscode/extensions.json
 .idea

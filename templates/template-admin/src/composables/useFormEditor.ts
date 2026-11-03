@@ -19,7 +19,7 @@ export function useFormEditor<Item, State extends object>(options: FormEditorOpt
         if (!Object.hasOwn(next, key)) Reflect.deleteProperty(form, key)
       }
       Object.assign(form, next)
-      // Remount UForm to clear validation errors when changing records.
+      // Remount UForm to clear validation errors when changing records / 切换记录时重新挂载 UForm 以清除校验错误
       formKey.value += 1
     } finally {
       hydrating.value = false
@@ -33,7 +33,7 @@ export function useFormEditor<Item, State extends object>(options: FormEditorOpt
   }
 
   function close() {
-    // Keep the state intact while the closing transition runs.
+    // Keep the state intact while the closing transition runs / 关闭过渡期间保持状态不变
     open.value = false
   }
 

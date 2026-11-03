@@ -1,6 +1,6 @@
 import { defineAdminConfig } from '@monorepo/vite-config'
 
-// Menu groups add 0.25rem padding; the item highlight is inset another 1px.
+// Menu groups add 0.25rem padding; the item highlight is inset another 1px / 菜单分组增加 0.25rem 内边距，菜单项高亮再向内缩进 1px
 const insetMenuItemRadius = 'before:rounded-[max(0px,calc(var(--radius-lg)_-_0.25rem_-_1px))]'
 
 export default defineAdminConfig({

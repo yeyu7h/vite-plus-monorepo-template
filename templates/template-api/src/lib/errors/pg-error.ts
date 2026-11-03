@@ -25,7 +25,7 @@ export const pgErrorMessages: Record<string, { message: string; statusCode: Cont
 
 export type ExtractedPgError = {
   pgError: postgres.PostgresError
-  /** Failing SQL — only present when the error came through Drizzle's query wrapper / 仅在错误经由 Drizzle 查询包装时存在 */
+  /** Failing SQL — only present when the error came through Drizzle's `query` wrapper / 仅在错误经由 Drizzle 查询包装时存在 */
   query?: string
   params?: readonly unknown[]
 }
@@ -33,7 +33,7 @@ export type ExtractedPgError = {
 /**
  * Recursively unwrap arbitrary thrown values to find the underlying postgres.PostgresError.
  *
- * Drizzle v1 wraps every query failure in `DrizzleQueryError`（带 query/params），
+ * Drizzle v1 wraps every `query` failure in `DrizzleQueryError`（带 `query`/`params`），
  * 而 `drizzle-orm/effect-core` 的 `EffectDrizzleQueryError` 是 Schema.TaggedError，但拥有相同的字段形状。
  * 这里用 instanceof + 鸭子类型双重判断，避免被迫 import effect-core 模块。
  */

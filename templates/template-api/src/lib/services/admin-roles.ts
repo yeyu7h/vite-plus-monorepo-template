@@ -34,7 +34,7 @@ export function resolveEnabledRoleIds(directRoles: readonly string[], enabledRol
   while (queue.length > 0) {
     const role = queue.shift()!
     for (const parent of parentsByChild.get(role) ?? []) {
-      // The built-in administrator role must be assigned explicitly.
+      // The built-in administrator role must be assigned explicitly / 内置管理员角色必须显式分配
       if (!enabledRoleIds.has(parent) || (parent === 'admin' && !direct.has('admin')) || effective.has(parent)) continue
       effective.add(parent)
       queue.push(parent)

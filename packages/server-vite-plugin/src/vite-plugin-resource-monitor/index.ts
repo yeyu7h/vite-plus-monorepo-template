@@ -2,9 +2,9 @@
  * Vite resource monitor plugin
  * Vite 资源监控插件
  *
- * Uses process.getActiveResourcesInfo() to monitor system resource changes before and after HMR
+ * Uses `process.getActiveResourcesInfo()` to monitor system resource changes before and after HMR
  * Detects potential resource leaks (TCP connections, timers, etc.)
- * 使用 process.getActiveResourcesInfo() 监控 HMR 前后的系统资源变化
+ * 使用 `process.getActiveResourcesInfo()` 监控 HMR 前后的系统资源变化
  * 检测潜在的资源泄漏（TCP 连接、定时器等）
  *
  * Improvements:

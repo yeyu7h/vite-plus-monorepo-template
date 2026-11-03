@@ -35,7 +35,7 @@ export async function shutdown(): Promise<void> {
   if (!hasSingleton(KEY)) return
 
   try {
-    // BullMQ shutdown 由 destroyAllSingletons 自动处理
+    // BullMQ shutdown is handled by `destroyAllSingletons` / BullMQ 关闭由 `destroyAllSingletons` 自动处理
     logger.info('[Bootstrap]: 正在关闭所有连接')
     await destroyAllSingletons()
     logger.info('[Bootstrap]: 所有连接已关闭')

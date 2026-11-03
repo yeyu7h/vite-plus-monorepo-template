@@ -1,4 +1,4 @@
-// We are using zodToOpenAPIRegistry to retrieve the example from the schemas.
+// Use `zodToOpenAPIRegistry` to retrieve the example from the schemas / 使用 `zodToOpenAPIRegistry` 从 Schema 中获取示例
 import { zodToOpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 import { z } from '@hono/zod-openapi'
 import { describe, expect, it } from 'vite-plus/test'

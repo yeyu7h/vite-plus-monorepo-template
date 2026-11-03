@@ -41,7 +41,7 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
         return
       }
 
-      // 同一路径重复进入时只更新标签内容 不追加重复标签
+      // Update the existing tab when revisiting the same path instead of adding a duplicate / 同一路径重复进入时只更新标签内容，不追加重复标签
       tabStore.setActive(currentTab.key)
       tabStore.upsert(currentTab)
     },
@@ -150,7 +150,7 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
         resolveRoute: (path) => {
           const resolved = router.resolve(path)
 
-          // 重新包一层统一结构 让 route-tab helper 不直接依赖 vue-router 的具体类型
+          // Wrap the value in a common structure so the route-tab helper does not depend on vue-router types / 使用统一结构包装，让 route-tab helper 不直接依赖 vue-router 的具体类型
           return {
             meta: resolved.meta as AdminRouteMeta,
             path: resolved.fullPath,
@@ -183,7 +183,7 @@ export function useAdminTabbar(options: UseAdminTabbarOptions = {}) {
 function createTabRecordFromPath(snapshot: PersistedAdminTab, router: Router): AdminTabRecord | undefined {
   const resolved = router.resolve(snapshot.viewPath)
 
-  // 只恢复当前账号重新注册后的权限路由，未知地址会落到 fallback，不能变成旧 Tab
+  // Restore only routes re-registered for the current account; unknown addresses fall back and cannot become old tabs / 只恢复当前账号重新注册后的权限路由，未知地址会落到 fallback，不能变成旧 Tab
   if (!resolved.matched.some((record) => record.meta.source === 'access')) return void 0
 
   const record = createAdminTabRecord(
@@ -199,7 +199,7 @@ function createTabRecordFromPath(snapshot: PersistedAdminTab, router: Router): A
       resolveRoute: (path) => {
         const resolved = router.resolve(path)
 
-        // 初始 tab 和运行时新增 tab 走同一套解析逻辑 避免首屏与后续行为不一致
+        // Use the same resolution logic for initial and runtime tabs to keep their behavior consistent / 初始 tab 和运行时新增 tab 使用同一套解析逻辑，避免行为不一致
         return {
           meta: resolved.meta as AdminRouteMeta,
           path: resolved.fullPath,

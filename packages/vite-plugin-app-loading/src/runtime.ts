@@ -22,7 +22,7 @@ function unmountGlobalLoading() {
   loadingElement.addEventListener('transitionend', removeLoading, { once: true })
   window.setTimeout(removeLoading, TRANSITION_FALLBACK_MS)
 
-  // Wait until the visible loading state has been painted before starting the transition.
+  // Wait until the visible loading state has been painted before starting the transition / 等待可见的加载状态完成绘制后再开始过渡
   window.requestAnimationFrame(() => {
     window.requestAnimationFrame(() => {
       loadingElement.setAttribute('aria-hidden', 'true')

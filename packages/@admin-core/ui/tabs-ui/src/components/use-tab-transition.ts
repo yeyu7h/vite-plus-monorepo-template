@@ -24,7 +24,7 @@ interface OpeningTabTransition {
  * @param options
  */
 export function useTabTransition(options: UseTabTransitionOptions) {
-  // 每个 Tab 的动画状态集中保存下一帧阶段标记
+  // Store each Tab's next-frame animation phase marker in one place / 集中保存每个 Tab 的下一帧动画阶段标记
   const closingTabs = ref<Record<string, ClosingTabTransition>>({})
   const openingTabs = ref<Record<string, OpeningTabTransition>>({})
   const closeFallbackTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -63,7 +63,7 @@ export function useTabTransition(options: UseTabTransitionOptions) {
         const transition = closingTabs.value[id]
         if (!transition) return
 
-        // 先渲染基准宽度，再切到 0px，让浏览器产生 flex-basis transition
+        // Render the base width before switching to 0px to trigger the flex-basis transition / 先渲染基准宽度，再切到 0px，让浏览器产生 flex-basis transition
         closingTabs.value = {
           ...closingTabs.value,
           [id]: { ...transition, collapsing: true },
@@ -123,7 +123,7 @@ export function useTabTransition(options: UseTabTransitionOptions) {
    * @param id 即将新增的 Tab 唯一标识
    */
   function prepareTabOpenTransition(id: string) {
-    // 新 tab 先以 0px 进入布局，挂载后再展开到基准宽度
+    // Add the new tab to the layout at 0px, then expand it to the base width after mounting / 新 tab 先以 0px 进入布局，挂载后再展开到基准宽度
     openingTabs.value = {
       ...openingTabs.value,
       [id]: { expanding: false },
@@ -144,7 +144,7 @@ export function useTabTransition(options: UseTabTransitionOptions) {
       const nextTransition = openingTabs.value[id]
       if (!nextTransition) return
 
-      // 测量完成后下一帧切到目标宽度，触发展开动画
+      // Switch to the target width on the next frame after measuring to trigger the expansion / 测量完成后下一帧切到目标宽度，触发展开动画
       openingTabs.value = {
         ...openingTabs.value,
         [id]: { ...nextTransition, expanding: true },

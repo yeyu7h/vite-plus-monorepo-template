@@ -15,7 +15,7 @@ function failure(c: Context<ClientBindings>, error: unknown) {
     if (error.code === 'INVALID_CODE') return c.json(Resp.fail('平台凭证无效，请重新获取后登录', { code: error.code }), 401)
     return c.json(Resp.fail('平台登录暂不可用，请稍后重试', { code: error.code }), 503)
   }
-  // Transport errors may contain secrets, one-use codes and raw responses. Never log them.
+  // Transport errors may contain secrets, one-use codes and raw responses; never log them / 传输错误可能包含密钥、一次性凭证和原始响应，禁止记录
   logger.error({ requestId: c.get('requestId'), errorType: error instanceof Error ? error.name : 'UnknownError' }, '[ClientAuth]: login service unavailable')
   return c.json(Resp.fail('登录服务暂不可用', { code: 'AUTH_UNAVAILABLE' }), 503)
 }

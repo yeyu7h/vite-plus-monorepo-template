@@ -27,11 +27,11 @@ export default function createApp() {
   app.use(requestId())
 
   /** 2. Logging - record early, including intercepted requests / 日志记录 - 尽早记录，包括被拦截的请求 */
-  // 客户端 tier 的请求日志对观测无价值（高频、用户自助、含 SSE 心跳），跳过以降低 SLS 成本
-  // 公共字典/参数接口同样高频且无营养，一并跳过
-  // Hono Context 对 Variables 是 invariant，pinoLogger 要求 `{ logger }`，而这里是其超集 BaseVariables，需双重断言透传
+  // Skip low-observability client tier request logs (high-frequency, self-service and SSE heartbeats) to reduce SLS costs / 跳过观测价值低的客户端 tier 请求日志（高频、用户自助及 SSE 心跳），降低 SLS 成本
+  // Also skip the high-frequency public dictionary and parameter endpoints / 同时跳过高频的公共字典和参数接口
+  // Hono Context is invariant in Variables; `pinoLogger` expects `{ logger }` while `BaseVariables` is a superset, so pass it through with a double assertion / Hono Context 对 Variables 是 invariant，`pinoLogger` 要求 `{ logger }`，而 `BaseVariables` 是其超集，需双重断言透传
   const requestLogger = pinoLogger({ pino: logger })
-  // 精确匹配跳过集合：O(1) 查找，新增路径只需往 Set 里加字符串
+  // Use an exact-match skip set for O(1) lookup; add new paths as strings / 使用精确匹配跳过集合进行 O(1) 查找，新增路径只需往 Set 中加字符串
   const SKIP_LOG_PATHS = new Set<string>(['/api/dicts', '/api/params'])
   app.use(async (c, next) => {
     const path = c.req.path
@@ -49,7 +49,7 @@ export default function createApp() {
   const globalRateLimit = createRateLimiter({ windowMs: RATE_LIMIT_WINDOW_MS, limit: RATE_LIMIT_MAX_REQUESTS, prefix: 'rl:global:' })
   app.use((c, next) => {
     const path = c.req.path.replace(/\/+$/, '')
-    // Probes must remain reachable when the Redis-backed limiter is unavailable.
+    // Probes must remain reachable when the Redis-backed limiter is unavailable / Redis 限流器不可用时探针仍必须可访问
     if ((c.req.method === 'GET' || c.req.method === 'HEAD') && (path === '/api/health' || path === '/api/health/ready')) return next()
     return globalRateLimit(c, next)
   })

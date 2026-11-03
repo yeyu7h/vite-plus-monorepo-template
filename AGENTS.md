@@ -25,3 +25,7 @@ release. Add a tool name to select part of the graph. For example, run
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
+
+## 仓库开发规范
+
+业务应用、共享包和模板的开发与维护遵循 [开发规范](docs/development.md)。同时遵循目标目录下更具体的 `AGENTS.md` 和适用的仓库技能。

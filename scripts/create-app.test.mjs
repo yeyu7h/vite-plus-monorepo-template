@@ -55,7 +55,7 @@ test('rejects invalid names and never overwrites an existing app', async (t) => 
   await assert.rejects(createApp('api', 'sample', root), /已存在/)
 })
 
-test('the real API template creates an independent generic app with optional storage and no miniapp business', async (t) => {
+test('the real API template includes client accounts and WeChat login with optional storage', async (t) => {
   const root = await fixture(t)
   const template = join(root, 'templates', 'template-api')
   await rm(template, { recursive: true })
@@ -70,18 +70,27 @@ test('the real API template creates an independent generic app with optional sto
   const packageJson = JSON.parse(await readFile(join(app, 'package.json'), 'utf8'))
   assert.equal(packageJson.name, '@app/generic-api')
   assert.equal(packageJson.dependencies['@monorepo/server-miniapp-auth'], undefined)
-  assert.doesNotMatch(await readFile(join(app, '.env.example'), 'utf8'), /MINIAPP_APPS|USER_UID_PREFIX|CLIENT_SESSION_SECONDS/)
-  assert.match(await readFile(join(app, '.env.example'), 'utf8'), /^STORAGE_PROVIDER=none$/m)
-  assert.doesNotMatch(await readFile(join(app, 'src/env.ts'), 'utf8'), /server-miniapp-auth/)
-  await assert.rejects(readFile(join(app, 'src/routes/client/auth/auth.index.ts')))
-  await assert.rejects(readFile(join(app, 'src/db/schema/client/users/users.ts')))
+  assert.equal(packageJson.dependencies['alipay-sdk'], undefined)
+  const envExample = await readFile(join(app, '.env.example'), 'utf8')
+  assert.match(envExample, /^MINIAPP_APPS='\{\}'$/m)
+  assert.match(envExample, /^CLIENT_JWT_SECRET=$/m)
+  assert.match(envExample, /^STORAGE_PROVIDER=none$/m)
+  assert.match(await readFile(join(app, 'src/routes/client/auth/auth.routes.ts'), 'utf8'), /微信小程序登录/)
+  assert.match(await readFile(join(app, 'src/db/schema/client/users/users.ts'), 'utf8'), /client_users/)
+  assert.match(await readFile(join(app, 'src/lib/services/miniapp-auth/index.ts'), 'utf8'), /api\.weixin\.qq\.com/)
   const migrations = await readdir(join(app, 'migrations'), { withFileTypes: true })
+  const sqlFiles = []
   for (const migration of migrations.filter((entry) => entry.isDirectory() && /^\d/.test(entry.name))) {
     if (!(await readdir(join(app, 'migrations', migration.name))).length) continue
     const sql = await readFile(join(app, 'migrations', migration.name, 'migration.sql'), 'utf8')
-    assert.match(sql, /CREATE TABLE "system_users"/)
-    assert.doesNotMatch(sql, /client_users|user_identities|uid_counters|DROP TABLE/)
+    assert.doesNotMatch(sql, /DROP TABLE/)
+    sqlFiles.push(sql)
   }
+  const sql = sqlFiles.join('\n')
+  assert.match(sql, /CREATE TABLE "system_users"/)
+  assert.match(sql, /CREATE TABLE "client_users"/)
+  assert.match(sql, /CREATE TABLE "client_user_identities"/)
+  assert.match(sql, /CREATE TABLE "client_user_uid_counters"/)
   assert.ok(migrations.some((entry) => entry.name.endsWith('_generic-api-baseline')))
   assert.match(await readFile(join(app, 'compose.rustfs.yaml'), 'utf8'), /dockerfile: apps\/generic-api\/Dockerfile/)
   assert.match(await readFile(join(app, 'src/lib/services/object-storage/config.ts'), 'utf8'), /STORAGE_PROVIDER/)

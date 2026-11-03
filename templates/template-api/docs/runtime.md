@@ -2,12 +2,13 @@
 
 ## 最小配置
 
-从 `.env.example` 复制环境文件，填写数据库、Redis 地址与独立的管理端 JWT 密钥：
+从 `.env.example` 复制环境文件，填写数据库、Redis 地址与独立的管理端和客户端 JWT 密钥：
 
 ```dotenv
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app
 REDIS_URL=redis://localhost:6379/0
 ADMIN_JWT_SECRET=填写至少32字符的随机密钥
+CLIENT_JWT_SECRET=填写不同的至少32字符的随机密钥
 STORAGE_PROVIDER=none
 ```
 

@@ -6,7 +6,7 @@
 
 Scalar 首页位于 `/`，三组 OpenAPI JSON 分别位于 `/api/doc`、`/api/client/doc` 和 `/api/admin/doc`。
 
-默认模板提供管理端账号与认证，不预设客户端的业务用户表、注册方式、UID 或资料生成规则。客户端认证接入方式见 [客户端认证](docs/client-auth.md)。微信、支付宝的完整业务实现已迁至独立的 [小程序示例](../../examples/miniapp-api/README.md)。
+默认模板提供独立的管理端与客户端账号、微信小程序登录、首次注册和客户端会话。微信应用未配置时无法平台登录；配置和接口详见 [微信小程序登录](docs/miniapp-auth.md)。业务应用可调整 UID 和用户资料规则。
 
 对象存储通过 `STORAGE_PROVIDER=none|r2|rustfs` 关闭或选择服务。新应用示例配置为 `none`，省略该变量时保持旧版 R2 行为。RustFS 可选部署、公开图片域名和服务端上传方法见 [对象存储](docs/object-storage.md)。
 
@@ -20,11 +20,11 @@ cp templates/template-api/.env.example templates/template-api/.env
 vp run @app/template-api#dev
 ```
 
-启动前填写至少 32 字符的随机 `ADMIN_JWT_SECRET`。本地运行 PostgreSQL/Redis 时，请将 `.env` 中服务主机名从 `postgres`/`redis` 改为 `localhost`。如使用 Compose，保留默认服务名即可。配置校验与存活、就绪检查见 [运行配置](docs/runtime.md)。
+启动前分别填写至少 32 字符、互不相同的随机 `ADMIN_JWT_SECRET` 和 `CLIENT_JWT_SECRET`。本地运行 PostgreSQL/Redis 时，请将 `.env` 中服务主机名从 `postgres`/`redis` 改为 `localhost`。如使用 Compose，保留默认服务名即可。配置校验与存活、就绪检查见 [运行配置](docs/runtime.md)。
 
 ## 数据库与测试
 
-当前初始迁移只面向新数据库。原有迁移历史完整保存在小程序示例中，已有数据库继续使用原来的迁移链，见 [迁移边界](migrations/README.md)。本模板的迁移不会为已有数据库执行小程序表清理。
+当前迁移链包含原通用模板基线及新增客户端表；历史小程序应用使用独立迁移链，不能混用，见 [迁移边界](migrations/README.md)。
 
 ```bash
 vp run @app/template-api#generate
@@ -44,7 +44,7 @@ vp run @app/template-api#test:storage
 
 ## 可复用边界
 
-框架级能力位于 `@monorepo/server-core`，Refine 查询位于 `@monorepo/server-refine-query`，Vite 服务端插件位于 `@monorepo/server-vite-plugin`，纯工具位于 `@monorepo/utils`。数据库连接、日志、Redis/BullMQ、Casbin 与可配置对象存储保持在 app 内；具体业务应用管理自己的用户、注册和客户端会话。
+框架级能力位于 `@monorepo/server-core`，Refine 查询位于 `@monorepo/server-refine-query`，Vite 服务端插件位于 `@monorepo/server-vite-plugin`，纯工具位于 `@monorepo/utils`。微信登录、客户端用户与会话、数据库连接、日志、Redis/BullMQ、Casbin 和可配置对象存储保持在 app 内。
 
 后续创建 API app 时，应显式向 `createApplication(config, runtime)` 提供环境、版本、route/middleware globs 和 app 根 Hono 实例。
 

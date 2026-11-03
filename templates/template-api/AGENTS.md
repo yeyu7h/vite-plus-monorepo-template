@@ -20,8 +20,8 @@ vp run @app/template-api#seed
 ## Architecture
 
 - `/api/*`：公共接口；`/api/client/*`：客户端 JWT；`/api/admin/*`：管理端 JWT + RBAC + 审计。
-- 默认模板不预设业务用户表或平台登录。客户端认证使用可注入适配器，未配置时拒绝访问；小程序业务参考 `examples/miniapp-api`。
-- 当前 `migrations/` 是新数据库的独立初始迁移链。旧 SQL 与快照完整保存在小程序示例中，不可用本模板对旧业务库执行 `push` 或替换历史。
+- 模板提供独立的客户端账号、微信小程序登录及 Redis 会话。未配置微信应用时不能登录；客户端与管理端认证、账号和密钥保持隔离。
+- 当前 `migrations/` 是独立迁移链。旧 SQL 与快照可在 Git 历史中查阅，不可用本模板对旧业务库执行 `push` 或替换历史。
 - 路由和中间件由 app 自己通过 `import.meta.glob` 提供给 `@monorepo/server-core`。
 - 数据库、日志、Redis、BullMQ、Casbin 和业务 Schema 属于本 app。
 - 跨 app 的 Hono/OpenAPI 生命周期能力放在 `@monorepo/server-core`。

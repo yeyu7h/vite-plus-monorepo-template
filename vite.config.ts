@@ -7,7 +7,7 @@ export default defineConfig({
     '*': 'vp check --fix',
   },
   test: {
-    projects: ['apps/*/vite.config.ts', 'templates/*/vite.config.ts', 'examples/*/vite.config.ts', 'packages/**/vite.config.ts', 'internal/*/vite.config.ts'],
+    projects: ['apps/*/vite.config.ts', 'templates/*/vite.config.ts', 'packages/**/vite.config.ts', 'internal/*/vite.config.ts'],
   },
   fmt: {
     semi: false,
@@ -95,7 +95,7 @@ export default defineConfig({
         },
       },
       {
-        files: ['templates/template-api/**/*.integration.test.ts', 'apps/**/*.integration.test.ts', 'examples/**/*.integration.test.ts'],
+        files: ['templates/template-api/**/*.integration.test.ts', 'apps/**/*.integration.test.ts'],
         rules: {
           'typescript/no-explicit-any': 'off',
           'typescript/unbound-method': 'off',
@@ -114,14 +114,7 @@ export default defineConfig({
         },
       },
       {
-        files: [
-          'templates/template-api/migrations/**/*.ts',
-          'templates/template-api/scripts/**/*.ts',
-          'apps/*/migrations/**/*.ts',
-          'apps/*/scripts/**/*.ts',
-          'examples/*/migrations/**/*.ts',
-          'examples/*/scripts/**/*.ts',
-        ],
+        files: ['templates/template-api/migrations/**/*.ts', 'templates/template-api/scripts/**/*.ts', 'apps/*/migrations/**/*.ts', 'apps/*/scripts/**/*.ts'],
         rules: {
           'typescript/no-explicit-any': 'off',
         },

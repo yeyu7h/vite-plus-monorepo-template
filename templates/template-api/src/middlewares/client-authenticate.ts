@@ -1,26 +1,18 @@
 import type { ClientBindings, ClientJwtPayload } from '@monorepo/server-core'
 import type { MiddlewareHandler } from 'hono'
+import { basePath } from 'hono/route'
 import { Resp } from '@/utils'
+import { ClientAuthError } from '@/lib/services/client-auth/contracts'
 
-export class ClientAuthError extends Error {
-  readonly reason: 'unauthorized' | 'disabled'
-  constructor(reason: 'unauthorized' | 'disabled' = 'unauthorized') {
-    super(reason === 'disabled' ? '账号已被禁用' : '登录凭证无效或已过期')
-    this.name = 'ClientAuthError'
-    this.reason = reason
-  }
-}
-
-/** The business app verifies its own token, session and account, then returns a trusted client identity. */
 export type ClientAuthenticate = (token: string) => Promise<{ payload: ClientJwtPayload }>
 
-const unconfigured: ClientAuthenticate = async () => {
-  throw new ClientAuthError()
-}
-
-/** All client routes are protected. Business login/refresh exemptions must be configured explicitly. */
-export function createClientAuthentication(authenticate: ClientAuthenticate = unconfigured): MiddlewareHandler<ClientBindings> {
+/** Only login and refresh are public; all other client routes require an active session. */
+export function createClientAuthentication(authenticate: ClientAuthenticate): MiddlewareHandler<ClientBindings> {
   return async (c, next) => {
+    // Resolve nested and parameterized mounts before matching tier-relative public routes.
+    const prefix = basePath(c).replace(/\/+$/, '')
+    const path = c.req.path.slice(prefix.length).replace(/\/+$/, '')
+    if (c.req.method === 'POST' && ['/auth/login', '/auth/refresh'].includes(path)) return next()
     const match = /^Bearer\s+(\S+)$/i.exec(c.req.header('Authorization') ?? '')
     if (!match) return c.json(Resp.fail('需要登录', { code: 'UNAUTHORIZED' }), 401)
     try {

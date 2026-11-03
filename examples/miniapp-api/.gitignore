@@ -1,5 +1,0 @@
-.env
-.env.*
-!.env.rustfs.example
-!.env.example
-!.env.test.example

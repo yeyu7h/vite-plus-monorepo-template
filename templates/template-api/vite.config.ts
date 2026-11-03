@@ -47,6 +47,8 @@ export default defineConfig(({ mode }) => {
     DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/postgres',
     REDIS_URL: process.env.TEST_REDIS_URL ?? 'redis://localhost:6379/0',
     ADMIN_JWT_SECRET: 'test-admin-jwt-secret-at-least-32-characters',
+    CLIENT_JWT_SECRET: 'test-client-jwt-secret-at-least-32-characters',
+    MINIAPP_APPS: '{}',
     ACCESS_KEY_ID: 'test-access-key',
     SECRET_ACCESS_KEY: 'test-secret-key',
     ENDPOINT: 'https://example.com',

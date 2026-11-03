@@ -1,6 +1,6 @@
 # Vite+ Monorepo Template
 
-包含独立的 Vue 前台、Vue 管理端与 Clhoria/Hono API 的 Vite+ monorepo 模板。模板源码集中在 `templates/`，用命令复制到 `apps/` 创建新应用。
+包含独立的 Vue 前台、Vue 管理端与 Hono API 的 Vite+ monorepo 模板。模板源码集中在 `templates/`，用命令复制到 `apps/` 创建新应用。
 
 多业务开发、协作与发布约定见 [开发规范](docs/development.md)。
 

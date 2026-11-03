@@ -1,0 +1,22 @@
+{
+  "name": "@monorepo/api-test-suite",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./roles": "./src/roles.ts",
+    "./users": "./src/users.ts",
+    "./refine-query": "./src/refine-query.ts"
+  },
+  "dependencies": {
+    "@monorepo/server-core": "workspace:*",
+    "@monorepo/server-refine-query": "workspace:*",
+    "casbin": "catalog:",
+    "drizzle-orm": "catalog:database",
+    "vite-plus": "catalog:"
+  },
+  "devDependencies": {
+    "@monorepo/tsconfig": "workspace:*",
+    "@types/node": "catalog:"
+  }
+}

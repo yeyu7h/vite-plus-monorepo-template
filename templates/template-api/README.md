@@ -38,6 +38,8 @@ vp run @app/template-api#test:storage
 
 `test` 默认排除 `*.integration.test.ts`；集成测试需要专用 PostgreSQL、Redis，以及已执行的迁移和 seed。必须显式设置 `TEST_DATABASE_URL`、`TEST_REDIS_URL`，缺少地址会在加载测试前终止。
 
+角色、用户和 Refine 查询执行器的共同测试契约维护在 [`internal/api-test-suite`](../../internal/api-test-suite/README.md)，应用内的测试入口负责注入本应用的依赖与数据清理。
+
 `test:storage` 独立使用专用 RustFS；必须显式设置 `TEST_STORAGE_ENDPOINT`、`TEST_STORAGE_ACCESS_KEY_ID`、`TEST_STORAGE_SECRET_ACCESS_KEY`、`TEST_STORAGE_BUCKET_NAME`，默认测试和数据库集成测试均不连接对象存储。配置选择日志不进行网络探测。
 
 ## 可复用边界

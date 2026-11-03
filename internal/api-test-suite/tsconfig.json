@@ -1,0 +1,5 @@
+{
+  "extends": "@monorepo/tsconfig/node-bundler.json",
+  "compilerOptions": { "allowImportingTsExtensions": true },
+  "include": ["src"]
+}

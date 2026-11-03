@@ -76,6 +76,7 @@ export const userRoles = snakeCase.table("user_roles", {
 ```
 
 **选择原则**：
+
 - 业务实体表：使用 `...baseColumns`（需要审计谁创建/修改了数据）
 - 基础设施表：使用 `baseColumns.id` + `baseColumns.createdAt`（系统自动管理）
 - 关联表/无主键表：不使用 baseColumns
@@ -304,6 +305,7 @@ items: jsonb().$type<DictItem[]>().default([]).notNull(),
 ```
 
 使用规则：
+
 - 必须使用 `$type<T>()` 指定 TypeScript 类型
 - 数组类型建议设置 `.default([])`
 - 根据业务需要决定是否 `.notNull()`
@@ -322,12 +324,14 @@ vp run @app/template-api#migrate       # 执行迁移
 ```
 
 **重要规则**：
+
 - 不要修改已执行的迁移文件和 `meta/` 文件夹；未执行的迁移文件可以修改或删除后重新生成
 - 开发环境只用 `push`，生产环境用 `generate` + `migrate`
 
 ## 数据库操作（无 MCP 时）
 
 如果没有数据库 MCP：
+
 1. 查看 `.env` 获取数据库连接信息
 2. 使用 Python + psycopg2 执行 SQL 查询
 3. 修改数据后需同步执行 drizzle-kit 命令

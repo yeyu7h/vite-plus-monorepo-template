@@ -38,6 +38,8 @@
     "oxfmt",
     "oxlint",
     "pino",
+    "pkey",
+    "psycopg",
     "ptype",
     "RUSTFS",
     "tsgo",

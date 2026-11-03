@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "ready": "vp check && vp run test:scaffold && vp run -r test && vp run -r build",
+    "ready": "vp check && vp run test:scaffold && vp test && vp run -r build",
     "dev": "vp run @app/template-admin#dev",
     "dev:admin": "vp run @app/template-admin#dev",
     "dev:web": "vp run @app/template-web#dev",

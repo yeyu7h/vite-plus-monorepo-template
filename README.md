@@ -70,6 +70,8 @@ vp run @app/template-api#test:integration
 vp run ready
 ```
 
+Gitea 和 GitHub 分别使用 `.gitea/workflows/ci.yml`、`.github/workflows/ci.yml`，在向 `main` 推送或提交 Pull Request 时执行同一套 `ready` 检查。两者使用 Node 24、仓库声明的 Vite+ 版本和锁文件安装依赖。自建 Gitea 需要启用仓库 Actions 并注册 Runner，配置步骤见 [持续集成](docs/ci.md)。该流程包含脚手架测试、默认单元测试与构建，不连接真实数据库、Redis 或对象存储；专用服务集成测试仍按上面的显式配置单独执行。
+
 ## Docker
 
 在仓库根目录运行：

@@ -46,7 +46,6 @@ export default defineConfig(({ mode }) => {
     LOG_LEVEL: 'silent',
     DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/postgres',
     REDIS_URL: process.env.TEST_REDIS_URL ?? 'redis://localhost:6379/0',
-    CLIENT_JWT_SECRET: 'test-client-jwt-secret-at-least-32-characters',
     ADMIN_JWT_SECRET: 'test-admin-jwt-secret-at-least-32-characters',
     ACCESS_KEY_ID: 'test-access-key',
     SECRET_ACCESS_KEY: 'test-secret-key',
@@ -84,10 +83,6 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       tsconfigPaths: true,
-    },
-    // Keep this workspace package and its transitive SDK resolvable after pnpm deploy relocates the app.
-    ssr: {
-      external: ['@monorepo/server-miniapp-auth'],
     },
     test: runStorageIntegration
       ? {

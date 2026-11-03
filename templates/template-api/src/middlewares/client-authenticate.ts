@@ -1,21 +1,31 @@
-import type { ClientBindings } from '@monorepo/server-core'
+import type { ClientBindings, ClientJwtPayload } from '@monorepo/server-core'
 import type { MiddlewareHandler } from 'hono'
 import { Resp } from '@/utils'
-import { ClientAuthError } from '@/lib/services/client-auth/contracts'
-import type { createClientSessionService } from '@/lib/services/client-auth/sessions'
 
-type Authenticate = ReturnType<typeof createClientSessionService>['authenticate']
+export class ClientAuthError extends Error {
+  readonly reason: 'unauthorized' | 'disabled'
+  constructor(reason: 'unauthorized' | 'disabled' = 'unauthorized') {
+    super(reason === 'disabled' ? '账号已被禁用' : '登录凭证无效或已过期')
+    this.name = 'ClientAuthError'
+    this.reason = reason
+  }
+}
 
-/** Exact method/path exceptions; all other client routes require an active session and account. */
-export function createClientAuthentication(authenticate: Authenticate): MiddlewareHandler<ClientBindings> {
+/** The business app verifies its own token, session and account, then returns a trusted client identity. */
+export type ClientAuthenticate = (token: string) => Promise<{ payload: ClientJwtPayload }>
+
+const unconfigured: ClientAuthenticate = async () => {
+  throw new ClientAuthError()
+}
+
+/** All client routes are protected. Business login/refresh exemptions must be configured explicitly. */
+export function createClientAuthentication(authenticate: ClientAuthenticate = unconfigured): MiddlewareHandler<ClientBindings> {
   return async (c, next) => {
-    const basePath = c.get('tierBasePath')
-    const path = c.req.path.replace(/\/+$/, '')
-    if (c.req.method === 'POST' && [basePath + '/auth/login', basePath + '/auth/refresh'].includes(path)) return next()
     const match = /^Bearer\s+(\S+)$/i.exec(c.req.header('Authorization') ?? '')
     if (!match) return c.json(Resp.fail('需要登录', { code: 'UNAUTHORIZED' }), 401)
     try {
       const { payload } = await authenticate(match[1])
+      if (typeof payload.sub !== 'string' || !payload.sub.trim()) throw new ClientAuthError()
       c.set('jwtPayload', payload)
     } catch (error) {
       if (error instanceof ClientAuthError)

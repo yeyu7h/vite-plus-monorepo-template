@@ -1,0 +1,133 @@
+import { z } from '@hono/zod-openapi'
+import { index, primaryKey, snakeCase, varchar } from 'drizzle-orm/pg-core'
+
+import { createSelectSchema } from 'drizzle-orm/zod'
+
+export const casbinRule = snakeCase.table(
+  'casbin_rule',
+  {
+    /** Policy type: p (permission policy) / g (role inheritance) / 策略类型：p（权限策略）/g（角色继承） */
+    ptype: varchar({ length: 8 }).notNull(), // Not null: all rules must contain ptype / 非空：所有规则必含 ptype
+    /** Subject: role or user (p=sub, g=parent role/user) / 主体：角色或用户（p策略=sub，g策略=上级角色/用户） */
+    v0: varchar({ length: 64 }).notNull(), // Not null: both p/g policies require subject / 非空：p/g 策略均需主体
+    /** Object: business resource (p=obj, g=child role/user) / 对象：业务资源（p策略=obj，g策略=下级角色/用户） */
+    v1: varchar({ length: 254 }).notNull(), // Not null: both p/g policies require object / 非空：p/g 策略均需对象
+    /** Action: business action (only used by p policy, empty string for g) / 动作：业务动作（仅p策略使用，g策略为空字符串） */
+    v2: varchar({ length: 64 }).notNull().default(''), // Default empty string: compatible with g policy / 默认空字符串：兼容g策略
+    /** Reserved field (not in use, defaults to empty string) / 保留字段（暂不使用，默认空字符串） */
+    v3: varchar({ length: 64 }).notNull().default(''),
+    /** Reserved field (not in use, defaults to empty string) / 保留字段（暂不使用，默认空字符串） */
+    v4: varchar({ length: 64 }).notNull().default(''),
+    /** Reserved field (not in use, defaults to empty string) / 保留字段（暂不使用，默认空字符串） */
+    v5: varchar({ length: 64 }).notNull().default(''),
+  },
+  (table) => [
+    // Primary key: ptype, v0, v1, v2 / 主键：ptype, v0, v1, v2
+    primaryKey({ name: 'casbin_rule_pkey', columns: [table.ptype, table.v0, table.v1, table.v2] }),
+    // Index: idx_casbin_g_v0 / 索引：idx_casbin_g_v0
+    index('idx_casbin_g_v0').on(table.ptype, table.v0, table.v1),
+    // Index: idx_casbin_v1 / 索引：idx_casbin_v1
+    index('idx_casbin_v1').on(table.ptype, table.v1),
+  ],
+)
+
+// Zod Schema adapted for not-null + default value constraints / Zod Schema 适配字段非空+默认值约束
+export const selectCasbinRuleSchema = createSelectSchema(casbinRule, {
+  ptype: (schema) => schema.meta({ description: '策略类型: p=策略 g=角色继承' }),
+  v0: (schema) => schema.meta({ description: '主体: 角色或用户（p=sub，g=上级）' }),
+  v1: (schema) => schema.meta({ description: '对象: 资源/角色（p=obj，g=下级）' }),
+  v2: (schema) => schema.meta({ description: '动作: 仅p策略使用（如GET/POST）' }),
+  v3: (schema) => schema.meta({ description: '保留字段' }),
+  v4: (schema) => schema.meta({ description: '保留字段' }),
+  v5: (schema) => schema.meta({ description: '保留字段' }),
+})
+
+// Type source: z.infer<typeof selectCasbinRuleSchema> is the parsed type of selectSchema, omit yields insert type / 类型来源：z.infer<typeof selectCasbinRuleSchema> 是 selectSchema 的解析类型，omit 后得到插入类型
+type InsertCasbinRuleType = z.infer<typeof selectCasbinRuleSchema>
+
+/** Base insert schema (without refine, for partial operations) / 基础插入 schema（不含 refine，用于 partial 等操作） */
+export const baseCasbinRuleSchema = selectCasbinRuleSchema
+
+type InsertCasbinRuleInput = z.infer<typeof baseCasbinRuleSchema>
+
+export const insertCasbinRuleSchema = baseCasbinRuleSchema.refine((data: InsertCasbinRuleInput) => {
+  if (data.ptype === 'g') {
+    if (data.v2 !== '') {
+      throw new Error('角色继承规则（g）不允许设置「动作（v2）」，请留空')
+    }
+  }
+
+  if (data.ptype === 'p') {
+    if (data.v2 === '') {
+      throw new Error('权限策略（p）必须设置「动作（v2，如GET/POST）」')
+    }
+  }
+
+  return true
+})
+
+type FromOriginalRuleType = {
+  ptype: InsertCasbinRuleType['ptype']
+}
+type UpdateDataInput = z.infer<typeof baseCasbinRuleSchema>
+type PatchCasbinRuleInput = {
+  fromOriginalRule: FromOriginalRuleType
+  updateData: Partial<UpdateDataInput>
+}
+
+export const patchCasbinRuleSchema = z
+  .object({
+    fromOriginalRule: z
+      .object({
+        ptype: selectCasbinRuleSchema.shape.ptype,
+      })
+      .meta({ description: '原规则的基础信息（仅需ptype，用于校验更新合法性）' }),
+    // Zod v4.3+: schema with refine cannot call partial(), use base schema / Zod v4.3+: 包含 refine 的 schema 不能调用 partial()，使用基础 schema
+    updateData: baseCasbinRuleSchema.partial().meta({ description: '待更新的规则字段（部分可选）' }),
+  })
+  .refine((data: PatchCasbinRuleInput) => {
+    const { fromOriginalRule, updateData } = data
+    const originalPtype = fromOriginalRule.ptype
+    const { ptype: newPtype, v2: newV2, v0: newV0, v1: newV1 } = updateData
+
+    // Scenario 1: Updating ptype (changing between g and p) / 场景1：更新 ptype（从g改p或p改g）
+    if (newPtype !== undefined && newPtype !== originalPtype) {
+      if (newPtype === 'g') {
+        if (newV2 !== undefined && newV2 !== '') {
+          throw new Error(`规则类型从「${originalPtype}」改为「g（角色继承）」后，不允许设置「动作（v2）」`)
+        }
+      }
+
+      if (newPtype === 'p') {
+        if (newV2 === undefined || newV2 === '') {
+          throw new Error(`规则类型从「${originalPtype}」改为「p（权限）」后，必须设置「动作（v2）」`)
+        }
+      }
+    }
+
+    // Scenario 2: ptype not updated (keeping original type) / 场景2：未更新 ptype（保持原类型）
+    if (newPtype === undefined || newPtype === originalPtype) {
+      if (originalPtype === 'g') {
+        if (newV2 !== undefined) {
+          throw new Error(`原规则为「g（角色继承）」，不允许更新「动作（v2）」，请移除此字段`)
+        }
+      }
+
+      if (originalPtype === 'p') {
+        if (newV2 !== undefined && newV2 === '') {
+          throw new Error(`原规则为「p（权限）」，更新「动作（v2）」时不能为空（如GET/POST）`)
+        }
+      }
+    }
+
+    // Scenario 3: Additional validation for v0/v1 updates / 场景3：更新 v0/v1 的额外校验
+    if (newV0 !== undefined && newV0.includes('@')) {
+      throw new Error('主体（v0）不允许包含「@」字符，请修改后重试')
+    }
+    if (newV1 !== undefined && newV1.length > 254) {
+      throw new Error(`对象（v1）长度不能超过254个字符，当前长度：${newV1.length}`)
+    }
+
+    return true
+  })
+  .meta({ description: 'Casbin规则更新Schema（支持部分字段更新，结合原规则类型做全场景校验）' })

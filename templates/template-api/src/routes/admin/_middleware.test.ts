@@ -44,7 +44,7 @@ beforeEach(() => {
 describe('admin middleware route exemptions', () => {
   it.each(['/auth/userinfo', '/auth/access', '/auth/permissions', '/system/users'])('rejects client audience at %s even if signed using the admin key', async (path) => {
     state.roles = ['admin']
-    const token = await sign({ sub: 'test-user', roles: ['admin'], sessionId: 'test-session', aud: 'client', iss: 'miniapp-client' }, env.ADMIN_JWT_SECRET, 'HS256')
+    const token = await sign({ sub: 'test-user', roles: ['admin'], sessionId: 'test-session', aud: 'client', iss: 'client-auth' }, env.ADMIN_JWT_SECRET, 'HS256')
     expect((await createApp().request('/api/admin' + path, { headers: { Authorization: `Bearer ${token}` } })).status).toBe(401)
     expect(state.audit).not.toHaveBeenCalled()
   })

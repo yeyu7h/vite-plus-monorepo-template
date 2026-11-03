@@ -4,4 +4,3 @@ export { miniappAppsSchema, miniappAppSchema, miniappIdentitySchema } from './co
 export type { MiniappApps, MiniappApp, MiniappIdentity, AlipayApp } from './config'
 export { MiniappAuthError } from './errors'
 export type { MiniappAuthErrorCode } from './errors'
-export { formatUserUid } from './uid'

@@ -113,10 +113,10 @@ my.getAuthCode({
 迁移历史中的 `unified-miniapp-auth` 曾引入统一 `users`，保留为历史记录。后续 `isolate-client-accounts` 迁移将管理账号和业务用户重新拆分；已有业务 UUID、UID、平台身份及 UID 计数器均保留，纯业务记录不会留在管理账号表。此迁移不提供账号合并或业务账号提升为管理员的能力。应用迁移前核对目标库；不要修改已执行的历史迁移。
 
 ```bash
-vp run @app/template-api#migrate
-vp run @app/template-api#seed
+vp run @example/miniapp-api#migrate
+vp run @example/miniapp-api#seed
 vp run @monorepo/server-miniapp-auth#test
-vp run @app/template-api#test
+vp run @example/miniapp-api#test
 ```
 
-集成测试需要独立 PostgreSQL 18+（UUIDv7）与 Redis，并先执行迁移、seed。必须通过 `TEST_DATABASE_URL`、`TEST_REDIS_URL` 显式指定专用测试服务，再运行 `vp run @app/template-api#test:integration`；缺少任一地址会在加载测试前终止。集成测试任务禁用缓存，始终检查真实外部状态。平台适配器在集成测试中替换为已验证身份，PostgreSQL 与 Redis 使用真实服务；真实平台联调另需有效应用配置及客户端一次性凭证。
+集成测试需要独立 PostgreSQL 18+（UUIDv7）与 Redis，并先执行迁移、seed。必须通过 `TEST_DATABASE_URL`、`TEST_REDIS_URL` 显式指定专用测试服务，再运行 `vp run @example/miniapp-api#test:integration`；缺少任一地址会在加载测试前终止。集成测试任务禁用缓存，始终检查真实外部状态。平台适配器在集成测试中替换为已验证身份，PostgreSQL 与 Redis 使用真实服务；真实平台联调另需有效应用配置及客户端一次性凭证。

@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm'
 import { format } from 'date-fns'
-import { formatUserUid } from '@monorepo/server-miniapp-auth'
+import { formatUserUid } from './uid'
 import type { MiniappIdentity } from '@monorepo/server-miniapp-auth'
 import db from '@/db'
 import { clientUsers, clientUserIdentities, clientUserUidCounters } from '@/db/schema'

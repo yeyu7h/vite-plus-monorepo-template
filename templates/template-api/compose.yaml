@@ -47,7 +47,6 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/postgres}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      CLIENT_JWT_SECRET: ${CLIENT_JWT_SECRET:-change-this-client-secret}
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-change-this-admin-secret}
       ACCESS_KEY_ID: ${ACCESS_KEY_ID:-}
       SECRET_ACCESS_KEY: ${SECRET_ACCESS_KEY:-}

@@ -49,7 +49,7 @@ describe('isTableDeclarationCall', () => {
 
 describe('findMissingTableDeclarations', () => {
   it('reports runtime tables missing from the source scan', () => {
-    expect(findMissingTableDeclarations(['systemUsers', 'systemRoles'], ['systemUsers', 'clientUsers', 'systemRoles'])).toEqual(['clientUsers'])
+    expect(findMissingTableDeclarations(['systemUsers', 'systemRoles'], ['systemUsers', 'missingTable', 'systemRoles'])).toEqual(['missingTable'])
   })
 
   it('returns an empty list when every runtime table was recognized', () => {

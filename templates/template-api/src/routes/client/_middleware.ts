@@ -1,5 +1,6 @@
 import { defineMiddleware } from '@monorepo/server-core'
 import { createClientAuthentication } from '@/middlewares/client-authenticate'
-import { clientSessions } from '@/lib/services/client-auth'
 
-export default defineMiddleware([createClientAuthentication(clientSessions.authenticate)])
+// Inject the business application's client authentication adapter here.
+// The default rejects access, including administrator tokens.
+export default defineMiddleware([createClientAuthentication()])
